@@ -13,9 +13,9 @@ using MediaBrowser.Controller.Plugins;
 using MediaBrowser.Model.Entities;
 using Microsoft.Extensions.Logging;
 using Jellyfin.Data.Enums;
-using NAudio.Wave;
 using Newtonsoft.Json;
-using VideoLibrary;
+using YoutubeExplode;
+using YoutubeExplode.Videos.Streams;
 
 
 namespace Jellyfin.Plugin.Themerr
@@ -37,19 +37,16 @@ namespace Jellyfin.Plugin.Themerr
         }
 
         
-        private static void SaveMp3(string destination, string videoUrl, string mp3Name)
+        private static async void SaveMp3(string destination, string videoUrl, string mp3Name)
         {
-            var youtube = YouTube.Default;
-            var vid = youtube.GetVideo(videoUrl);
-            File.WriteAllBytes(destination + vid.FullName, vid.GetBytes());
+            var youtube = new YoutubeClient();
+            var streamManifest = await youtube.Videos.Streams.GetManifestAsync(videoUrl);
 
-            // convert video to mp3 using NAudio
-            var inputFile = destination + vid.FullName;
-            var outputFile = $"{destination}/{mp3Name}.mp3";
+            // highest bitrate audio stream
+            var streamInfo = streamManifest.GetAudioOnlyStreams().GetWithHighestBitrate();
 
-            using var reader = new MediaFoundationReader(inputFile);
-            using var writer = new WaveFileWriter(outputFile, reader.WaveFormat);
-            reader.CopyTo(writer);
+            // Download the stream to a file
+            await youtube.Videos.Streams.DownloadAsync(streamInfo, $"{destination}/{mp3Name}.mp3");
         }
         
         
