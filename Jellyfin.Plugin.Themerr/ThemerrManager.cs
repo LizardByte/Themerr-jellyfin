@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using System.IO;
 using System.Linq;
 using System.Net.Http;
 using System.Threading;
@@ -21,8 +20,6 @@ using YoutubeExplode.Videos.Streams;
 namespace Jellyfin.Plugin.Themerr
 
 {
-
-
     public class ThemerrManager : IServerEntryPoint
     {
         private readonly ILibraryManager _libraryManager;

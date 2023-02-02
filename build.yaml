@@ -1,12 +1,12 @@
 ---
 name: "jellyfin-plugin-themerr"
 guid: "e41ef0c4-c413-41ba-b4fa-8c565dc3c969"
-version: "0"  # Please increment with each pull request
+version: "0.0.1"  # update with CI
 jellyfin_version: "10.5.0"  # The earliest binary-compatible version
 owner: "LizardByte"
 nicename: "Themerr"
-description: "Automatically add theme songs to movies using ThemerrDB"
 overview: "Automatically add theme songs to movies using ThemerrDB"
+description: "Automatically add theme songs to movies using ThemerrDB"
 category: "Metadata"
 artifacts:
   - "Jellyfin.Plugin.Themerr.dll"
