@@ -1,6 +1,6 @@
 ﻿using MediaBrowser.Model.Plugins;
 
-namespace Jellyfin.Plugin.ThemeSongs.Configuration
+namespace Jellyfin.Plugin.Themerr.Configuration
 {
     public class PluginConfiguration : BasePluginConfiguration
     {

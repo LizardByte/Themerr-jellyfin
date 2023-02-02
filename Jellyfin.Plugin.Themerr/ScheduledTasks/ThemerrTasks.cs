@@ -6,22 +6,22 @@ using MediaBrowser.Controller.Library;
 using MediaBrowser.Model.Tasks;
 using Microsoft.Extensions.Logging;
 
-namespace Jellyfin.Plugin.ThemeSongs.ScheduledTasks
+namespace Jellyfin.Plugin.Themerr.ScheduledTasks
 {
-    public class DownloadThemeSongsTask : IScheduledTask
+    public class DownloadThemerrTask : IScheduledTask
     {
-        private readonly ILogger<ThemeSongsManager> _logger;
-        private readonly ThemeSongsManager _themeSongsManager;
+        private readonly ILogger<ThemerrManager> _logger;
+        private readonly ThemerrManager _themerrManager;
 
-        public DownloadThemeSongsTask(ILibraryManager libraryManager, ILogger<ThemeSongsManager> logger)
+        public DownloadThemerrTask(ILibraryManager libraryManager, ILogger<ThemerrManager> logger)
         {
             _logger = logger;
-            _themeSongsManager = new ThemeSongsManager(libraryManager,  logger);
+            _themerrManager = new ThemerrManager(libraryManager,  logger);
         }
         public Task Execute(CancellationToken cancellationToken, IProgress<double> progress)
         {
-            _logger.LogInformation("Starting plugin, Downloading TV Theme Songs...");
-            _themeSongsManager.DownloadAllThemeSongs();
+            _logger.LogInformation("Starting plugin, Downloading Movie Theme Songs...");
+            _themerrManager.DownloadAllThemerr();
             _logger.LogInformation("All theme songs downloaded");
             return Task.CompletedTask;
         }
@@ -36,9 +36,9 @@ namespace Jellyfin.Plugin.ThemeSongs.ScheduledTasks
             };
         }
 
-        public string Name => "Download TV Theme Songs";
-        public string Key => "DownloadTV ThemeSongs";
-        public string Description => "Scans all libraries to download TV Theme Songs";
+        public string Name => "Download Movie Theme Songs";
+        public string Key => "DownloadMovie ThemeSongs";
+        public string Description => "Scans all libraries to download Movie Theme Songs";
         public string Category => "Theme Songs";
     }
 }
