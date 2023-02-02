@@ -13,8 +13,7 @@ using MediaBrowser.Controller.Plugins;
 using MediaBrowser.Model.Entities;
 using Microsoft.Extensions.Logging;
 using Jellyfin.Data.Enums;
-using MediaToolkit;
-using MediaToolkit.Model;
+using NAudio.Wave;
 using Newtonsoft.Json;
 using VideoLibrary;
 
@@ -38,21 +37,19 @@ namespace Jellyfin.Plugin.Themerr
         }
 
         
-        private static void SaveMp3(string saveToFolder, string videoUrl, string mp3Name)
+        private static void SaveMp3(string destination, string videoUrl, string mp3Name)
         {
-            var destination = @saveToFolder;
             var youtube = YouTube.Default;
             var vid = youtube.GetVideo(videoUrl);
             File.WriteAllBytes(destination + vid.FullName, vid.GetBytes());
 
-            var inputFile = new MediaFile { Filename = destination + vid.FullName };
-            var outputFile = new MediaFile { Filename = $"{mp3Name}.mp3" };
+            // convert video to mp3 using NAudio
+            var inputFile = destination + vid.FullName;
+            var outputFile = $"{destination}/{mp3Name}.mp3";
 
-            using (var engine = new Engine())
-            {
-                engine.GetMetadata(inputFile);
-                engine.Convert(inputFile, outputFile);
-            }
+            using var reader = new MediaFoundationReader(inputFile);
+            using var writer = new WaveFileWriter(outputFile, reader.WaveFormat);
+            reader.CopyTo(writer);
         }
         
         
@@ -73,7 +70,7 @@ namespace Jellyfin.Plugin.Themerr
             var movies = GetMoviesFromLibrary();
             foreach (var movie in movies)
             {
-                if (movie.GetThemeSongs().Count() > 0)
+                if (movie.GetThemeSongs().Count > 0)
                 {
                     continue;
                 }

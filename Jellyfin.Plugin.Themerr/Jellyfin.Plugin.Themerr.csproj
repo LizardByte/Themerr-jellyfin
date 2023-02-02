@@ -11,8 +11,8 @@
 
   <ItemGroup>
     <PackageReference Include="Jellyfin.Controller" Version="10.8.0-alpha5" />
-    <PackageReference Include="MediaToolkit" Version="1.1.0.1" />
     <PackageReference Include="Microsoft.AspNetCore.Mvc" Version="2.2.0" />
+    <PackageReference Include="NAudio" Version="2.1.0" />
     <PackageReference Include="Newtonsoft.Json" Version="13.0.2" />
     <PackageReference Include="VideoLibrary" Version="3.2.3" />
   </ItemGroup>
