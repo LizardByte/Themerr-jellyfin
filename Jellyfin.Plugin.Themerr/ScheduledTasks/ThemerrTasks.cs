@@ -18,12 +18,12 @@ namespace Jellyfin.Plugin.Themerr.ScheduledTasks
             _logger = logger;
             _themerrManager = new ThemerrManager(libraryManager,  logger);
         }
-        public Task Execute(CancellationToken cancellationToken, IProgress<double> progress)
+
+        public async Task ExecuteAsync(IProgress<double> progress, CancellationToken cancellationToken)
         {
             _logger.LogInformation("Starting plugin, Downloading Movie Theme Songs...");
-            _themerrManager.DownloadAllThemerr();
+            await _themerrManager.DownloadAllThemerr();
             _logger.LogInformation("All theme songs downloaded");
-            return Task.CompletedTask;
         }
 
         public IEnumerable<TaskTriggerInfo> GetDefaultTriggers()
@@ -39,6 +39,6 @@ namespace Jellyfin.Plugin.Themerr.ScheduledTasks
         public string Name => "Download Movie Theme Songs";
         public string Key => "DownloadMovie ThemeSongs";
         public string Description => "Scans all libraries to download Movie Theme Songs";
-        public string Category => "Theme Songs";
+        public string Category => "Themerr";
     }
 }

@@ -5,8 +5,8 @@ using System.Net.Http;
 using System.Threading;
 using System.Threading.Tasks;
 using MediaBrowser.Controller.Entities;
-// using MediaBrowser.Controller.Entities.TV;
 using MediaBrowser.Controller.Entities.Movies;
+// using MediaBrowser.Controller.Entities.TV;
 using MediaBrowser.Controller.Library;
 using MediaBrowser.Controller.Plugins;
 using MediaBrowser.Model.Entities;
@@ -34,16 +34,19 @@ namespace Jellyfin.Plugin.Themerr
         }
 
         
-        private static async void SaveMp3(string destination, string videoUrl, string mp3Name)
+        private static void SaveMp3(string destination, string videoUrl, string mp3Name)
         {
-            var youtube = new YoutubeClient();
-            var streamManifest = await youtube.Videos.Streams.GetManifestAsync(videoUrl);
+            Task.Run(async () =>
+            {
+                var youtube = new YoutubeClient();
+                var streamManifest = await youtube.Videos.Streams.GetManifestAsync(videoUrl);
 
-            // highest bitrate audio stream
-            var streamInfo = streamManifest.GetAudioOnlyStreams().GetWithHighestBitrate();
+                // highest bitrate audio stream
+                var streamInfo = streamManifest.GetAudioOnlyStreams().GetWithHighestBitrate();
 
-            // Download the stream to a file
-            await youtube.Videos.Streams.DownloadAsync(streamInfo, $"{destination}/{mp3Name}.mp3");
+                // Download the stream to a file
+                await youtube.Videos.Streams.DownloadAsync(streamInfo, $"{destination}/{mp3Name}.mp3");
+            });
         }
         
         
@@ -59,7 +62,7 @@ namespace Jellyfin.Plugin.Themerr
         }
 
 
-        public void DownloadAllThemerr()
+        public Task DownloadAllThemerr()
         {
             var movies = GetMoviesFromLibrary();
             foreach (var movie in movies)
@@ -88,7 +91,7 @@ namespace Jellyfin.Plugin.Themerr
                         
                         try
                         {
-                            SaveMp3(movie.Path, youtubeThemeUrl, "theme");
+                            SaveMp3(movie.ContainingFolderPath, youtubeThemeUrl, "theme");
                             _logger.LogInformation("{movieName} theme song successfully downloaded",
                                 movie.Name);
                         }
@@ -110,7 +113,8 @@ namespace Jellyfin.Plugin.Themerr
                     _logger.LogInformation("{movieName} theme song not in database, or no internet connection",
                         movie.Name);
                 }
-            }        
+            }
+            return Task.CompletedTask;
         }
 
 

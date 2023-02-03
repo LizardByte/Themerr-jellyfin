@@ -1,15 +1,14 @@
 ---
-name: "jellyfin-plugin-themerr"
+name: "Themerr"
 guid: "e41ef0c4-c413-41ba-b4fa-8c565dc3c969"
-version: "0.0.1"  # update with CI
-jellyfin_version: "10.5.0"  # The earliest binary-compatible version
-owner: "LizardByte"
-nicename: "Themerr"
+targetAbi: "10.8.0.0"
+framework: "net6.0"
 overview: "Automatically add theme songs to movies using ThemerrDB"
-description: "Automatically add theme songs to movies using ThemerrDB"
+description: >
+  Automatically add theme songs to movies using ThemerrDB
 category: "Metadata"
+owner: "LizardByte"
 artifacts:
   - "Jellyfin.Plugin.Themerr.dll"
-build_type: "dotnet"
-dotnet_configuration: "Release"
-dotnet_framework: "netstandard2.1"
+# add version using CI
+# add changelog using CI

@@ -10,7 +10,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Jellyfin.Controller" Version="10.8.0-alpha5" />
+    <PackageReference Include="Jellyfin.Controller" Version="10.8.4" />
     <PackageReference Include="Microsoft.AspNetCore.Mvc" Version="2.2.0" />
     <PackageReference Include="Newtonsoft.Json" Version="13.0.2" />
     <PackageReference Include="YoutubeExplode" Version="6.2.5" />
@@ -18,7 +18,7 @@
 
   <ItemGroup>
     <None Remove="Configuration\configurationpage.html" />
-    <EmbeddedResource Include="Configuration\configurationpage.html" />
+    <EmbeddedResource Include="Configuration\configurationPage.html" />
   </ItemGroup>
 
   <ItemGroup>

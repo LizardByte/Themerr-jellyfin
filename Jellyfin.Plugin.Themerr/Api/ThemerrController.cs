@@ -1,4 +1,5 @@
 using System.Net.Mime;
+using System.Threading.Tasks;
 using MediaBrowser.Controller.Library;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
@@ -40,12 +41,11 @@ namespace Jellyfin.Plugin.Themerr.Api
         /// <returns>A <see cref="NoContentResult"/> indicating success.</returns>
         [HttpPost("DownloadMovies")]
         [ProducesResponseType(StatusCodes.Status204NoContent)]
-        public ActionResult DownloadMovieThemerrRequest()
+        public async Task DownloadMovieThemerrRequest()
         {
             _logger.LogInformation("Downloading Movie Theme Songs");
-            _themerrManager.DownloadAllThemerr();
+            await _themerrManager.DownloadAllThemerr();
             _logger.LogInformation("Completed");
-            return NoContent();
         }
     }
 }

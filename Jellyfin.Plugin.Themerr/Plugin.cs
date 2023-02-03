@@ -31,8 +31,8 @@ namespace Jellyfin.Plugin.Themerr
             {
                 new PluginPageInfo
                 {
-                    Name = "Theme Songs",
-                    EmbeddedResourcePath = GetType().Namespace + ".Configuration.configurationpage.html"
+                    Name = "Themerr",
+                    EmbeddedResourcePath = GetType().Namespace + ".Configuration.configurationPage.html"
                 }
             };
         }
