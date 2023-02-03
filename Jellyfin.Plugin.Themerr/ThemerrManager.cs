@@ -34,7 +34,7 @@ namespace Jellyfin.Plugin.Themerr
         }
 
         
-        private static void SaveMp3(string destination, string videoUrl, string mp3Name)
+        private static void SaveMp3(string destination, string videoUrl)
         {
             Task.Run(async () =>
             {
@@ -45,7 +45,7 @@ namespace Jellyfin.Plugin.Themerr
                 var streamInfo = streamManifest.GetAudioOnlyStreams().GetWithHighestBitrate();
 
                 // Download the stream to a file
-                await youtube.Videos.Streams.DownloadAsync(streamInfo, $"{destination}/{mp3Name}.mp3");
+                await youtube.Videos.Streams.DownloadAsync(streamInfo, destination);
             });
         }
         
@@ -67,11 +67,32 @@ namespace Jellyfin.Plugin.Themerr
             var movies = GetMoviesFromLibrary();
             foreach (var movie in movies)
             {
-                if (movie.GetThemeSongs().Count > 0)
+                // set paths
+                var themePath = $"{movie.ContainingFolderPath}/theme.mp3";
+                var themerrDataPath = $"{movie.ContainingFolderPath}/themerr.json";
+                
+                // if theme.mp3 exists and themerr.json does not exist then skip
+                // don't overwrite user supplied theme files
+                if (System.IO.File.Exists(themePath) && !System.IO.File.Exists(themerrDataPath))
                 {
                     continue;
                 }
+                
+                // open themerr.json and check if theme song is already downloaded
+                var existingYoutubeThemeUrl = "";
+                if (System.IO.File.Exists(themerrDataPath))
+                {
+                    var jsonString = System.IO.File.ReadAllText(themerrDataPath);
+                    dynamic jsonData = JsonConvert.DeserializeObject(jsonString);
+                    if (jsonData != null)
+                    {
+                        existingYoutubeThemeUrl = jsonData.youtube_theme_url;
+                    }
+                }
+                
+                // get tmdb id
                 var tmdb = movie.GetProviderId(MetadataProvider.Tmdb);
+                // create themerrdb_link
                 var themerrDbLink = $"https://app.lizardbyte.dev/ThemerrDB/movies/themoviedb/{tmdb}.json";
 
                 // download themerrdb_link as a json object
@@ -85,15 +106,32 @@ namespace Jellyfin.Plugin.Themerr
                     {
                         // extract the youtube_theme_url key (string)
                         string youtubeThemeUrl = jsonData.youtube_theme_url;
+                        
+                        // if youtubeThemeUrl is not equal to existingYoutubeThemeUrl then download
+                        if (youtubeThemeUrl == existingYoutubeThemeUrl)
+                        {
+                            continue;
+                        }
 
                         _logger.LogDebug("Trying to download {movieName}, {youtubeThemeUrl}",
                             movie.Name, youtubeThemeUrl);
                         
                         try
                         {
-                            SaveMp3(movie.ContainingFolderPath, youtubeThemeUrl, "theme");
+                            SaveMp3(themePath, youtubeThemeUrl);
                             _logger.LogInformation("{movieName} theme song successfully downloaded",
                                 movie.Name);
+                            // create themerr.json (json object) with these keys, youtube_theme_url, downloaded_timestamp
+                            var themerrData = new
+                            {
+                                downloaded_timestamp = DateTime.UtcNow,
+                                youtube_theme_url = youtubeThemeUrl
+                            };
+                            // write themerr.json to disk
+                            System.IO.File.WriteAllText(themerrDataPath, JsonConvert.SerializeObject(themerrData));
+                            
+                            // update the metadata
+                            movie.RefreshMetadata(CancellationToken.None);
                         }
                         catch (Exception e)
                         {
