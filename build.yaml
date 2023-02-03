@@ -5,7 +5,7 @@ guid: "e41ef0c4-c413-41ba-b4fa-8c565dc3c969"
 targetAbi: "10.8.0.0"
 framework: "net6.0"
 overview: "Automatically add theme songs to movies using ThemerrDB"
-description: >
+description: >-
   Automatically add theme songs to movies using ThemerrDB
 category: "Metadata"
 owner: "LizardByte"
@@ -13,4 +13,4 @@ artifacts:
   - "Jellyfin.Plugin.Themerr.dll"
   - "YoutubeExplode.dll"
 version: "0.0.0"
-changelog: "local build"
+changelog: "see LizardByte/Themerr-jellyfin on GitHub"

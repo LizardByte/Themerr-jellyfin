@@ -400,3 +400,6 @@ FodyWeavers.xsd
 
 # exclude python venv
 venv/
+
+# exclude build directory
+build/
