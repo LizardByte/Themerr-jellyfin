@@ -36,8 +36,8 @@ namespace Jellyfin.Plugin.Themerr.ScheduledTasks
             };
         }
 
-        public string Name => "Download Movie Theme Songs";
-        public string Key => "DownloadMovie ThemeSongs";
+        public string Name => "Download Theme Songs";
+        public string Key => "Download ThemeSongs";
         public string Description => "Scans all libraries to download Movie Theme Songs";
         public string Category => "Themerr";
     }
