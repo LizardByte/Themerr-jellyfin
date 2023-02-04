@@ -91,4 +91,6 @@ ARG PLUGIN_NAME="themerr-jellyfin"
 ARG PLUGIN_DIR="/config/data/plugins"
 
 # add files from buildstage
-COPY --link --from=buildstage /artifacts/ $PLUGIN_DIR/$PLUGIN_NAME
+# trailing slash on artifacts directory copies the contents of the directory, instead of the directory itself
+# do not use `--link` here, the docker mod will not work
+COPY --from=buildstage /artifacts/ $PLUGIN_DIR/$PLUGIN_NAME
