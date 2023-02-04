@@ -75,6 +75,9 @@ mkdir -p ./artifacts
 # check if build version is empty
 if [ -z "${BUILD_VERSION}" ]; then
   BUILD_VERSION="0.0.0.0"
+else
+  # remove the v prefix from the version
+  BUILD_VERSION="${BUILD_VERSION#v}"
 fi
 python3 -m jprm --verbosity=debug plugin build "./" --version="${BUILD_VERSION}" --output="./artifacts"
 mkdir -p /artifacts
