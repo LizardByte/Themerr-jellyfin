@@ -87,8 +87,8 @@ _BUILD
 FROM scratch AS deploy
 
 # variables
-ARG PLUGIN_NAME="Themerr"
+ARG PLUGIN_NAME="themerr-jellyfin"
 ARG PLUGIN_DIR="/config/data/plugins"
 
 # add files from buildstage
-COPY --link --from=buildstage /artifacts $PLUGIN_DIR/$PLUGIN_NAME
+COPY --link --from=buildstage /artifacts/ $PLUGIN_DIR/$PLUGIN_NAME
