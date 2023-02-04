@@ -1,0 +1,8 @@
+# ignore git files
+.git*
+
+# ignore hidden files
+.*
+
+# ignore directories
+docs/
