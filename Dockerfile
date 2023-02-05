@@ -92,5 +92,4 @@ ARG PLUGIN_DIR="/config/data/plugins"
 
 # add files from buildstage
 # trailing slash on artifacts directory copies the contents of the directory, instead of the directory itself
-# do not use `--link` here, the docker mod will not work
-COPY --from=buildstage /artifacts/ $PLUGIN_DIR/$PLUGIN_NAME
+COPY --link --from=buildstage /artifacts/ $PLUGIN_DIR/$PLUGIN_NAME
