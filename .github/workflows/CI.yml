@@ -44,7 +44,7 @@ jobs:
 
       - name: Build Plugin
         id: jprm
-        uses: oddstr13/jellyfin-plugin-repository-manager@v0.5.0
+        uses: oddstr13/jellyfin-plugin-repository-manager@v0.5.1
         with:
           path: .
           output: ./build
