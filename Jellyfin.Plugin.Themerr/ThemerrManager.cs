@@ -82,11 +82,30 @@ namespace Jellyfin.Plugin.Themerr
                 var existingYoutubeThemeUrl = "";
                 if (System.IO.File.Exists(themerrDataPath))
                 {
-                    var jsonString = System.IO.File.ReadAllText(themerrDataPath);
-                    dynamic jsonData = JsonConvert.DeserializeObject(jsonString);
-                    if (jsonData != null)
+                    // handle errors, delete file if it is corrupted
+                    try
                     {
-                        existingYoutubeThemeUrl = jsonData.youtube_theme_url;
+                        var jsonString = System.IO.File.ReadAllText(themerrDataPath);
+                        dynamic jsonData = JsonConvert.DeserializeObject(jsonString);
+                        if (jsonData != null)
+                        {
+                            existingYoutubeThemeUrl = jsonData.youtube_theme_url;
+                        }
+                    }
+                    catch (JsonSerializationException e)
+                    {
+                        _logger.LogError("Deleting corrupted file `{themerrDataPath}`: {error}",
+                            themerrDataPath, e);
+                        // delete the file
+                        try
+                        {
+                            System.IO.File.Delete(themerrDataPath);
+                        }
+                        catch (Exception exception)
+                        {
+                            _logger.LogError("Failed to delete corrupted file `{themerrDataPath}`: {error}",
+                                themerrDataPath, exception);
+                        }
                     }
                 }
                 
@@ -121,14 +140,15 @@ namespace Jellyfin.Plugin.Themerr
                             SaveMp3(themePath, youtubeThemeUrl);
                             _logger.LogInformation("{movieName} theme song successfully downloaded",
                                 movie.Name);
-                            // create themerr.json (json object) with these keys, youtube_theme_url, downloaded_timestamp
+                            // create themerr.json (json object) with keys, youtube_theme_url, downloaded_timestamp
                             var themerrData = new
                             {
                                 downloaded_timestamp = DateTime.UtcNow,
                                 youtube_theme_url = youtubeThemeUrl
                             };
                             // write themerr.json to disk
-                            System.IO.File.WriteAllText(themerrDataPath, JsonConvert.SerializeObject(themerrData));
+                            System.IO.File.WriteAllText(themerrDataPath,
+                                JsonConvert.SerializeObject(themerrData));
                             
                             // update the metadata
                             movie.RefreshMetadata(CancellationToken.None);
@@ -144,12 +164,21 @@ namespace Jellyfin.Plugin.Themerr
                         _logger.LogInformation("{movieName} theme song not in database, or no internet connection",
                             movie.Name);
                     }
-                    
                 }
-                catch (Exception)
+                catch (HttpRequestException e) when ((int)e.StatusCode == 404)
                 {
-                    _logger.LogInformation("{movieName} theme song not in database, or no internet connection",
+                    _logger.LogInformation("{movieName} theme song not in database.",
                         movie.Name);
+                }
+                catch (HttpRequestException e)
+                {
+                    _logger.LogInformation("Network exception occurred for movie: {movieName}: {error}",
+                        movie.Name, e);
+                }
+                catch (Exception e)
+                {
+                    _logger.LogInformation("Unknown exception occurred for {movieName}: {error}",
+                        movie.Name, e);
                 }
             }
             return Task.CompletedTask;
