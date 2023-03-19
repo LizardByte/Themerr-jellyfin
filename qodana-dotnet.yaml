@@ -1,0 +1,24 @@
+---
+version: "1.0"
+linter: jetbrains/qodana-dotnet:2023.1-eap
+
+bootstrap: |
+  # download dotnet install script and pipe it to bash
+  curl -fsSL https://dot.net/v1/dotnet-install.sh |
+    bash -s -- --channel 6.0 -i /usr/share/dotnet
+
+dot-net:
+  solution: Jellyfin.Plugin.Themerr.sln
+
+exclude:
+  - name: All
+    paths:
+      - gh-pages
+
+failThreshold: 100
+
+include:
+  - name: CheckDependencyLicenses
+
+profile:
+  name: qodana.recommended
