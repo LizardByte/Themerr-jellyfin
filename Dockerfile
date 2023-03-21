@@ -2,7 +2,7 @@
 # artifacts: false
 # platforms: linux/amd64,linux/arm64/v8
 # cannot enable "linux/arm/v7" due to issue with dotnet
-FROM ubuntu:22.04 AS base
+FROM ubuntu:23.04 AS base
 
 ENV DEBIAN_FRONTEND=noninteractive
 
