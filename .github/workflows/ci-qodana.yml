@@ -11,16 +11,15 @@ on:
     types: [opened, synchronize, reopened]
   push:
     branches: [master, nightly]
-  repository_dispatch:
-    types: [qodana-notify]
   workflow_dispatch:
 
-# concurrency is handled in the dispatch-qodana workflow
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   qodana_initial_check:
     name: Qodana Initial Check
-    if: ${{ github.event_name != 'repository_dispatch' }}
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -33,15 +32,11 @@ jobs:
           if [ "${{ github.event_name }}" == "push" ]
           then
             echo "This is a PUSH event"
-            checkout_repo=${{ github.event.repository.full_name }}
-            checkout_ref=${{ github.ref }}
             # use the branch name
             destination=${{ github.ref_name }}
             target=${{ github.ref_name }}
           else
             echo "This is a PR event"
-            checkout_repo=${{ github.event.pull_request.head.repo.full_name }}
-            checkout_ref=${{ github.event.pull_request.head.ref }}
             # use the PR number
             destination=${{ github.event.pull_request.number }}
             target=${{ github.event.pull_request.base.ref }}
@@ -91,19 +86,30 @@ jobs:
 
           echo "reports_markdown=$REPORTS_MARKDOWN" >> $GITHUB_OUTPUT
 
-      - name: Setup client payload
+      - name: Setup initial notification client payload
         id: client_payload
-        if: ${{ steps.prepare.outputs.files != '' }}
+        if: >-
+          startsWith(github.event_name, 'pull_request') &&
+          steps.prepare.outputs.files != ''
         run: |
+          # workflow logs
+          workflow_url_a=https://github.com/${{ github.repository_owner }}/${{ github.event.repository.name }}
+          workflow_url=${workflow_url_a}/actions/runs/${{ github.run_id }}
+
+          # multiline message
+          message=$(cat <<- EOF
+            :warning: **Qodana is checking this PR** :warning:
+            Live results available [here](${workflow_url})
+          EOF
+          )
+
+          # escape json control characters
+          message=$(jq -n --arg message "$message" '$message' | sed -e 's/\\/\\\\/g' -e 's/"/\\"/g')
+
           client_payload=$(echo '{
-            "checkout_repo": "'"${{ steps.prepare.outputs.checkout_repo }}"'",
-            "checkout_ref": "'"${{ steps.prepare.outputs.checkout_ref }}"'",
-            "destination": "'"${{ steps.prepare.outputs.destination }}"'",
-            "target": "'"${{ steps.prepare.outputs.target }}"'",
-            "files": "'"${{ steps.prepare.outputs.files }}"'",
-            "reports_markdown": "'"${{ steps.prepare.outputs.reports_markdown }}"'",
-            "github": ${{ toJson(github) }},
-            "matrix": ${{ toJson(steps.prepare.outputs.matrix) }}
+            "issue_message": "'"${message}"'",
+            "issue_message_id": "'"qodana"'",
+            "issue_number": "'"${{ github.event.number }}"'"
           }' | jq -c .)
 
           echo $client_payload
@@ -115,56 +121,134 @@ jobs:
         uses: peter-evans/repository-dispatch@v2.1.1
         with:
           token: ${{ secrets.GH_BOT_TOKEN }}
-          repository: ${{ github.repository_owner }}/qodana-reports
-          event-type: qodana-scan
+          repository: ${{ github.repository_owner }}/.github
+          event-type: issue-pr-comment
           client-payload: ${{ steps.client_payload.outputs.client_payload }}
 
-  qodana_notify:
-    name: Qodana Notify
-    if: ${{ github.event_name == 'repository_dispatch' }}
+    outputs:
+      destination: ${{ steps.prepare.outputs.destination }}
+      target: ${{ steps.prepare.outputs.target }}
+      files: ${{ steps.prepare.outputs.files }}
+      reports_markdown: ${{ steps.prepare.outputs.reports_markdown }}
+      matrix: ${{ steps.prepare.outputs.matrix }}
+
+  qodana:
+    if: ${{ needs.qodana_initial_check.outputs.files != '' }}
+    needs: [qodana_initial_check]
     runs-on: ubuntu-latest
-    permissions:
-      pull-requests: write  # required to add PR comment
+    strategy:
+      fail-fast: false
+      matrix: ${{ fromJson(needs.qodana_initial_check.outputs.matrix) }}
+    name: Qodana-Scan-${{ matrix.language }}
+    continue-on-error: true
     steps:
-
-      - name: Initial PR comment
-        if: ${{ github.event.client_payload.final == 'false' }}
-        uses: mshick/add-pr-comment@v2
+      - name: Checkout
+        uses: actions/checkout@v3
         with:
-          issue: ${{ github.event.client_payload.pull_request_number }}
-          repo-token: ${{ secrets.GH_BOT_TOKEN }}
-          message: |
-            :warning: **Qodana is checking this PR** :warning:
-            Live results available [here](${{ github.event.client_payload.workflow_url }})
+          submodules: recursive
 
-      - name: Final PR comment
-        if: ${{ github.event.client_payload.final != 'false' }}
-        uses: mshick/add-pr-comment@v2
-        with:
-          issue: ${{ github.event.client_payload.pull_request_number }}
-          repo-token: ${{ secrets.GH_BOT_TOKEN }}
-          status: ${{ github.event.client_payload.status }}
-          message-failure: |
-            :warning: **Qodana: failure**
-
-            [Logs](${{ github.event.client_payload.workflow_url }})
-
-            Reports: ${{ github.event.client_payload.reports_markdown }}
-
-            :information_source: It may take a few minutes for the reports to be live. Check status
-            [here](https://github.com/LizardByte/qodana-reports/actions/workflows/pages/pages-build-deployment).
-
-          message-success: |
-            :white_check_mark: **Qodana: success**
-
-            Reports: ${{ github.event.client_payload.reports_markdown }}
-
-            :information_source: It may take a few minutes for the reports to be live. Check status
-            [here](https://github.com/LizardByte/qodana-reports/actions/workflows/pages/pages-build-deployment).
-
-      - name: Fail workflow
-        if: ${{ github.event.client_payload.status != 'success' }}
+      - name: Get baseline
+        id: baseline
         run: |
-          echo "Qodana failed"
-          echo "See the logs at ${{ github.event.client_payload.workflow_url }}"
-          exit 1
+          # check if destination is not an integer
+          if ! [[ "${{ needs.qodana_initial_check.outputs.destination }}" =~ ^[0-9]+$ ]]
+          then
+            echo "Running for a branch update"
+            echo "baseline_args=" >> $GITHUB_OUTPUT
+          else
+            echo "Running for a PR"
+
+            sarif_file=qodana.sarif.json
+            repo=${{ github.event.repository.name }}
+            target=${{ needs.qodana_initial_check.outputs.target }}
+            language=${{ matrix.language }}
+
+            baseline_file="${repo}/${target}/${language}/results/${sarif_file}"
+            baseline_file_url="https://lizardbyte.github.io/qodana-reports/${baseline_file}"
+
+            # don't fail if file does not exist
+            wget ${baseline_file_url} || true
+
+            # check if file exists
+            if [ -f ${sarif_file} ]
+            then
+              echo "baseline exists"
+              echo "baseline_args=--baseline,${sarif_file}" >> $GITHUB_OUTPUT
+            else
+              echo "baseline does not exist"
+              echo "baseline_args=" >> $GITHUB_OUTPUT
+            fi
+          fi
+
+      - name: Rename Qodana config file
+        id: rename
+        run: |
+          # rename the file
+          if [ "${{ matrix.file }}" != "./qodana.yaml" ]
+          then
+            mv -f ${{ matrix.file }} ./qodana.yaml
+          fi
+
+      - name: Qodana
+        id: qodana
+        continue-on-error: true  # ensure dispatch-qodana job is run
+        uses: JetBrains/qodana-action@v2022.3.4
+        with:
+          additional-cache-hash: ${{ github.ref }}-${{ matrix.language }}
+          artifact-name: qodana-${{ matrix.language }}  # yamllint disable-line rule:line-length
+          args: '--print-problems,${{ steps.baseline.outputs.baseline_args }}'
+          pr-mode: false
+          upload-result: true
+          use-caches: true
+
+      - name: Set output status
+        id: status
+        run: |
+          # check if qodana failed
+          echo "qodana_status=${{ steps.qodana.outcome }}" >> $GITHUB_OUTPUT
+
+    outputs:
+      qodana_status: ${{ steps.status.outputs.qodana_status }}
+
+  dispatch-qodana:
+    # trigger qodana-reports to download artifacts from the matrix runs
+    needs: [qodana_initial_check, qodana]
+    runs-on: ubuntu-latest
+    name: Dispatch Qodana
+    if: ${{ needs.qodana_initial_check.outputs.files != '' }}
+    steps:
+      - name: Setup client payload
+        id: client_payload
+        run: |
+          # get the artifacts
+          artifacts=${{ toJson(steps.artifacts.outputs.result) }}
+          artifacts=$(echo $artifacts | jq -c .)
+
+          # get the target branch
+          target=${{ needs.qodana_initial_check.outputs.target }}
+
+          # get the destination branch
+          destination=${{ needs.qodana_initial_check.outputs.destination }}
+
+          # client payload
+          client_payload=$(echo '{
+            "destination": "'"${destination}"'",
+            "ref": "'"${{ github.ref }}"'",
+            "repo": "'"${{ github.repository }}"'",
+            "repo_name": "'"${{ github.event.repository.name }}"'",
+            "run_id": "'"${{ github.run_id }}"'",
+            "reports_markdown": "'"${{ needs.qodana_initial_check.outputs.reports_markdown }}"'",
+            "status": "'"${{ needs.qodana.outputs.qodana_status }}"'"
+          }' | jq -c .)
+
+          echo $client_payload
+          echo $client_payload | jq .
+          echo "client_payload=$client_payload" >> $GITHUB_OUTPUT
+
+      - name: Repository Dispatch
+        uses: peter-evans/repository-dispatch@v2.1.1
+        with:
+          token: ${{ secrets.GH_BOT_TOKEN }}
+          repository: ${{ github.repository_owner }}/qodana-reports
+          event-type: qodana-publish
+          client-payload: ${{ steps.client_payload.outputs.client_payload }}
