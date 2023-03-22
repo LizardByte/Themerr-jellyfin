@@ -13,7 +13,7 @@
     <PackageReference Include="Jellyfin.Controller" Version="10.8.4" />
     <PackageReference Include="Microsoft.AspNetCore.Mvc" Version="2.2.0" />
     <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
-    <PackageReference Include="YoutubeExplode" Version="6.2.8" />
+    <PackageReference Include="YoutubeExplode" Version="6.2.10" />
   </ItemGroup>
 
   <ItemGroup>
