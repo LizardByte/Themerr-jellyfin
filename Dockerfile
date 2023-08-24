@@ -21,19 +21,19 @@ RUN <<_DEPS
 #!/bin/bash
 apt-get update -y
 apt-get install -y --no-install-recommends \
-  libc6=2.35* \
-  libgcc-s1=12.1* \
-  libgssapi-krb5-2=1.19* \
-  libicu70=70.1* \
-  liblttng-ust1=2.13* \
-  libssl3=3.0* \
-  libstdc++6=12.1* \
-  libunwind8=1.3* \
-  python3=3.10* \
-  python3-pip=22.0* \
-  unzip=6.0* \
-  wget=1.21* \
-  zlib1g=1:1.2.11*
+  libc6 \
+  libgcc-s1 \
+  libgssapi-krb5-2 \
+  libicu70 \
+  liblttng-ust1 \
+  libssl3 \
+  libstdc++6 \
+  libunwind8 \
+  python3 \
+  python3-pip \
+  unzip \
+  wget \
+  zlib1g
 apt-get clean
 rm -rf /var/lib/apt/lists/*
 _DEPS
@@ -93,3 +93,6 @@ ARG PLUGIN_DIR="/config/data/plugins"
 # add files from buildstage
 # trailing slash on artifacts directory copies the contents of the directory, instead of the directory itself
 COPY --link --from=buildstage /artifacts/ $PLUGIN_DIR/$PLUGIN_NAME
+
+# copy s6 initialization files
+COPY --link --from=buildstage /build/dockermod_root/ /
