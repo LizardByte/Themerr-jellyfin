@@ -84,6 +84,9 @@ mkdir -p /artifacts
 unzip ./artifacts/*.zip -d /artifacts
 _BUILD
 
+# apply permissions to s6 run script
+RUN chmod +x ./dockermod_root/etc/s6-overlay/s6-rc.d/init-mod-jellyfin-themerr/run
+
 FROM scratch AS deploy
 
 # variables
