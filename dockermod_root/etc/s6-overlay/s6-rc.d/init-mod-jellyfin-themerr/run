@@ -12,10 +12,12 @@ echo '
 ║          Themerr-jellyfin, a LizardByte application           ║
 ║                                                               ║
 ║  Docs: https://docs.lizardbyte.dev/projects/themerr-jellyfin  ║
-║      Support center: https://app.lizardbyte.dev/#Support      ║
+║      Support center: https://app.lizardbyte.dev/support       ║
 ║          Donate: https://app.lizardbyte.dev/#Donate           ║
 ║                                                               ║
 ╚═══════════════════════════════════════════════════════════════╝
 '
 
-lsiown abc:abc /config/data/plugins/themerr-jellyfin
+lsiown abc:abc \
+  /config/data/plugins/themerr-jellyfin \
+  /config/data/plugins/themerr-jellyfin/*
