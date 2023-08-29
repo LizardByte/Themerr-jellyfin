@@ -87,15 +87,22 @@ _BUILD
 # apply permissions to s6 run script
 RUN chmod +x ./dockermod_root/etc/s6-overlay/s6-rc.d/init-mod-jellyfin-themerr-config/run
 
-FROM scratch AS deploy
+FROM scratch AS layer_stage
 
 # variables
 ARG PLUGIN_NAME="themerr-jellyfin"
-ARG PLUGIN_DIR="/config/data/plugins"
+ARG PLUGIN_DIR="/root-layer/config/data/plugins"
 
 # add files from buildstage
 # trailing slash on artifacts directory copies the contents of the directory, instead of the directory itself
 COPY --link --from=buildstage /artifacts/ $PLUGIN_DIR/$PLUGIN_NAME
 
 # copy s6 initialization files
-COPY --link --from=buildstage /build/dockermod_root/ /
+COPY --link --from=buildstage /build/dockermod_root/ /root-layer
+
+FROM scratch AS deploy
+
+# Linuxserver.io docker mods require that mods be fully contained in a single layer
+
+# copy s6 initialization files
+COPY --link --from=layer_stage /root-layer/ /
