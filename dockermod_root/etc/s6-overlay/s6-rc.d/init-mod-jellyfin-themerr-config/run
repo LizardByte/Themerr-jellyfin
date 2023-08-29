@@ -18,6 +18,12 @@ echo '
 ╚═══════════════════════════════════════════════════════════════╝
 '
 
+# jellyfin image should handle this, but it does not
+# create plugin configurations directory
+mkdir -p \
+  /config/data/plugins/configurations
+
 lsiown abc:abc \
+  /config/data/plugins/configurations \
   /config/data/plugins/themerr-jellyfin \
   /config/data/plugins/themerr-jellyfin/*
