@@ -1,4 +1,4 @@
-furo==2023.8.19
+furo==2023.9.10
 m2r2==0.3.3.post2
 Sphinx==7.2.5
 sphinx-copybutton==0.5.2
