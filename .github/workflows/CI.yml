@@ -58,6 +58,16 @@ jobs:
           dotnet-target: net6.0
           verbosity: debug
 
+      - name: Unit Test
+        id: test
+        run: |
+          dotnet test /p:CollectCoverage=true /p:CoverletOutputFormat=opencover
+
+      - name: Upload coverage
+        # any except cancelled or skipped
+        if: always() && (steps.test.outcome == 'success' || steps.test.outcome == 'failure')
+        uses: codecov/codecov-action@v3
+
       - name: Rename artifacts
         run: |
           mkdir -p artifacts

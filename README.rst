@@ -17,6 +17,10 @@ Integrations
    :alt: Read the Docs
    :target: http://themerr-jellyfin.readthedocs.io/
 
+.. image:: https://img.shields.io/codecov/c/gh/LizardByte/Themerr-jellyfin?token=E7LQZ34U04&style=for-the-badge&logo=codecov&label=codecov
+   :alt: Codecov
+   :target: https://codecov.io/gh/LizardByte/Themerr-jellyfin
+
 Downloads
 ---------
 
