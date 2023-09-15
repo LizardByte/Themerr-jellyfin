@@ -34,15 +34,18 @@ namespace Jellyfin.Plugin.Themerr
         }
 
         
-        private static void SaveMp3(string destination, string videoUrl)
+        public static void SaveMp3(string destination, string videoUrl)
         {
             Task.Run(async () =>
             {
                 var youtube = new YoutubeClient();
                 var streamManifest = await youtube.Videos.Streams.GetManifestAsync(videoUrl);
 
-                // highest bitrate audio stream
-                var streamInfo = streamManifest.GetAudioOnlyStreams().GetWithHighestBitrate();
+                // highest bitrate audio mp3 stream
+                var streamInfo = streamManifest
+                    .GetAudioOnlyStreams()
+                    .Where(s => s.Container == Container.Mp4)
+                    .GetWithHighestBitrate();
 
                 // Download the stream to a file
                 await youtube.Videos.Streams.DownloadAsync(streamInfo, destination);
