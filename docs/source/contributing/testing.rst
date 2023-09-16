@@ -50,4 +50,4 @@ Themerr-jellyfin uses `xUnit <https://www.nuget.org/packages/xunit>`__ for unit 
 Test with xUnit
    .. code-block:: bash
 
-      dotnet test /p:CollectCoverage=true /p:CoverletOutputFormat=opencover
+      dotnet test /p:CollectCoverage=true /p:CoverletOutputFormat=opencover --logger "console;verbosity=detailed"
