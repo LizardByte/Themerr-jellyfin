@@ -14,3 +14,4 @@
 
    contributing/database
    contributing/build
+   contributing/testing

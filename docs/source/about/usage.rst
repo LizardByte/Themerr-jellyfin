@@ -24,12 +24,12 @@ Manual
 
 To initialize a download task manually, follow these steps:
 
-#. Navigate to `<http://localhost:8096/web/index.html#!/configurationpage?name=Themerr>`_.
+#. Navigate to `<http://localhost:8096/web/index.html#!/configurationpage?name=Themerr>`__.
 #. Select `Download Theme Songs`.
 
 Or alternatively:
 
-#. Navigate to `<http://localhost:8096/web/index.html#!/scheduledtasks.html>`_.
+#. Navigate to `<http://localhost:8096/web/index.html#!/scheduledtasks.html>`__.
 #. Select `Download Theme Songs` under the `Themerr` section.
 
 Scheduled
