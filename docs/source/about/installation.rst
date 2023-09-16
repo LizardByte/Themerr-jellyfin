@@ -3,14 +3,14 @@ Installation
 ..
    The recommended method for running Themerr-jellyfin is to add the `repository`_ to Jellyfin.
 
-.. Tip:: See `Jellyfin Plugins <https://jellyfin.org/docs/general/server/plugins/>`_ for more information about
+.. Tip:: See `Jellyfin Plugins <https://jellyfin.org/docs/general/server/plugins/>`__ for more information about
    installing plugins. 
 
 ..
    Repository
    ----------
 
-   #. In Jellyfin, go to `<http://localhost:8096/web/index.html#!/repositories.html>`_.
+   #. In Jellyfin, go to `<http://localhost:8096/web/index.html#!/repositories.html>`__.
    #. Add the repository ``https://repo.lizardbyte.dev/jellyfin/manifest.json``.
    #. Go to Catalog and search for `Themerr`.
    #. Select and install the plugin.

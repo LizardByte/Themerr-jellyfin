@@ -2,13 +2,13 @@ Build
 =====
 Compiling Themerr-jellyfin requires the following:
 
-- `git <https://git-scm.com/>`_
-- `.net6.0 SDK <https://dotnet.microsoft.com/en-us/download/dotnet/6.0>`_
-- `python 3.x <https://www.python.org/downloads/>`_
+- `git <https://git-scm.com/>`__
+- `.net6.0 SDK <https://dotnet.microsoft.com/en-us/download/dotnet/6.0>`__
+- `python 3.x <https://www.python.org/downloads/>`__
 
 Clone
 -----
-Ensure `git <https://git-scm.com/>`_ is installed and run the following:
+Ensure `git <https://git-scm.com/>`__ is installed and run the following:
 
 .. code-block:: bash
 

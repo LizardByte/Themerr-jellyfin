@@ -11,6 +11,10 @@ build:
   os: ubuntu-20.04
   tools:
     python: "3.10"
+  jobs:
+    post_build:
+      - rstcheck -r .  # lint rst files
+      # - rstfmt --check --diff -w 120 .  # check rst formatting
 
 # Build documentation in the docs/ directory with Sphinx
 sphinx:
