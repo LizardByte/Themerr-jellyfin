@@ -7,7 +7,6 @@
 # standard imports
 from datetime import datetime
 import os
-import re
 
 
 # -- Path setup --------------------------------------------------------------
@@ -26,8 +25,8 @@ copyright = f'{datetime.now ().year}, {project}'
 author = 'ReenigneArcher'
 
 # The full version, including alpha/beta/rc tags
-with open(os.path.join(root_dir, 'CHANGELOG.md'), 'r') as f:
-    version = re.search(r"\[((\d+)\.(\d+)\.(\d+))]", str(f.read())).group(1)
+# https://docs.readthedocs.io/en/stable/reference/environment-variables.html#envvar-READTHEDOCS_VERSION
+version = os.getenv('READTHEDOCS_VERSION', 'dirty')
 
 
 # -- General configuration ---------------------------------------------------
@@ -62,6 +61,15 @@ source_suffix = ['.rst', '.md']
 # so a file named "default.css" will overwrite the builtin "default.css".
 # html_static_path = ['_static']
 
+# These paths are either relative to html_static_path
+# or fully qualified paths (eg. https://...)
+# html_css_files = [
+#     'css/custom.css',
+# ]
+# html_js_files = [
+#     'js/custom.js',
+# ]
+
 html_logo = os.path.join(root_dir, 'themerr-jellyfin.png')
 
 # The theme to use for HTML and HTML Help pages.  See the documentation for
@@ -70,7 +78,7 @@ html_theme = 'furo'
 
 html_theme_options = {
     "top_of_page_button": "edit",
-    "source_edit_link": "https://github.com/lizardbyte/themerr-jellyfin/tree/nightly/docs/source/{filename}",
+    "source_edit_link": "https://github.com/lizardbyte/themerr-jellyfin/blob/master/docs/source/{filename}",
 }
 
 # extension config options
