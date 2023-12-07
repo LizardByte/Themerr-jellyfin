@@ -7,6 +7,7 @@
    about/docker
    about/usage
    about/troubleshooting
+   about/changelog
 
 .. toctree::
    :maxdepth: 2

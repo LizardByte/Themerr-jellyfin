@@ -72,8 +72,8 @@ RUN <<_BUILD
 set -e
 # jprm fails if output directory does not exist, so create it
 mkdir -p ./artifacts
-# check if build version is empty
-if [ -z "${BUILD_VERSION}" ]; then
+# check if build version is empty or "v" (v may be supplied with no version for PR events)
+if [[ -z "${BUILD_VERSION}" || "${BUILD_VERSION}" == "v" ]]; then
   BUILD_VERSION="0.0.0.0"
 else
   # remove the v prefix from the version
