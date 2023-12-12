@@ -25,8 +25,4 @@
     <Folder Include="Properties\" />
   </ItemGroup>
 
-  <ItemGroup>
- 
-  </ItemGroup>
-
 </Project>
