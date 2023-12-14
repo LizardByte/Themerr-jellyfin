@@ -103,3 +103,13 @@ jobs:
           prerelease: ${{ needs.setup_release.outputs.publish_pre_release }}
           tag: ${{ needs.setup_release.outputs.release_tag }}
           token: ${{ secrets.GH_BOT_TOKEN }}
+
+      - name: Create/Update Jellyfin Release
+        if: ${{ needs.setup_release.outputs.publish_release == 'true' }}
+        uses: LizardByte/jellyfin-plugin-repo@v2023.1214.42902
+        with:
+          github_token: ${{ secrets.GH_BOT_TOKEN }}
+          committer_email: ${{ secrets.GH_BOT_EMAIL }}
+          committer_name: ${{ secrets.GH_BOT_NAME }}
+          release_tag: ${{ needs.setup_release.outputs.release_tag }}
+          zipfile: ./artifacts/themerr-jellyfin.zip
