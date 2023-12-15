@@ -1,17 +1,19 @@
 Testing
 =======
 
-flake8
-------
-Themerr-jellyfin uses `flake8 <https://pypi.org/project/flake8/>`__ for enforcing consistent code styling. flake8 is
-included in the ``requirements-dev.txt``.
+SonarAnalyzer.CSharp
+--------------------
+Themerr-jellyfin uses `SonarAnalyzers.CSharp <https://www.nuget.org/packages/SonarAnalyzer.CSharp/>`__ to spot Bugs,
+Vulnerabilities, and Code Smells in the project. This is run automatically as part of the build process.
 
-The config file for flake8 is ``.flake8``. This is already included in the root of the repo and should not be modified.
+The config file for SonarAnalyzers.CSharp is ``.editorconfig``.
 
-Test with flake8
-   .. code-block:: bash
+StyleCop.Analyzers
+------------------
+Themerr-jellyfin uses `StyleCop.Analyzers <https://www.nuget.org/packages/StyleCop.Analyzers/>`__ to enforce consistent
+code styling. This is run automatically as part of the build process.
 
-      python -m flake8
+The config file for StyleCop.Analyzers is ``.editorconfig``.
 
 Sphinx
 ------
