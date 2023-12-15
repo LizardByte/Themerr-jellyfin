@@ -3,22 +3,15 @@ using Movie = MediaBrowser.Controller.Entities.Movies.Movie;
 
 namespace Jellyfin.Plugin.Themerr.Tests;
 
-[CollectionDefinition("Bootstrapped Collection")]
-public class BootstrappedCollection : ICollectionFixture<BootstrapJellyfinServer>
-{
-    // This class doesn't need to have any code, or even be long-lived.
-    // All it needs is to just exist, and be annotated with CollectionDefinition.
-}
-
 /// <summary>
-/// This class is used to bootstrap a Jellyfin server with mock movies
+/// This class is used as a fixture for the Jellyfin server with mock movies
 /// </summary>
-public class BootstrapJellyfinServer
+public class FixtureJellyfinServer
 {
     /// <summary>
     /// Mock movies to use for testing
     /// </summary>
-    /// <returns></returns>
+    /// <returns>List containing mock <see cref="Movie"/> objects.</returns>
     public static List<Movie> MockMovies()
     {
         return new List<Movie>
@@ -66,7 +59,6 @@ public class BootstrapJellyfinServer
         };
     }
 
-
     /// <summary>
     /// Create mock movies from stub video
     /// </summary>
@@ -75,14 +67,13 @@ public class BootstrapJellyfinServer
     private void CreateMockMovies()
     {
         var mockMovies = MockMovies();
-        
+
         // get the stub video path based on the directory of this file
         var stubVideoPath = Path.Combine(
             Directory.GetCurrentDirectory(),
             "data",
-            "video_stub.mp4"
-            );
-        
+            "video_stub.mp4");
+
         Assert.True(File.Exists(stubVideoPath), "Could not find ./data/video_stub.mp4");
 
         foreach (var movie in mockMovies)
@@ -90,25 +81,23 @@ public class BootstrapJellyfinServer
             // copy the ./data/video_stub.mp4 to the movie folder "movie.Name (movie.ProductionYear)"
             var movieFolder = Path.Combine(
                 "themerr_jellyfin_tests",
-                $"{movie.Name} ({movie.ProductionYear})"
-                );
-            
+                $"{movie.Name} ({movie.ProductionYear})");
+
             // create the movie folder
             Directory.CreateDirectory(movieFolder);
-            
+
             // copy the video_stub.mp4 to the movie folder, renaming it based on movie name
             var movieVideoPath = Path.Combine(
                 movieFolder,
-                $"{movie.Name} ({movie.ProductionYear}).mp4"
-                );
-            
+                $"{movie.Name} ({movie.ProductionYear}).mp4");
+
             // if file does not exist
             if (!File.Exists(movieVideoPath))
             {
                 // copy the stub video to the movie folder
                 File.Copy(stubVideoPath, movieVideoPath);
             }
-            
+
             Assert.True(File.Exists(movieVideoPath), $"Could not find {movieVideoPath}");
         }
     }

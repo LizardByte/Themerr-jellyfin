@@ -4,21 +4,21 @@ using System.Linq;
 using System.Net.Http;
 using System.Threading;
 using System.Threading.Tasks;
+using Jellyfin.Data.Enums;
 using MediaBrowser.Controller.Entities;
 using MediaBrowser.Controller.Entities.Movies;
-// using MediaBrowser.Controller.Entities.TV;
 using MediaBrowser.Controller.Library;
 using MediaBrowser.Controller.Plugins;
 using MediaBrowser.Model.Entities;
 using Microsoft.Extensions.Logging;
-using Jellyfin.Data.Enums;
 using Newtonsoft.Json;
 using YoutubeExplode;
 using YoutubeExplode.Videos.Streams;
 
+// TODO: Add support for TV shows
+// using MediaBrowser.Controller.Entities.TV;
 
 namespace Jellyfin.Plugin.Themerr
-
 {
     /// <summary>
     /// The main entry point for the plugin.
@@ -30,22 +30,40 @@ namespace Jellyfin.Plugin.Themerr
         private readonly ILogger<ThemerrManager> _logger;
 
         /// <summary>
-        /// Constructor
+        /// Initializes a new instance of the <see cref="ThemerrManager"/> class.
         /// </summary>
-        /// <param name="libraryManager"></param>
-        /// <param name="logger"></param>
+        /// <param name="libraryManager">The library manager.</param>
+        /// <param name="logger">The logger.</param>
         public ThemerrManager(ILibraryManager libraryManager, ILogger<ThemerrManager> logger)
         {
             _libraryManager = libraryManager;
             _logger = logger;
             _timer = new Timer(_ => OnTimerElapsed(), null, Timeout.Infinite, Timeout.Infinite);
         }
-        
+
+        /// <summary>
+        /// Get the existing youtube theme url from the themerr data file if it exists.
+        /// </summary>
+        /// <param name="themerrDataPath">The path to the themerr data file.</param>
+        /// <returns>The existing YouTube theme url if it exists, empty string otherwise.</returns>
+        public static string GetExistingYoutubeThemeUrl(string themerrDataPath)
+        {
+            if (!System.IO.File.Exists(themerrDataPath))
+            {
+                return string.Empty;
+            }
+
+            var jsonString = System.IO.File.ReadAllText(themerrDataPath);
+            dynamic jsonData = JsonConvert.DeserializeObject(jsonString);
+            return jsonData?.youtube_theme_url;
+        }
+
         /// <summary>
         /// Save a mp3 file from a youtube video url.
         /// </summary>
-        /// <param name="destination"></param>
-        /// <param name="videoUrl"></param>
+        /// <param name="destination">The destination path.</param>
+        /// <param name="videoUrl">The YouTube video url.</param>
+        /// <returns>True if the file was saved successfully, false otherwise.</returns>
         public bool SaveMp3(string destination, string videoUrl)
         {
             try
@@ -73,11 +91,11 @@ namespace Jellyfin.Plugin.Themerr
 
             return WaitForFile(destination, 30000);
         }
-        
+
         /// <summary>
         /// Get all movies from the library that have a tmdb id.
         /// </summary>
-        /// <returns></returns>
+        /// <returns>List of <see cref="Movie"/>.</returns>
         public IEnumerable<Movie> GetMoviesFromLibrary()
         {
             return _libraryManager.GetItemList(new InternalItemsQuery
@@ -88,11 +106,11 @@ namespace Jellyfin.Plugin.Themerr
                 HasTmdbId = true
             }).Select(m => m as Movie);
         }
-        
+
         /// <summary>
         /// Enumerate through all movies in the library and downloads their theme songs as required.
         /// </summary>
-        /// <returns></returns>
+        /// <returns>A <see cref="Task"/> representing the asynchronous operation.</returns>
         public Task DownloadAllThemerr()
         {
             var movies = GetMoviesFromLibrary();
@@ -107,7 +125,7 @@ namespace Jellyfin.Plugin.Themerr
         /// <summary>
         /// Download the theme song for a movie if it doesn't already exist.
         /// </summary>
-        /// <param name="movie"></param>
+        /// <param name="movie">The Jellyfin movie object.</param>
         public void ProcessMovieTheme(Movie movie)
         {
             var movieTitle = movie.Name;
@@ -123,6 +141,7 @@ namespace Jellyfin.Plugin.Themerr
 
             // get tmdb id
             var tmdbId = movie.GetProviderId(MetadataProvider.Tmdb);
+
             // create themerrdb url
             var themerrDbLink = CreateThemerrDbLink(tmdbId);
 
@@ -132,7 +151,7 @@ namespace Jellyfin.Plugin.Themerr
             {
                 return;
             }
-            
+
             SaveMp3(themePath, youtubeThemeUrl);
             SaveThemerrData(themerrDataPath, youtubeThemeUrl);
             movie.RefreshMetadata(CancellationToken.None);
@@ -143,9 +162,9 @@ namespace Jellyfin.Plugin.Themerr
         ///
         /// If theme.mp3 exists and themerr.json doesn't exist, then skip to avoid overwriting user supplied themes.
         /// </summary>
-        /// <param name="themePath"></param>
-        /// <param name="themerrDataPath"></param>
-        /// <returns></returns>
+        /// <param name="themePath">The path to the theme song.</param>
+        /// <param name="themerrDataPath">The path to the themerr data file.</param>
+        /// <returns>True if the theme song should NOT be downloaded, false otherwise.</returns>
         public bool ShouldSkipDownload(string themePath, string themerrDataPath)
         {
             return System.IO.File.Exists(themePath) && !System.IO.File.Exists(themerrDataPath);
@@ -154,8 +173,8 @@ namespace Jellyfin.Plugin.Themerr
         /// <summary>
         /// Get the path to the theme song.
         /// </summary>
-        /// <param name="movie"></param>
-        /// <returns></returns>
+        /// <param name="movie">The Jellyfin movie object.</param>
+        /// <returns>The path to the theme song.</returns>
         public string GetThemePath(Movie movie)
         {
             return $"{movie.ContainingFolderPath}/theme.mp3";
@@ -164,33 +183,18 @@ namespace Jellyfin.Plugin.Themerr
         /// <summary>
         /// Get the path to the themerr data file.
         /// </summary>
-        /// <param name="movie"></param>
-        /// <returns></returns>
+        /// <param name="movie">The Jellyfin movie object.</param>
+        /// <returns>The path to the themerr data file.</returns>
         public string GetThemerrDataPath(Movie movie)
         {
             return $"{movie.ContainingFolderPath}/themerr.json";
         }
 
         /// <summary>
-        /// Get the existing youtube theme url from the themerr data file if it exists.
-        /// </summary>
-        /// <param name="themerrDataPath"></param>
-        /// <returns></returns>
-        public static string GetExistingYoutubeThemeUrl(string themerrDataPath)
-        {
-            if (!System.IO.File.Exists(themerrDataPath))
-                return string.Empty;
-            
-            var jsonString = System.IO.File.ReadAllText(themerrDataPath);
-            dynamic jsonData = JsonConvert.DeserializeObject(jsonString);
-            return jsonData?.youtube_theme_url;
-        }
-
-        /// <summary>
         /// Create a link to the themerr database.
         /// </summary>
-        /// <param name="tmdbId"></param>
-        /// <returns></returns>
+        /// <param name="tmdbId">The tmdb id.</param>
+        /// <returns>The themerr database link.</returns>
         public string CreateThemerrDbLink(string tmdbId)
         {
             return $"https://app.lizardbyte.dev/ThemerrDB/movies/themoviedb/{tmdbId}.json";
@@ -199,9 +203,9 @@ namespace Jellyfin.Plugin.Themerr
         /// <summary>
         /// Get the YouTube theme url from the themerr database.
         /// </summary>
-        /// <param name="themerrDbUrl"></param>
-        /// <param name="movieTitle"></param>
-        /// <returns></returns>
+        /// <param name="themerrDbUrl">The themerr database url.</param>
+        /// <param name="movieTitle">The movie title.</param>
+        /// <returns>The YouTube theme url.</returns>
         public string GetYoutubeThemeUrl(string themerrDbUrl, string movieTitle)
         {
             var client = new HttpClient();
@@ -222,9 +226,9 @@ namespace Jellyfin.Plugin.Themerr
         /// <summary>
         /// Save the themerr data file.
         /// </summary>
-        /// <param name="themerrDataPath"></param>
-        /// <param name="youtubeThemeUrl"></param>
-        /// <returns></returns>
+        /// <param name="themerrDataPath">The path to the themerr data file.</param>
+        /// <param name="youtubeThemeUrl">The YouTube theme url.</param>
+        /// <returns>True if the file was saved successfully, false otherwise.</returns>
         public bool SaveThemerrData(string themerrDataPath, string youtubeThemeUrl)
         {
             var success = false;
@@ -245,13 +249,13 @@ namespace Jellyfin.Plugin.Themerr
 
             return success && WaitForFile(themerrDataPath, 10000);
         }
-        
+
         /// <summary>
-        /// Wait for file to exist on disk.
+        /// Wait for file to exist on disk and is not locked by another process.
         /// </summary>
-        /// <param name="filePath"></param>
-        /// <param name="timeout"></param>
-        /// <returns></returns>
+        /// <param name="filePath">The file path to check.</param>
+        /// <param name="timeout">The maximum amount of time (in milliseconds) to wait.</param>
+        /// <returns>True if the file exists and is not locked, false otherwise.</returns>
         public bool WaitForFile(string filePath, int timeout)
         {
             var startTime = DateTime.UtcNow;
@@ -261,17 +265,22 @@ namespace Jellyfin.Plugin.Themerr
                 {
                     return false;
                 }
+
                 Thread.Sleep(100);
             }
-            
-            // wait until file is not being used by another process
-            var fileIsLocked = true;
-            while (fileIsLocked)
+
+            // Wait until the file is not being used by another process
+            while (true)
             {
                 try
                 {
-                    using (System.IO.File.Open(filePath, System.IO.FileMode.Open)) { }
-                    fileIsLocked = false;
+                    // Attempt to open and close the file to check for locks
+                    using (var stream = System.IO.File.Open(filePath, System.IO.FileMode.Open))
+                    {
+                        stream.Close();
+                    }
+
+                    return true;
                 }
                 catch (System.IO.IOException)
                 {
@@ -279,13 +288,29 @@ namespace Jellyfin.Plugin.Themerr
                     {
                         return false;
                     }
+
                     Thread.Sleep(100);
                 }
             }
-            
-            return true;
         }
-        
+
+        /// <summary>
+        /// Run the task, asynchronously.
+        /// </summary>
+        /// <returns>A <see cref="Task"/> representing the asynchronous operation.</returns>
+        public Task RunAsync()
+        {
+            return Task.CompletedTask;
+        }
+
+        /// <summary>
+        /// Cleanup.
+        /// </summary>
+        public void Dispose()
+        {
+            // Cleanup
+        }
+
         /// <summary>
         /// Called when the plugin is loaded.
         /// </summary>
@@ -293,22 +318,6 @@ namespace Jellyfin.Plugin.Themerr
         {
             // Stop the timer until next update
             _timer.Change(Timeout.Infinite, Timeout.Infinite);
-        }
-        
-        /// <summary>
-        /// Todo
-        /// </summary>
-        /// <returns></returns>
-        public Task RunAsync()
-        {
-            return Task.CompletedTask;
-        }
-        
-        /// <summary>
-        /// Todo
-        /// </summary>
-        public void Dispose()
-        {
         }
     }
 }

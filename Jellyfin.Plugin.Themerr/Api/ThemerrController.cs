@@ -15,16 +15,17 @@ namespace Jellyfin.Plugin.Themerr.Api
     [Authorize(Policy = "DefaultAuthorization")]
     [Route("Themerr")]
     [Produces(MediaTypeNames.Application.Json)]
-    
 
     public class ThemerrController : ControllerBase
     {
         private readonly ThemerrManager _themerrManager;
         private readonly ILogger<ThemerrManager> _logger;
 
-        
         /// <summary>
-        /// Initializes a new instance of <see cref="ThemerrController"/>.
+        /// Initializes a new instance of the <see cref="ThemerrController"/> class.
+        /// </summary>
+        /// <param name="libraryManager">The library manager.</param>
+        /// <param name="logger">The logger.</param>
         public ThemerrController(
             ILibraryManager libraryManager,
             ILogger<ThemerrManager> logger)
@@ -33,11 +34,10 @@ namespace Jellyfin.Plugin.Themerr.Api
             _logger = logger;
         }
 
-        
         /// <summary>
         /// Downloads all Movie theme songs.
         /// </summary>
-        /// <reponse code="204">Theme song download started successfully. </response>
+        /// <response code="204">Theme song download started successfully.</response>
         /// <returns>A <see cref="NoContentResult"/> indicating success.</returns>
         [HttpPost("DownloadMovies")]
         [ProducesResponseType(StatusCodes.Status204NoContent)]
