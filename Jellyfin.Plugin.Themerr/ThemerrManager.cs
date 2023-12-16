@@ -42,20 +42,21 @@ namespace Jellyfin.Plugin.Themerr
         }
 
         /// <summary>
-        /// Get the existing youtube theme url from the themerr data file if it exists.
+        /// Get a value from the themerr data file if it exists.
         /// </summary>
+        /// <param name="key">The key to search for.</param>
         /// <param name="themerrDataPath">The path to the themerr data file.</param>
-        /// <returns>The existing YouTube theme url if it exists, empty string otherwise.</returns>
-        public static string GetExistingYoutubeThemeUrl(string themerrDataPath)
+        /// <returns>The value of the key if it exists, null otherwise.</returns>
+        public string GetExistingThemerrDataValue(string key, string themerrDataPath)
         {
             if (!System.IO.File.Exists(themerrDataPath))
             {
-                return string.Empty;
+                return null;
             }
 
             var jsonString = System.IO.File.ReadAllText(themerrDataPath);
             dynamic jsonData = JsonConvert.DeserializeObject(jsonString);
-            return jsonData?.youtube_theme_url;
+            return jsonData?[key];
         }
 
         /// <summary>
@@ -132,42 +133,83 @@ namespace Jellyfin.Plugin.Themerr
             var themePath = GetThemePath(movie);
             var themerrDataPath = GetThemerrDataPath(movie);
 
-            if (ShouldSkipDownload(themePath, themerrDataPath))
+            if (!ContinueDownload(themePath, themerrDataPath))
             {
                 return;
             }
 
-            var existingYoutubeThemeUrl = GetExistingYoutubeThemeUrl(themerrDataPath);
+            var existingYoutubeThemeUrl = GetExistingThemerrDataValue("youtube_theme_url", themerrDataPath);
 
             // get tmdb id
             var tmdbId = movie.GetProviderId(MetadataProvider.Tmdb);
 
             // create themerrdb url
-            var themerrDbLink = CreateThemerrDbLink(tmdbId);
+            var themerrDbUrl = CreateThemerrDbLink(tmdbId);
 
-            var youtubeThemeUrl = GetYoutubeThemeUrl(themerrDbLink, movieTitle);
+            var youtubeThemeUrl = GetYoutubeThemeUrl(themerrDbUrl, movieTitle);
 
             if (string.IsNullOrEmpty(youtubeThemeUrl) || youtubeThemeUrl == existingYoutubeThemeUrl)
             {
                 return;
             }
 
-            SaveMp3(themePath, youtubeThemeUrl);
-            SaveThemerrData(themerrDataPath, youtubeThemeUrl);
+            var successMp3 = SaveMp3(themePath, youtubeThemeUrl);
+            if (!successMp3)
+            {
+                return;
+            }
+
+            var successThemerrData = SaveThemerrData(themePath, themerrDataPath, youtubeThemeUrl);
+            if (!successThemerrData)
+            {
+                return;
+            }
+
             movie.RefreshMetadata(CancellationToken.None);
         }
 
         /// <summary>
         /// Check if the theme song should be downloaded.
         ///
-        /// If theme.mp3 exists and themerr.json doesn't exist, then skip to avoid overwriting user supplied themes.
+        /// Various checks are performed to determine if the theme song should be downloaded.
         /// </summary>
         /// <param name="themePath">The path to the theme song.</param>
         /// <param name="themerrDataPath">The path to the themerr data file.</param>
-        /// <returns>True if the theme song should NOT be downloaded, false otherwise.</returns>
-        public bool ShouldSkipDownload(string themePath, string themerrDataPath)
+        /// <returns>True to continue with downloaded, false otherwise.</returns>
+        public bool ContinueDownload(string themePath, string themerrDataPath)
         {
-            return System.IO.File.Exists(themePath) && !System.IO.File.Exists(themerrDataPath);
+            if (!System.IO.File.Exists(themePath) && !System.IO.File.Exists(themerrDataPath))
+            {
+                // neither file exists, so don't skip
+                return true;
+            }
+
+            if (!System.IO.File.Exists(themePath) && System.IO.File.Exists(themerrDataPath))
+            {
+                // the theme is missing, so delete the themerr data file
+                System.IO.File.Delete(themerrDataPath);
+                return true;
+            }
+
+            if (System.IO.File.Exists(themePath) && !System.IO.File.Exists(themerrDataPath))
+            {
+                // the theme is user supplied, so don't overwrite it
+                return false;
+            }
+
+            var existingThemeMd5 = GetExistingThemerrDataValue("theme_md5", themerrDataPath);
+
+            // if existing theme md5 is empty, don't skip
+            if (string.IsNullOrEmpty(existingThemeMd5))
+            {
+                return true;
+            }
+
+            // check if the theme hash matches what is in the themerr data file
+            var themeMd5 = GetMd5Hash(themePath);
+
+            // if hashes match, theme is supplied by themerr, otherwise it is user supplied
+            return themeMd5 == existingThemeMd5;
         }
 
         /// <summary>
@@ -226,15 +268,17 @@ namespace Jellyfin.Plugin.Themerr
         /// <summary>
         /// Save the themerr data file.
         /// </summary>
+        /// <param name="themePath">The path to the theme song.</param>
         /// <param name="themerrDataPath">The path to the themerr data file.</param>
         /// <param name="youtubeThemeUrl">The YouTube theme url.</param>
         /// <returns>True if the file was saved successfully, false otherwise.</returns>
-        public bool SaveThemerrData(string themerrDataPath, string youtubeThemeUrl)
+        public bool SaveThemerrData(string themePath, string themerrDataPath, string youtubeThemeUrl)
         {
             var success = false;
             var themerrData = new
             {
                 downloaded_timestamp = DateTime.UtcNow,
+                theme_md5 = GetMd5Hash(themePath),
                 youtube_theme_url = youtubeThemeUrl
             };
             try
@@ -248,6 +292,23 @@ namespace Jellyfin.Plugin.Themerr
             }
 
             return success && WaitForFile(themerrDataPath, 10000);
+        }
+
+        /// <summary>
+        /// Get the MD5 hash of a file.
+        /// </summary>
+        /// <param name="filePath">The file path.</param>
+        /// <returns>The MD5 hash of the file.</returns>
+        public string GetMd5Hash(string filePath)
+        {
+            using (var md5 = System.Security.Cryptography.MD5.Create())
+            {
+                using (var stream = System.IO.File.OpenRead(filePath))
+                {
+                    var hash = md5.ComputeHash(stream);
+                    return BitConverter.ToString(hash).Replace("-", string.Empty).ToLowerInvariant();
+                }
+            }
         }
 
         /// <summary>
