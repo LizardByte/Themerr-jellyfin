@@ -36,8 +36,9 @@ namespace Jellyfin.Plugin.Themerr.Api
 
         /// <summary>
         /// Downloads all Movie theme songs.
+        ///
+        /// A response code of 204 indicates that the download has started successfully.
         /// </summary>
-        /// <response code="204">Theme song download started successfully.</response>
         /// <returns>A <see cref="NoContentResult"/> indicating success.</returns>
         [HttpPost("DownloadMovies")]
         [ProducesResponseType(StatusCodes.Status204NoContent)]

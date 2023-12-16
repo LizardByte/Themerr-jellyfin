@@ -7,6 +7,7 @@
 # standard imports
 from datetime import datetime
 import os
+import subprocess
 
 
 # -- Path setup --------------------------------------------------------------
@@ -35,11 +36,14 @@ version = os.getenv('READTHEDOCS_VERSION', 'dirty')
 # extensions coming with Sphinx (named 'sphinx.ext.*') or your custom
 # ones.
 extensions = [
+    'breathe',  # c# support for sphinx with doxygen, and sphinx-csharp
     'm2r2',  # enable markdown files
     'sphinx.ext.autosectionlabel',
+    'sphinx.ext.graphviz',  # enable graphs for breathe
     'sphinx.ext.todo',  # enable to-do sections
     'sphinx.ext.viewcode',  # add links to view source code
     'sphinx_copybutton',  # add a copy button to code blocks
+    'sphinx_csharp',  # c# directives
 ]
 
 # Add any paths that contain templates here, relative to this directory.
@@ -83,4 +87,161 @@ html_theme_options = {
 
 # extension config options
 autosectionlabel_prefix_document = True  # Make sure the target is unique
+breathe_default_project = 'Jellyfin.Plugin.Themerr'
+breathe_projects = {
+    "Jellyfin.Plugin.Themerr": "../build/doxyxml"
+}
+sphinx_csharp_test_links = True
 todo_include_todos = True
+
+# How to generate external doc links, replace %s with type. Use the format
+#    'package name': ('direct link to %s', 'alternate backup link or search page')
+sphinx_csharp_ext_search_pages = {
+    'System': (
+        'https://learn.microsoft.com/en-us/dotnet/api/system.%s?view=net-6.0',
+    ),
+    'Microsoft': (
+        'https://learn.microsoft.com/en-us/dotnet/api/microsoft.%s?view=dotnet-plat-ext-6.0',
+    ),
+    'Jellyfin.Controller.MediaBrowser.Common.Configuration': (
+        'https://github.com/jellyfin/jellyfin/blob/v10.8.13/MediaBrowser.Common/Configuration/%s.cs',
+    ),
+    'Jellyfin.Controller.MediaBrowser.Common.Plugins': (
+        'https://github.com/jellyfin/jellyfin/blob/v10.8.13/MediaBrowser.Common/Plugins/%s.cs',
+    ),
+    'Jellyfin.Controller.MediaBrowser.Model.Plugins': (
+        'https://github.com/jellyfin/jellyfin/blob/v10.8.13/MediaBrowser.Model/Plugins/%s.cs',
+    ),
+    'Jellyfin.Controller.MediaBrowser.Model.Serialization': (
+        'https://github.com/jellyfin/jellyfin/blob/v10.8.13/MediaBrowser.Model/Serialization/%s.cs',
+    ),
+    'Jellyfin.Controller.MediaBrowser.Model.Tasks': (
+        'https://github.com/jellyfin/jellyfin/blob/v10.8.13/MediaBrowser.Model/Tasks/%s.cs',
+    ),
+    'Jellyfin.Controller.MediaBrowser.Controller.Entities.Movies': (
+        'https://github.com/jellyfin/jellyfin/blob/v10.8.13/MediaBrowser.Controller/Entities/Movies/%s.cs',
+    ),
+    'Jellyfin.Controller.MediaBrowser.Controller.Entities.Library': (
+        'https://github.com/jellyfin/jellyfin/blob/v10.8.13/MediaBrowser.Controller/Library/%s.cs',
+    ),
+    'Jellyfin.Controller.MediaBrowser.Controller.Plugins': (
+        'https://github.com/jellyfin/jellyfin/blob/v10.8.13/MediaBrowser.Controller/Plugins/%s.cs',
+    ),
+}
+
+# Types that are in an external package. Use the format
+#   'package name': {
+#      'Namespace1': ['Type1', 'Type2'],
+sphinx_csharp_ext_type_map = {
+    'System': {
+        '': [
+            'Guid',
+            'IProgress',
+        ],
+        'Threading': [
+            'CancellationToken',
+            'Timer',
+        ],
+        'Threading.Tasks': [
+            'Task',
+        ],
+    },
+    'Microsoft': {
+        'AspNetCore.Mvc': [
+            'ControllerBase',
+        ],
+        'Extensions.Logging': [
+            'ILogger',
+        ],
+    },
+    'Jellyfin.Controller.MediaBrowser.Common.Configuration': {
+        '': [
+            'ConfigurationStore',
+            'ConfigurationUpdateEventArgs',
+            'EncodingConfigurationExtensions',
+            'IApplicationPaths',
+            'IConfigurationFactory',
+            'IConfigurationManager',
+            'IValidatingConfiguration',
+        ],
+    },
+    'Jellyfin.Controller.MediaBrowser.Common.Plugins': {
+        '': [
+            'BasePlugin',
+            'BasePluginOfT',
+            'IHasPluginConfiguration',
+            'IPlugin',
+            'IPluginAssembly',
+            'IPluginManager',
+            'LocalPlugin',
+            'PluginManifest',
+        ],
+    },
+    'Jellyfin.Controller.MediaBrowser.Model.Plugins': {
+        '': [
+            'BasePluginConfiguration',
+            'IHasWebPages',
+            'PluginInfo',
+            'PluginPageInfo',
+            'PluginStatus',
+        ],
+    },
+    'Jellyfin.Controller.MediaBrowser.Model.Serialization': {
+        '': [
+            'IXmlSerializer',
+        ],
+    },
+    'Jellyfin.Controller.MediaBrowser.Model.Tasks': {
+        '': [
+            'IConfigurableScheduledTask',
+            'IScheduledTask',
+            'IScheduledTaskWorker',
+            'ITaskManager',
+            'ITaskTrigger',
+            'ScheduledTaskHelpers',
+            'TaskCompletionEventArgs',
+            'TaskCompletionStatus',
+            'TaskInfo',
+            'TaskOptions',
+            'TaskResults',
+            'TaskState',
+            'TaskTriggerInfo',
+        ],
+    },
+    'Jellyfin.Controller.MediaBrowser.Controller.Entities.Movies': {
+        '': [
+            'BoxSet',
+            'Movie',
+        ],
+    },
+    'Jellyfin.Controller.MediaBrowser.Controller.Entities.Library': {
+        '': [
+            'ILibraryManager',
+        ],
+    },
+    'Jellyfin.Controller.MediaBrowser.Controller.Plugins': {
+        '': [
+            'IRunBeforeStartup',
+            'IServerEntryPoint',
+        ],
+    },
+}
+
+# [Advanced] Rename type before generating external link. Commonly used for generic types
+sphinx_csharp_external_type_rename = {
+    'IProgress': 'IProgress-1',
+}
+
+# disable epub mimetype warnings
+# https://github.com/readthedocs/readthedocs.org/blob/eadf6ac6dc6abc760a91e1cb147cc3c5f37d1ea8/docs/conf.py#L235-L236
+suppress_warnings = ["epub.unknown_project_files"]
+
+# get doxygen version
+doxy_proc = subprocess.run('doxygen --version', shell=True, cwd=source_dir, capture_output=True)
+doxy_version = doxy_proc.stdout.decode('utf-8').strip()
+print('doxygen version: ' + doxy_version)
+
+# run doxygen
+doxy_proc = subprocess.run('doxygen Doxyfile', shell=True, cwd=source_dir)
+if doxy_proc.returncode != 0:
+    raise RuntimeError('doxygen failed with return code ' + str(doxy_proc.returncode))
