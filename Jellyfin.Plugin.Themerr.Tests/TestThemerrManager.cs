@@ -62,6 +62,44 @@ public class TestThemerrManager
 
     [Fact]
     [Trait("Category", "Unit")]
+    private void TestGetExistingThemerrDataValue()
+    {
+        string themerrDataPath;
+        themerrDataPath = Path.Combine(
+            Directory.GetCurrentDirectory(),
+            "data",
+            "dummy.json");
+
+        // ensure correct values are returned
+        Assert.Equal(
+            "dummy_value",
+            _themerrManager.GetExistingThemerrDataValue("dummy_key", themerrDataPath));
+        Assert.Equal(
+            "https://www.youtube.com/watch?v=E8nxMWr2sr4",
+            _themerrManager.GetExistingThemerrDataValue("youtube_theme_url", themerrDataPath));
+
+        // ensure null when the key does not exist
+        Assert.Null(_themerrManager.GetExistingThemerrDataValue("invalid_key", themerrDataPath));
+
+        // ensure null when the file does not exist
+        themerrDataPath = Path.Combine(
+            Directory.GetCurrentDirectory(),
+            "data",
+            "no_file.json");
+
+        Assert.Null(_themerrManager.GetExistingThemerrDataValue("any_key", themerrDataPath));
+
+        // test empty json file
+        themerrDataPath = Path.Combine(
+            Directory.GetCurrentDirectory(),
+            "data",
+            "empty.json");
+
+        Assert.Null(_themerrManager.GetExistingThemerrDataValue("any_key", themerrDataPath));
+    }
+
+    [Fact]
+    [Trait("Category", "Unit")]
     private void TestSaveMp3()
     {
         // set destination with themerr_jellyfin_tests as the folder name
@@ -180,15 +218,80 @@ public class TestThemerrManager
 
     [Fact]
     [Trait("Category", "Unit")]
-    private void TestShouldSkipDownload()
+    private void TestContinueDownload()
     {
-        var themePath = Path.Combine(
-            "theme.mp3");
-        var themerrDataPath = Path.Combine(
-            "themerr_data.json");
+        string themePath;
+        string themerrDataPath;
 
-        var shouldSkipDownload = _themerrManager.ShouldSkipDownload(themePath, themerrDataPath);
-        Assert.False(shouldSkipDownload, "ShouldSkipDownload returned True");
+        // test when neither theme nor data file exists
+        themePath = Path.Combine(
+            "no_file.mp3");
+        themerrDataPath = Path.Combine(
+            "no_file.json");
+        Assert.True(_themerrManager.ContinueDownload(themePath, themerrDataPath), "ContinueDownload returned False");
+
+        // test when theme does not exist and data file does
+        themePath = Path.Combine(
+            "no_file.mp3");
+
+        // copy the dummy.json to a secondary location
+        var ogFile = Path.Combine(
+            Directory.GetCurrentDirectory(),
+            "data",
+            "dummy.json");
+        themerrDataPath = Path.Combine(
+            Directory.GetCurrentDirectory(),
+            "data",
+            "dummy2.json");
+
+        // copy the dummy.json
+        File.Copy(ogFile, themerrDataPath);
+        Assert.True(_themerrManager.ContinueDownload(themePath, themerrDataPath), "ContinueDownload returned False");
+        Assert.False(File.Exists(themerrDataPath), $"File {themerrDataPath} was not removed");
+
+        // test when theme file exists but data file does not
+        themePath = Path.Combine(
+            Directory.GetCurrentDirectory(),
+            "data",
+            "audio_stub.mp3");
+        themerrDataPath = Path.Combine(
+            Directory.GetCurrentDirectory(),
+            "data",
+            "no_file.json");
+        Assert.False(_themerrManager.ContinueDownload(themePath, themerrDataPath), "ContinueDownload returned True");
+
+        // test when both theme and data file exist, but hash is empty in data file
+        themePath = Path.Combine(
+            Directory.GetCurrentDirectory(),
+            "data",
+            "audio_stub.mp3");
+        themerrDataPath = Path.Combine(
+            Directory.GetCurrentDirectory(),
+            "data",
+            "dummy.json");
+        Assert.True(_themerrManager.ContinueDownload(themePath, themerrDataPath), "ContinueDownload returned False");
+
+        // test when both theme and data file exist, and md5 hashes match
+        themePath = Path.Combine(
+            Directory.GetCurrentDirectory(),
+            "data",
+            "audio_stub.mp3");
+        themerrDataPath = Path.Combine(
+            Directory.GetCurrentDirectory(),
+            "data",
+            "audio_themerr_data.json");
+        Assert.True(_themerrManager.ContinueDownload(themePath, themerrDataPath), "ContinueDownload returned False");
+
+        // test when both theme and data file exist, and md5 hashes do not match
+        themePath = Path.Combine(
+            Directory.GetCurrentDirectory(),
+            "data",
+            "audio_stub.mp3");
+        themerrDataPath = Path.Combine(
+            Directory.GetCurrentDirectory(),
+            "data",
+            "audio_themerr_data_user_overwritten.json");
+        Assert.False(_themerrManager.ContinueDownload(themePath, themerrDataPath), "ContinueDownload returned True");
     }
 
     [Fact]
@@ -273,11 +376,16 @@ public class TestThemerrManager
         // set mock themerrDataPath using a random number
         var mockThemerrDataPath = $"themerr_{new Random().Next()}.json";
 
+        var stubVideoPath = Path.Combine(
+            Directory.GetCurrentDirectory(),
+            "data",
+            "video_stub.mp4");
+
         // loop over each themerrDbLink
         foreach (var youtubeThemeUrl in FixtureYoutubeUrls())
         {
             // save themerr data
-            var fileExists = _themerrManager.SaveThemerrData(mockThemerrDataPath, youtubeThemeUrl);
+            var fileExists = _themerrManager.SaveThemerrData(stubVideoPath, mockThemerrDataPath, youtubeThemeUrl);
             Assert.True(fileExists, $"SaveThemerrData did not return True for {youtubeThemeUrl}");
 
             // check if file exists
@@ -292,5 +400,28 @@ public class TestThemerrManager
                 youtubeThemeUrl == savedYoutubeThemeUrl,
                 $"youtubeThemeUrl {youtubeThemeUrl} does not match savedYoutubeThemeUrl {savedYoutubeThemeUrl}");
         }
+    }
+
+    [Fact]
+    [Trait("Category", "Unit")]
+    private void TestGetMd5Hash()
+    {
+        var stubVideoPath = Path.Combine(
+            Directory.GetCurrentDirectory(),
+            "data",
+            "video_stub.mp4");
+
+        var expectedMd5HashFile = Path.Combine(
+            Directory.GetCurrentDirectory(),
+            "data",
+            "video_stub.mp4.md5");
+
+        // get expected md5 hash out of file
+        var expectedMd5Hash = File.ReadAllText(expectedMd5HashFile).Trim();
+
+        // get actual md5 hash
+        var actualMd5Hash = _themerrManager.GetMd5Hash(stubVideoPath);
+
+        Assert.Equal(expectedMd5Hash, actualMd5Hash);
     }
 }
