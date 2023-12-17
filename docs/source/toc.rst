@@ -16,3 +16,9 @@
    contributing/database
    contributing/build
    contributing/testing
+
+.. toctree::
+   :maxdepth: 2
+   :caption: Source Code
+
+   source_code/source_code

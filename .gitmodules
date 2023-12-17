@@ -1,0 +1,4 @@
+[submodule "third-party/sphinx-csharp"]
+	path = third-party/sphinx-csharp
+	url = https://github.com/rogerbarton/sphinx-csharp.git
+	branch = master
