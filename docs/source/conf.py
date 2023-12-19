@@ -74,7 +74,7 @@ source_suffix = ['.rst', '.md']
 #     'js/custom.js',
 # ]
 
-html_logo = os.path.join(root_dir, 'themerr-jellyfin.png')
+html_logo = os.path.join(root_dir, 'themerr.png')
 
 # The theme to use for HTML and HTML Help pages.  See the documentation for
 # a list of builtin themes.
