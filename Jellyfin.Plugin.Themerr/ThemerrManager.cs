@@ -112,7 +112,7 @@ namespace Jellyfin.Plugin.Themerr
         /// Enumerate through all movies in the library and downloads their theme songs as required.
         /// </summary>
         /// <returns>A <see cref="Task"/> representing the asynchronous operation.</returns>
-        public Task DownloadAllThemerr()
+        public Task UpdateAll()
         {
             var movies = GetMoviesFromLibrary();
             foreach (var movie in movies)

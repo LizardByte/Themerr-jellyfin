@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>Themerr</title>
+</head>
+<body>
+    <div id="ThemerrConfigPage" data-role="page" class="page type-interior pluginConfigurationPage"
+            data-require="emby-input,emby-button,emby-select,emby-checkbox">
+        <div data-role="content">
+            <div class="content-primary">
+                <form class="tbsConfigurationPage">
+                    <div class="sectionTitleContainer flex align-items-center">
+                        <h2 class="sectionTitle">Themerr</h2>
+                        <a is="emby-linkbutton" class="raised button-alt headerHelpButton emby-button" target="_blank"
+                           href="https://app.lizardbyte.dev/support">Support</a>
+                    </div>
+                    <div class="verticalSection">
+                        <p>This plugin relies on the TMDB provider.
+                            Please make sure it is enabled!</p>
+                        <br/>
+                    </div>
+                </form>
+                
+                <form id="ThemerrConfigForm">
+                    <div class="inputContainer">
+                        <label class="inputLabel inputLabelUnfocused" for="UpdateInterval">
+                            Update Interval
+                        </label>
+                        <input id="UpdateInterval" name="UpdateInterval"
+                               type="number" is="emby-input" min="15" />
+                        <div class="fieldDescription">
+                            The interval, in minutes, between theme song updates.
+                        </div>
+                    </div>
+                    <div>
+                        <button is="emby-button" type="submit" class="raised button-submit block emby-button">
+                            <span>Save</span>
+                        </button>
+                    </div>
+                    <br/>
+                    <div>
+                        <button is="emby-button" type="button" class="raised block" id="refresh-library"
+                                onclick=download()>
+                            <span>Update Theme Songs</span>
+                        </button>
+                    </div>
+                </form>
+                <br/>
+            </div>
+        </div>
+
+        <script type="text/javascript">
+            let ThemerrConfig = {
+                pluginUniqueId: '84b59a39-bde4-42f4-adbd-c39882cbb772'
+            }
+
+            document.querySelector('#ThemerrConfigPage')
+                .addEventListener('pageshow', function() {
+                    Dashboard.showLoadingMsg()
+                    ApiClient.getPluginConfiguration(ThemerrConfig.pluginUniqueId).then(function (config) {
+                        document.querySelector('#UpdateInterval').value = config.UpdateInterval
+                        Dashboard.hideLoadingMsg()
+                    })
+                })
+
+            document.querySelector('#ThemerrConfigForm')
+                .addEventListener('submit', function(e) {
+                    Dashboard.showLoadingMsg()
+                    ApiClient.getPluginConfiguration(ThemerrConfig.pluginUniqueId).then(function (config) {
+                        config.UpdateInterval = document.querySelector('#UpdateInterval').value
+                        ApiClient.updatePluginConfiguration(ThemerrConfig.pluginUniqueId, config).then(function (result) {
+                            Dashboard.processPluginConfigurationUpdateResult(result)
+                        })
+                    })
+
+                    e.preventDefault()
+                    return false
+                })
+            function download() {
+                let request = {
+                    url: ApiClient.getUrl('/Themerr/TriggerUpdate'),
+                    type: 'POST'
+                }
+
+                ApiClient.fetch(request).then(function () {
+                    Dashboard.alert("Updating Theme Songs...")
+                }).catch(function () {
+                    Dashboard.alert({
+                        message: "Unexpected error occurred!"
+                    })
+                })
+            }
+        </script>
+    </div>
+</body>
+</html>
