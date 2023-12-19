@@ -30,12 +30,12 @@ namespace Jellyfin.Plugin.Themerr.ScheduledTasks
         /// <summary>
         /// Gets the name of the task.
         /// </summary>
-        public string Name => "Download Theme Songs";
+        public string Name => "Update Theme Songs";
 
         /// <summary>
         /// Gets the key of the task.
         /// </summary>
-        public string Key => "Download ThemeSongs";
+        public string Key => "Update ThemeSongs";
 
         /// <summary>
         /// Gets the description of the task.
@@ -56,7 +56,7 @@ namespace Jellyfin.Plugin.Themerr.ScheduledTasks
         public async Task ExecuteAsync(IProgress<double> progress, CancellationToken cancellationToken)
         {
             _logger.LogInformation("Starting plugin, Downloading Movie Theme Songs...");
-            await _themerrManager.DownloadAllThemerr();
+            await _themerrManager.UpdateAll();
             _logger.LogInformation("All theme songs downloaded");
         }
 
@@ -66,11 +66,11 @@ namespace Jellyfin.Plugin.Themerr.ScheduledTasks
         /// <returns>A list of <see cref="TaskTriggerInfo"/>.</returns>
         public IEnumerable<TaskTriggerInfo> GetDefaultTriggers()
         {
-            // Run this task every 24 hours
+            // Run this task according to the configured interval
             yield return new TaskTriggerInfo
             {
                 Type = TaskTriggerInfo.TriggerInterval,
-                IntervalTicks = TimeSpan.FromHours(24).Ticks
+                IntervalTicks = TimeSpan.FromMinutes(ThemerrPlugin.Instance.Configuration.UpdateInterval).Ticks
             };
         }
     }

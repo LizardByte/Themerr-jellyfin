@@ -32,6 +32,9 @@ dotnet_diagnostic.SA1012.severity = None
 # Closing brace should be preceded by a space
 dotnet_diagnostic.SA1013.severity = None
 
+# Code should not contain trailing whitespace
+dotnet_diagnostic.SA1028.severity = error
+
 # Using directive should appear within a namespace declaration
 dotnet_diagnostic.SA1200.severity = None
 

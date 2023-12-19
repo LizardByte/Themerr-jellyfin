@@ -35,17 +35,17 @@ namespace Jellyfin.Plugin.Themerr.Api
         }
 
         /// <summary>
-        /// Downloads all Movie theme songs.
+        /// Trigger an update from the configuration html page.
         ///
         /// A response code of 204 indicates that the download has started successfully.
         /// </summary>
         /// <returns>A <see cref="NoContentResult"/> indicating success.</returns>
-        [HttpPost("DownloadMovies")]
+        [HttpPost("TriggerUpdate")]
         [ProducesResponseType(StatusCodes.Status204NoContent)]
-        public async Task DownloadMovieThemerrRequest()
+        public async Task TriggerUpdateRequest()
         {
-            _logger.LogInformation("Downloading Movie Theme Songs");
-            await _themerrManager.DownloadAllThemerr();
+            _logger.LogInformation("Updating Movie Theme Songs");
+            await _themerrManager.UpdateAll();
             _logger.LogInformation("Completed");
         }
     }
