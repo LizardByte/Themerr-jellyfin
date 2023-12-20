@@ -148,7 +148,11 @@ namespace Jellyfin.Plugin.Themerr
 
             var youtubeThemeUrl = GetYoutubeThemeUrl(themerrDbUrl, movieTitle);
 
-            if (string.IsNullOrEmpty(youtubeThemeUrl) || youtubeThemeUrl == existingYoutubeThemeUrl)
+            // skip if no youtube theme url in ThemerrDB or
+            // if the youtube themes match AND the theme_md5 is unknown
+            if (string.IsNullOrEmpty(youtubeThemeUrl) ||
+                (youtubeThemeUrl == existingYoutubeThemeUrl &&
+                 !string.IsNullOrEmpty(GetExistingThemerrDataValue("theme_md5", themerrDataPath))))
             {
                 return;
             }
