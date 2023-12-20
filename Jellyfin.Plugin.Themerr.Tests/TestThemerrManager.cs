@@ -197,6 +197,18 @@ public class TestThemerrManager
         Assert.False(File.Exists(destinationFile), $"File {destinationFile} exists");
     }
 
+    [Fact]
+    [Trait("Category", "Unit")]
+    private void TestGetMoviesFromLibrary()
+    {
+        var movies = _themerrManager.GetMoviesFromLibrary();
+
+        // movies list should be empty
+        Assert.Empty(movies);
+
+        // todo: test with actual movies
+    }
+
     // todo: fix this test
     // [Fact]
     // [Trait("Category", "Unit")]
@@ -214,6 +226,46 @@ public class TestThemerrManager
     //
     //         Assert.True(File.Exists(_themerrManager.GetThemePath(movie)), $"File {_themerrManager.GetThemePath(movie)} does not exist");
     //     }
+    // }
+
+    [Fact]
+    [Trait("Category", "Unit")]
+    private void TestGetTmdbId()
+    {
+        // get fixture movies
+        var mockMovies = FixtureJellyfinServer.MockMovies();
+
+        foreach (var movie in mockMovies)
+        {
+            // get the movie theme
+            var tmdbId = _themerrManager.GetTmdbId(movie);
+
+            // ensure tmdbId is not empty
+            Assert.NotEmpty(tmdbId);
+
+            // ensure tmdbId is the same as the one in the movie fixture
+            Assert.Equal(movie.ProviderIds[MetadataProvider.Tmdb.ToString()], tmdbId);
+        }
+    }
+
+    // todo: fix this test
+    // [Fact]
+    // [Trait("Category", "Unit")]
+    // private void TestGetThemeProvider()
+    // {
+    //     // get fixture movies
+    //     var mockMovies = FixtureJellyfinServer.MockMovies();
+    //
+    //     foreach (var movie in mockMovies)
+    //     {
+    //         // get the movie theme
+    //         var themeProvider = _themerrManager.GetThemeProvider(movie);
+    //
+    //         // ensure themeProvider null
+    //         Assert.Null(themeProvider);
+    //     }
+    //
+    //     // todo: test with actual movies
     // }
 
     [Fact]

@@ -21,7 +21,7 @@
                         <br/>
                     </div>
                 </form>
-                
+
                 <form id="ThemerrConfigForm">
                     <div class="inputContainer">
                         <label class="inputLabel inputLabelUnfocused" for="UpdateInterval">
@@ -47,13 +47,27 @@
                     </div>
                 </form>
                 <br/>
+                <br/>
+                <!-- Create Movie Theme Progress Dashboard -->
+                <form>
+                    <div id="ThemerrDashboard"></div>
+                </form>
             </div>
         </div>
 
         <script type="text/javascript">
-            let ThemerrConfig = {
-                pluginUniqueId: '84b59a39-bde4-42f4-adbd-c39882cbb772'
+            function getThemerrConfig() {
+                return {
+                    pluginUniqueId: '84b59a39-bde4-42f4-adbd-c39882cbb772'
+                }
             }
+            
+            function getLogPrefix() {
+                return '[Themerr] - '
+            }
+            
+            ThemerrConfig = getThemerrConfig()
+            LogPrefix = getLogPrefix()
 
             document.querySelector('#ThemerrConfigPage')
                 .addEventListener('pageshow', function() {
@@ -84,13 +98,145 @@
                 }
 
                 ApiClient.fetch(request).then(function () {
-                    Dashboard.alert("Updating Theme Songs...")
+                    let message = "Updating theme songs..."
+                    Dashboard.alert(message)
+                    console.log(LogPrefix + message)
                 }).catch(function () {
+                    let message = "Unexpected error occurred!"
                     Dashboard.alert({
-                        message: "Unexpected error occurred!"
+                        message: message
+
                     })
+                    console.log(LogPrefix + message)
                 })
             }
+
+            function updateProgress() {
+                let request = {
+                    url: ApiClient.getUrl('/Themerr/GetProgress'),
+                    type: 'GET',
+                    dataType: 'json'  // this should automatically return response.json()
+                }
+
+                ApiClient.fetch(request).then(function (response) {
+                    console.log(LogPrefix + "media_count: " + response["media_count"])
+                    console.log(LogPrefix + "media_percent_complete: " + response["media_percent_complete"])
+
+                    if (response["media_count"] === 0) {
+                        let message = "No media found!"
+                        console.log(LogPrefix + message)
+                        return
+                    }
+
+                    // get dashboard container
+                    let ThemerrDashboard = document.querySelector('#ThemerrDashboard')
+
+                    // create progress bar
+                    let progressBar = document.createElement('div')
+                    progressBar.setAttribute('is', 'emby-progressbar')
+                    progressBar.setAttribute('class', 'itemProgressBar')
+                    progressBar.setAttribute('style', 'height: 20px;')
+                    ThemerrDashboard.appendChild(progressBar)
+
+                    // progress bar foreground
+                    let progressBarForeground = document.createElement('div')
+                    progressBarForeground.setAttribute('class', 'itemProgressBarForeground')
+                    progressBarForeground.setAttribute('style', 'width: ' + response["media_percent_complete"] + '%;')
+                    progressBarForeground.innerText = response["media_percent_complete"] + '%'
+                    progressBar.appendChild(progressBarForeground)
+
+                    // add break
+                    ThemerrDashboard.appendChild(document.createElement('br'))
+
+                    // create table
+                    let table = document.createElement('table')
+                    table.setAttribute('id', 'ThemerrProgressTable')
+                    table.setAttribute('class', 'table table-striped table-hover')
+                    ThemerrDashboard.appendChild(table)
+
+                    // create table header
+                    let tableHeader = document.createElement('thead')
+                    table.appendChild(tableHeader)
+
+                    // create table header row
+                    let tableHeaderRow = document.createElement('tr')
+                    tableHeader.appendChild(tableHeaderRow)
+
+                    let columns = ['Title', 'Year', 'Contribute', 'Status']
+
+                    // create table header columns
+                    for (let column in columns) {
+                        let tableHeaderColumn = document.createElement('th')
+                        tableHeaderColumn.setAttribute('scope', 'col')
+                        tableHeaderColumn.innerHTML = columns[column]
+                        tableHeaderRow.appendChild(tableHeaderColumn)
+                    }
+
+                    // loop over items
+                    for (let item in response["items"]) {
+                        console.log(LogPrefix + "item: " + item)
+                        console.log(LogPrefix + "name: " + response["items"][item]["name"])
+                        console.log(LogPrefix + "id: " + response["items"][item]["id"])
+                        console.log(LogPrefix + "issue_url: " + response["items"][item]["issue_url"])
+                        console.log(LogPrefix + "theme_provider: " + response["items"][item]["theme_provider"])
+                        console.log(LogPrefix + "year: " + response["items"][item]["year"])
+
+                        // create table row
+                        let tableRow = document.createElement('tr')
+                        table.appendChild(tableRow)
+
+                        // create table columns
+                        let tableColumnTitle = document.createElement('td')
+                        tableColumnTitle.innerHTML = response["items"][item]["name"]
+                        tableRow.appendChild(tableColumnTitle)
+
+                        let tableColumnYear = document.createElement('td')
+                        tableColumnYear.innerHTML = response["items"][item]["year"]
+                        tableRow.appendChild(tableColumnYear)
+
+                        let contributeButton = document.createElement('a')
+                        contributeButton.setAttribute('is', 'emby-linkbutton')
+                        contributeButton.setAttribute('class', 'raised headerHelpButton button-submit emby-button')
+                        contributeButton.setAttribute('target', '_blank')
+                        contributeButton.setAttribute('href', response["items"][item]["issue_url"])
+                        contributeButton.innerHTML = 'Contribute'
+
+                        let tableColumnContribute = document.createElement('td')
+                        tableColumnContribute.appendChild(contributeButton)
+                        tableRow.appendChild(tableColumnContribute)
+
+                        let tableColumnStatus = document.createElement('td')
+                        
+                        let statusSpan = document.createElement('span')
+                        let statusText = document.createElement('span')
+                        statusSpan.setAttribute('class', 'material-icons')
+                        statusSpan.setAttribute('style', 'margin-right: 6px;')
+                        if (response["items"][item]["theme_provider"] === 'themerr') {
+                            statusSpan.classList.add('check')
+                            statusText.innerText = 'Themerr provided'
+                        } else if (response["items"][item]["theme_provider"] === 'user') {
+                            statusSpan.classList.add('person')
+                            statusText.innerText = 'User provided'
+                        } else {
+                            statusSpan.classList.add('cancel')
+                            statusText.innerText = 'No theme song'
+                        }
+                        tableColumnStatus.appendChild(statusSpan)
+                        tableColumnStatus.appendChild(statusText)
+                        tableRow.appendChild(tableColumnStatus)
+                    }
+
+                }).catch(function () {
+                    let message = "Unexpected error occurred creating progress dashboard."
+                    Dashboard.alert({
+                        message: message
+                    })
+                    console.log(LogPrefix + message)
+                })
+            }
+
+            // on ready
+            updateProgress()
         </script>
     </div>
 </body>

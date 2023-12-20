@@ -148,6 +148,7 @@ sphinx_csharp_ext_type_map = {
     },
     'Microsoft': {
         'AspNetCore.Mvc': [
+            'ActionResult',
             'ControllerBase',
         ],
         'Extensions.Logging': [
