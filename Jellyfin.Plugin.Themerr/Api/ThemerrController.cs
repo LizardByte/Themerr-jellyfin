@@ -69,10 +69,6 @@ namespace Jellyfin.Plugin.Themerr.Api
         [ProducesResponseType(StatusCodes.Status200OK)]
         public ActionResult GetProgress()
         {
-            // url components
-            const string issueBase = "https://github.com/LizardByte/ThemerrDB/issues/new?assignees=&labels=request-theme&template=theme.yml&title=[MOVIE]:%20";
-            const string databaseBase = "https://www.themoviedb.org/movie/";
-
             var tmpItems = new ArrayList();
 
             var mediaCount = 0;
@@ -86,15 +82,14 @@ namespace Jellyfin.Plugin.Themerr.Api
 
             foreach (var movie in enumerable)
             {
-                var urlEncodedName = movie.Name.Replace(" ", "%20");
                 var year = movie.ProductionYear;
-                var tmdbId = _themerrManager.GetTmdbId(movie);
+                var issueUrl = _themerrManager.GetIssueUrl(movie);
                 var themeProvider = _themerrManager.GetThemeProvider(movie);
                 var item = new
                 {
                     name = movie.Name,
                     id = movie.Id,
-                    issue_url = $"{issueBase}{urlEncodedName}%20({year})&database_url={databaseBase}{tmdbId}",
+                    issue_url = issueUrl,
                     theme_provider = themeProvider,
                     year = year
                 };

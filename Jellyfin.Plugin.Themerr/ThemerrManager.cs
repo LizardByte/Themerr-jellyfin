@@ -145,7 +145,6 @@ namespace Jellyfin.Plugin.Themerr
         /// <param name="movie">The Jellyfin movie object.</param>
         public void ProcessMovieTheme(Movie movie)
         {
-            var movieTitle = movie.Name;
             var themePath = GetThemePath(movie);
             var themerrDataPath = GetThemerrDataPath(movie);
 
@@ -162,7 +161,7 @@ namespace Jellyfin.Plugin.Themerr
             // create themerrdb url
             var themerrDbUrl = CreateThemerrDbLink(tmdbId);
 
-            var youtubeThemeUrl = GetYoutubeThemeUrl(themerrDbUrl, movieTitle);
+            var youtubeThemeUrl = GetYoutubeThemeUrl(themerrDbUrl, movie);
 
             // skip if no youtube theme url in ThemerrDB or
             // if the youtube themes match AND the theme_md5 is unknown
@@ -299,9 +298,9 @@ namespace Jellyfin.Plugin.Themerr
         /// Get the YouTube theme url from the themerr database.
         /// </summary>
         /// <param name="themerrDbUrl">The themerr database url.</param>
-        /// <param name="movieTitle">The movie title.</param>
+        /// <param name="movie">The Jellyfin movie object.</param>
         /// <returns>The YouTube theme url.</returns>
-        public string GetYoutubeThemeUrl(string themerrDbUrl, string movieTitle)
+        public string GetYoutubeThemeUrl(string themerrDbUrl, Movie movie)
         {
             var client = new HttpClient();
 
@@ -311,11 +310,36 @@ namespace Jellyfin.Plugin.Themerr
                 dynamic jsonData = JsonConvert.DeserializeObject(jsonString);
                 return jsonData?.youtube_theme_url;
             }
-            catch (Exception e)
+            catch (Exception)
             {
-                _logger.LogError("Unable to get theme song for {MovieTitle}: {Error}", movieTitle, e);
+                _logger.LogWarning(
+                    "Missing from ThemerrDB: {MovieTitle}, contribute:\n  {IssueUrl}",
+                    movie.Name,
+                    GetIssueUrl(movie));
                 return string.Empty;
             }
+        }
+
+        /// <summary>
+        /// Get ThemerrDB issue url.
+        ///
+        /// This url can be used to easily add/edit theme songs in ThemerrDB.
+        /// </summary>
+        /// <param name="movie">The Jellyfin movie object.</param>
+        /// <returns>The ThemerrDB issue url.</returns>
+        public string GetIssueUrl(Movie movie)
+        {
+            // url components
+            const string issueBase =
+                "https://github.com/LizardByte/ThemerrDB/issues/new?assignees=&labels=request-theme&template=theme.yml&title=[MOVIE]:%20";
+            const string databaseBase = "https://www.themoviedb.org/movie/";
+
+            var urlEncodedName = movie.Name.Replace(" ", "%20");
+            var year = movie.ProductionYear;
+            var tmdbId = GetTmdbId(movie);
+
+            var issueUrl = $"{issueBase}{urlEncodedName}%20({year})&database_url={databaseBase}{tmdbId}";
+            return issueUrl;
         }
 
         /// <summary>
