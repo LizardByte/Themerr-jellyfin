@@ -99,13 +99,29 @@ namespace Jellyfin.Plugin.Themerr
         /// <returns>List of <see cref="Movie"/>.</returns>
         public IEnumerable<Movie> GetMoviesFromLibrary()
         {
-            return _libraryManager.GetItemList(new InternalItemsQuery
+            var movies = _libraryManager.GetItemList(new InternalItemsQuery
             {
                 IncludeItemTypes = new[] {BaseItemKind.Movie},
                 IsVirtualItem = false,
                 Recursive = true,
                 HasTmdbId = true
-            }).Select(m => m as Movie);
+            });
+
+            var movieList = new List<Movie>();
+            if (movies == null || movies.Count == 0)
+            {
+                return movieList;
+            }
+
+            foreach (var movie in movies)
+            {
+                if (movie is Movie m)
+                {
+                    movieList.Add(m);
+                }
+            }
+
+            return movieList;
         }
 
         /// <summary>
@@ -141,7 +157,7 @@ namespace Jellyfin.Plugin.Themerr
             var existingYoutubeThemeUrl = GetExistingThemerrDataValue("youtube_theme_url", themerrDataPath);
 
             // get tmdb id
-            var tmdbId = movie.GetProviderId(MetadataProvider.Tmdb);
+            var tmdbId = GetTmdbId(movie);
 
             // create themerrdb url
             var themerrDbUrl = CreateThemerrDbLink(tmdbId);
@@ -170,6 +186,39 @@ namespace Jellyfin.Plugin.Themerr
             }
 
             movie.RefreshMetadata(CancellationToken.None);
+        }
+
+        /// <summary>
+        /// Get TMDB id from a movie.
+        /// </summary>
+        /// <param name="movie">The Jellyfin movie object.</param>
+        /// <returns>TMDB id.</returns>
+        public string GetTmdbId(Movie movie)
+        {
+            var tmdbId = movie.GetProviderId(MetadataProvider.Tmdb);
+            return tmdbId;
+        }
+
+        /// <summary>
+        /// Get the theme provider.
+        /// </summary>
+        /// <param name="movie">The Jellyfin movie object.</param>
+        /// <returns>The theme provider.</returns>
+        public string GetThemeProvider(Movie movie)
+        {
+            // check if item has a theme song
+            var themeSongs = movie.GetThemeSongs();
+            if (themeSongs == null || themeSongs.Count == 0)
+            {
+                return null;
+            }
+
+            var themerrDataPath = GetThemerrDataPath(movie);
+            var themerrHash = GetExistingThemerrDataValue("theme_md5", themerrDataPath);
+            var themeHash = GetMd5Hash(themeSongs[0].Path);
+
+            // if hashes match, theme is supplied by themerr, otherwise it is user supplied
+            return themerrHash == themeHash ? "themerr" : "user";
         }
 
         /// <summary>

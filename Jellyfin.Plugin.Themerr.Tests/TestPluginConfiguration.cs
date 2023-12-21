@@ -23,6 +23,7 @@ public class TestPluginConfiguration
     /// Test getting the default PluginConfiguration.
     /// </summary>
     [Fact]
+    [Trait("Category", "Unit")]
     public void TestPluginConfigurationInstance()
     {
         // ensure UpdateInterval is an int

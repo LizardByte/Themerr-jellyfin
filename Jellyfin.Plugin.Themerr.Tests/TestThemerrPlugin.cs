@@ -29,6 +29,7 @@ public class TestThemerrPlugin
     /// Test getting the plugin name.
     /// </summary>
     [Fact]
+    [Trait("Category", "Unit")]
     public void TestPluginInstance()
     {
         Assert.NotNull(_plugin.Name);
@@ -39,6 +40,7 @@ public class TestThemerrPlugin
     /// Test getting the plugin description.
     /// </summary>
     [Fact]
+    [Trait("Category", "Unit")]
     public void TestPluginDescription()
     {
         Assert.NotNull(_plugin.Description);
@@ -49,6 +51,7 @@ public class TestThemerrPlugin
     /// Test get the plugin id.
     /// </summary>
     [Fact]
+    [Trait("Category", "Unit")]
     public void TestPluginId()
     {
         Assert.Equal(new Guid("84b59a39-bde4-42f4-adbd-c39882cbb772"), _plugin.Id);
@@ -58,6 +61,7 @@ public class TestThemerrPlugin
     /// Test getting the plugin configuration page.
     /// </summary>
     [Fact]
+    [Trait("Category", "Unit")]
     public void TestPluginConfigurationPage()
     {
         var pages = _plugin.GetPages();
