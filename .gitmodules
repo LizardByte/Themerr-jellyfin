@@ -1,3 +1,11 @@
+[submodule "third-party/jellyfin-apiclient-javascript"]
+	path = third-party/jellyfin-apiclient-javascript
+	url = https://github.com/jellyfin/jellyfin-apiclient-javascript.git
+	branch = master
+[submodule "third-party/jellyfin-web"]
+	path = third-party/jellyfin-web
+	url = https://github.com/jellyfin/jellyfin-web
+	branch = master
 [submodule "third-party/sphinx-csharp"]
 	path = third-party/sphinx-csharp
 	url = https://github.com/rogerbarton/sphinx-csharp.git

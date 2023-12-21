@@ -54,6 +54,12 @@
                 </form>
             </div>
         </div>
+        
+        <!-- Remove IDE complaints -->
+        <!-- ApiClient -->
+        <script type="text/javascript" src="../../third-party/jellyfin-apiclient-javascript/src/apiClient.js"></script>
+        <!-- Dashboard -->
+        <script type="text/javascript" src="../../third-party/jellyfin-web/src/scripts/clientUtils.js"></script>
 
         <script type="text/javascript">
             function getThemerrConfig() {
@@ -68,11 +74,19 @@
             
             ThemerrConfig = getThemerrConfig()
             LogPrefix = getLogPrefix()
+            
+            // if ApiClient is not defined, define it
+            if (typeof ApiClient === 'undefined') {
+                _ApiClient = new ApiClient()
+            }
+            else {
+                _ApiClient = ApiClient
+            }
 
             document.querySelector('#ThemerrConfigPage')
                 .addEventListener('pageshow', function() {
                     Dashboard.showLoadingMsg()
-                    ApiClient.getPluginConfiguration(ThemerrConfig.pluginUniqueId).then(function (config) {
+                    _ApiClient.getPluginConfiguration(ThemerrConfig.pluginUniqueId).then(function (config) {
                         document.querySelector('#UpdateInterval').value = config.UpdateInterval
                         Dashboard.hideLoadingMsg()
                     })
@@ -81,9 +95,9 @@
             document.querySelector('#ThemerrConfigForm')
                 .addEventListener('submit', function(e) {
                     Dashboard.showLoadingMsg()
-                    ApiClient.getPluginConfiguration(ThemerrConfig.pluginUniqueId).then(function (config) {
+                    _ApiClient.getPluginConfiguration(ThemerrConfig.pluginUniqueId).then(function (config) {
                         config.UpdateInterval = document.querySelector('#UpdateInterval').value
-                        ApiClient.updatePluginConfiguration(ThemerrConfig.pluginUniqueId, config).then(function (result) {
+                        _ApiClient.updatePluginConfiguration(ThemerrConfig.pluginUniqueId, config).then(function (result) {
                             Dashboard.processPluginConfigurationUpdateResult(result)
                         })
                     })
@@ -93,11 +107,11 @@
                 })
             function download() {
                 let request = {
-                    url: ApiClient.getUrl('/Themerr/TriggerUpdate'),
+                    url: _ApiClient.getUrl('/Themerr/TriggerUpdate'),
                     type: 'POST'
                 }
 
-                ApiClient.fetch(request).then(function () {
+                _ApiClient.fetch(request).then(function () {
                     let message = "Updating theme songs..."
                     Dashboard.alert(message)
                     console.log(LogPrefix + message)
@@ -113,12 +127,12 @@
 
             function updateProgress() {
                 let request = {
-                    url: ApiClient.getUrl('/Themerr/GetProgress'),
+                    url: _ApiClient.getUrl('/Themerr/GetProgress'),
                     type: 'GET',
                     dataType: 'json'  // this should automatically return response.json()
                 }
 
-                ApiClient.fetch(request).then(function (response) {
+                _ApiClient.fetch(request).then(function (response) {
                     console.log(LogPrefix + "media_count: " + response["media_count"])
                     console.log(LogPrefix + "media_percent_complete: " + response["media_percent_complete"])
 
