@@ -60,6 +60,27 @@ public class FixtureJellyfinServer
     }
 
     /// <summary>
+    /// Mock movies without an associated theme in ThemerrDB to use for testing
+    /// </summary>
+    /// <returns>List containing mock <see cref="Movie"/> objects.</returns>
+    public static List<Movie> MockMovies2()
+    {
+        return new List<Movie>
+        {
+            new()
+            {
+                Name = "Themerr Test Movie",
+                ProductionYear = 1970,
+                ProviderIds = new Dictionary<string, string>
+                {
+                    { MetadataProvider.Imdb.ToString(), "tt0000000"},
+                    { MetadataProvider.Tmdb.ToString(), "0"},
+                }
+            },
+        };
+    }
+
+    /// <summary>
     /// Create mock movies from stub video
     /// </summary>
     [Fact]

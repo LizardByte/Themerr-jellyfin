@@ -11,6 +11,9 @@ dotnet_diagnostic.S125.severity = None
 # Complete the task associated to this 'TODO' comment.
 dotnet_diagnostic.S1135.severity = None
 
+# Remove the unused local variable 'foo'.
+dotnet_diagnostic.S1481.severity = error
+
 # Remove this empty class, write its code or make it an "interface".
 dotnet_diagnostic.S2094.severity = None
 
