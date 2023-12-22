@@ -12,13 +12,29 @@
                 <form class="tbsConfigurationPage">
                     <div class="sectionTitleContainer flex align-items-center">
                         <h2 class="sectionTitle">Themerr</h2>
+                        <button is="emby-linkbutton"
+                                type="button"
+                                class="raised button-alt headerHelpButton emby-button"
+                                id="toggle-discord-widget"
+                                onclick=toggleDiscordWidget()>
+                            <span>Discord</span>
+                        </button>
                         <a is="emby-linkbutton" class="raised button-alt headerHelpButton emby-button" target="_blank"
-                           href="https://app.lizardbyte.dev/support">Support</a>
+                           href="https://app.lizardbyte.dev/support">Support Center</a>
+                    </div>
+                    <div id="DiscordWidget" style="display: none;">
+                        <widgetbot
+                                server="804382334370578482"
+                                channel="804383092822900797"
+                                width="800"
+                                height="600"
+                        ></widgetbot>
+                        <br>
                     </div>
                     <div class="verticalSection">
                         <p>This plugin relies on the TMDB provider.
                             Please make sure it is enabled!</p>
-                        <br/>
+                        <br>
                     </div>
                 </form>
 
@@ -38,7 +54,7 @@
                             <span>Save</span>
                         </button>
                     </div>
-                    <br/>
+                    <br>
                     <div>
                         <button is="emby-button" type="button" class="raised block" id="refresh-library"
                                 onclick=download()>
@@ -46,15 +62,18 @@
                         </button>
                     </div>
                 </form>
-                <br/>
-                <br/>
+                <br>
+                <br>
                 <!-- Create Movie Theme Progress Dashboard -->
                 <form>
                     <div id="ThemerrDashboard"></div>
                 </form>
             </div>
         </div>
-        
+
+        <!-- Discord Widget -->
+        <script src="https://cdn.jsdelivr.net/npm/@widgetbot/html-embed"></script>
+
         <!-- Remove IDE complaints -->
         <!-- ApiClient -->
         <script type="text/javascript" src="../../third-party/jellyfin-apiclient-javascript/src/apiClient.js"></script>
@@ -123,6 +142,15 @@
                     })
                     console.log(LogPrefix + message)
                 })
+            }
+
+            function toggleDiscordWidget() {
+                let discordWidget = document.querySelector('#DiscordWidget')
+                if (discordWidget.style.display === 'none') {
+                    discordWidget.style.display = 'block'
+                } else {
+                    discordWidget.style.display = 'none'
+                }
             }
 
             function updateProgress() {
