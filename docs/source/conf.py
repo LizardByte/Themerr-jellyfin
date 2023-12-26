@@ -22,7 +22,7 @@ root_dir = os.path.dirname(source_dir)  # the root folder directory
 
 # -- Project information -----------------------------------------------------
 project = 'Themerr-jellyfin'
-copyright = f'{datetime.now ().year}, {project}'
+project_copyright = f'{datetime.now ().year}, {project}'
 author = 'ReenigneArcher'
 
 # The full version, including alpha/beta/rc tags
@@ -60,6 +60,10 @@ source_suffix = ['.rst', '.md']
 
 # -- Options for HTML output -------------------------------------------------
 
+# images
+html_favicon = os.path.join(root_dir, 'favicon.ico')
+html_logo = os.path.join(root_dir, 'themerr.png')
+
 # Add any paths that contain custom static files (such as style sheets) here,
 # relative to this directory. They are copied after the builtin static files,
 # so a file named "default.css" will overwrite the builtin "default.css".
@@ -73,8 +77,6 @@ source_suffix = ['.rst', '.md']
 # html_js_files = [
 #     'js/custom.js',
 # ]
-
-html_logo = os.path.join(root_dir, 'themerr.png')
 
 # The theme to use for HTML and HTML Help pages.  See the documentation for
 # a list of builtin themes.
