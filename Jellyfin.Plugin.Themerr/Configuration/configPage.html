@@ -184,8 +184,13 @@
                     let progressBarForeground = document.createElement('div')
                     progressBarForeground.setAttribute('class', 'itemProgressBarForeground')
                     progressBarForeground.setAttribute('style', 'width: ' + response["media_percent_complete"] + '%;')
-                    progressBarForeground.innerText = response["media_percent_complete"] + '%'
                     progressBar.appendChild(progressBarForeground)
+                    
+                    // progress bar text
+                    let progressBarText = document.createElement('span')
+                    progressBarText.setAttribute('style', 'margin-left: 0.5em;')
+                    progressBarText.innerText = response["media_percent_complete"] + '%'
+                    progressBarForeground.appendChild(progressBarText)
 
                     // add break
                     ThemerrDashboard.appendChild(document.createElement('br'))
@@ -193,7 +198,7 @@
                     // create table
                     let table = document.createElement('table')
                     table.setAttribute('id', 'ThemerrProgressTable')
-                    table.setAttribute('class', 'table table-striped table-hover')
+                    table.setAttribute('class', 'detailTable')
                     ThemerrDashboard.appendChild(table)
 
                     // create table header
@@ -209,6 +214,7 @@
                     // create table header columns
                     for (let column in columns) {
                         let tableHeaderColumn = document.createElement('th')
+                        tableHeaderColumn.setAttribute('class', 'detailTableHeaderCell')
                         tableHeaderColumn.setAttribute('scope', 'col')
                         tableHeaderColumn.innerHTML = columns[column]
                         tableHeaderRow.appendChild(tableHeaderColumn)
@@ -231,14 +237,17 @@
 
                         // create table columns
                         let tableColumnTitle = document.createElement('td')
+                        tableColumnTitle.setAttribute('class', 'detailTableBodyCell')
                         tableColumnTitle.innerHTML = response["items"][item]["name"]
                         tableRow.appendChild(tableColumnTitle)
 
                         let tableColumnYear = document.createElement('td')
+                        tableColumnYear.setAttribute('class', 'detailTableBodyCell')
                         tableColumnYear.innerHTML = response["items"][item]["year"]
                         tableRow.appendChild(tableColumnYear)
                         
                         let tableColumnType = document.createElement('td')
+                        tableColumnType.setAttribute('class', 'detailTableBodyCell')
                         tableColumnType.innerHTML = response["items"][item]["type"]
                         tableRow.appendChild(tableColumnType)
 
@@ -247,26 +256,33 @@
                         contributeButton.setAttribute('class', 'raised headerHelpButton button-submit emby-button')
                         contributeButton.setAttribute('target', '_blank')
                         contributeButton.setAttribute('href', response["items"][item]["issue_url"])
-                        contributeButton.innerHTML = 'Contribute'
+                        // text added when status is set
 
                         let tableColumnContribute = document.createElement('td')
                         tableColumnContribute.appendChild(contributeButton)
                         tableRow.appendChild(tableColumnContribute)
 
                         let tableColumnStatus = document.createElement('td')
-                        
+                        tableColumnStatus.setAttribute('class', 'detailTableBodyCell')
+
                         let statusSpan = document.createElement('span')
                         let statusText = document.createElement('span')
                         statusSpan.setAttribute('class', 'material-icons')
-                        statusSpan.setAttribute('style', 'margin-right: 6px;')
+                        statusText.setAttribute('class', 'detailTableBodyCell')
                         if (response["items"][item]["theme_provider"] === 'themerr') {
+                            contributeButton.innerHTML = 'Edit'
                             statusSpan.classList.add('check')
+                            statusSpan.setAttribute('style', 'margin-right: 6px; color: #00ff00;')
                             statusText.innerText = 'Themerr provided'
                         } else if (response["items"][item]["theme_provider"] === 'user') {
+                            contributeButton.innerHTML = 'Contribute'
                             statusSpan.classList.add('person')
+                            statusSpan.setAttribute('style', 'margin-right: 6px; color: #00a4dc;')
                             statusText.innerText = 'User provided'
                         } else {
+                            contributeButton.innerHTML = 'Add'
                             statusSpan.classList.add('cancel')
+                            statusSpan.setAttribute('style', 'margin-right: 6px; color: #ff0000;')
                             statusText.innerText = 'No theme song'
                         }
                         tableColumnStatus.appendChild(statusSpan)
