@@ -204,7 +204,7 @@
                     let tableHeaderRow = document.createElement('tr')
                     tableHeader.appendChild(tableHeaderRow)
 
-                    let columns = ['Title', 'Year', 'Contribute', 'Status']
+                    let columns = ['Title', 'Year', 'Type', 'Contribute', 'Status']
 
                     // create table header columns
                     for (let column in columns) {
@@ -216,10 +216,12 @@
 
                     // loop over items
                     for (let item in response["items"]) {
+                        console.log(LogPrefix + "------------------")
                         console.log(LogPrefix + "item: " + item)
                         console.log(LogPrefix + "name: " + response["items"][item]["name"])
                         console.log(LogPrefix + "id: " + response["items"][item]["id"])
                         console.log(LogPrefix + "issue_url: " + response["items"][item]["issue_url"])
+                        console.log(LogPrefix + "type: " + response["items"][item]["type"])
                         console.log(LogPrefix + "theme_provider: " + response["items"][item]["theme_provider"])
                         console.log(LogPrefix + "year: " + response["items"][item]["year"])
 
@@ -235,6 +237,10 @@
                         let tableColumnYear = document.createElement('td')
                         tableColumnYear.innerHTML = response["items"][item]["year"]
                         tableRow.appendChild(tableColumnYear)
+                        
+                        let tableColumnType = document.createElement('td')
+                        tableColumnType.innerHTML = response["items"][item]["type"]
+                        tableRow.appendChild(tableColumnType)
 
                         let contributeButton = document.createElement('a')
                         contributeButton.setAttribute('is', 'emby-linkbutton')
