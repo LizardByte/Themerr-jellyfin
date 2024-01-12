@@ -21,9 +21,6 @@ Themerr-jellyfin uses `Sphinx <https://www.sphinx-doc.org/en/master/>`__ for doc
 other required python dependencies are included in the `./docs/requirements.txt` file. Python is required to build
 sphinx docs. Installation and setup of python will not be covered here.
 
-.. todo::
-   Add documentation within C# code to be included in sphinx docs.
-
 The config file for Sphinx is ``docs/source/conf.py``. This is already included in the root of the repo and should not
 be modified.
 
