@@ -195,24 +195,26 @@ public class TestThemerrManager
         // todo: test with actual items
     }
 
-    // todo: fix this test
-    // [Fact]
-    // [Trait("Category", "Unit")]
-    // private void TestProcessItemTheme()
-    // {
-    //     // get fixture movies
-    //     var mockItems = FixtureJellyfinServer.MockItems();
-    //
-    //     Assert.True(mockItems.Count > 0, "mockItems.Count is not greater than 0");
-    //
-    //     foreach (var item in mockItems)
-    //     {
-    //         // get the item theme
-    //         _themerrManager.ProcessItemTheme(item);
-    //
-    //         Assert.True(File.Exists(_themerrManager.GetThemePath(item)), $"File {_themerrManager.GetThemePath(item)} does not exist");
-    //     }
-    // }
+    [Fact]
+    [Trait("Category", "Unit")]
+    private void TestProcessItemTheme()
+    {
+        // get fixture movies
+        var mockItems = FixtureJellyfinServer.MockItems();
+
+        Assert.True(mockItems.Count > 0, "mockItems.Count is not greater than 0");
+
+        foreach (var item in mockItems)
+        {
+            // get the item theme
+            _themerrManager.ProcessItemTheme(item);
+
+            Assert.True(File.Exists(_themerrManager.GetThemePath(item)), $"File {_themerrManager.GetThemePath(item)} does not exist");
+
+            // cleanup and delete the file
+            File.Delete(_themerrManager.GetThemePath(item));
+        }
+    }
 
     [Fact]
     [Trait("Category", "Unit")]
