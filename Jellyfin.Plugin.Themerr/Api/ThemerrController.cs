@@ -3,7 +3,6 @@ using System.Collections;
 using System.Linq;
 using System.Net.Mime;
 using System.Threading.Tasks;
-using MediaBrowser.Controller.Entities.Movies;
 using MediaBrowser.Controller.Library;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
@@ -49,7 +48,7 @@ namespace Jellyfin.Plugin.Themerr.Api
         [ProducesResponseType(StatusCodes.Status204NoContent)]
         public async Task TriggerUpdateRequest()
         {
-            _logger.LogInformation("Updating Movie Theme Songs");
+            _logger.LogInformation("Updating Theme Songs");
             await _themerrManager.UpdateAll();
             _logger.LogInformation("Completed");
         }
@@ -57,11 +56,11 @@ namespace Jellyfin.Plugin.Themerr.Api
         /// <summary>
         /// Get the data required to populate the progress dashboard.
         ///
-        /// Loop over all Jellyfin libraries and movies, creating a json object with the following structure:
+        /// Loop over all Jellyfin libraries and supported items, creating a json object with the following structure:
         /// {
-        ///   "items": [Movies],
-        ///   "media_count": Movies.Count,
-        ///   "media_percent_complete": ThemedMovies.Count / Movies.Count * 100,
+        ///   "items": [BaseItems],
+        ///   "media_count": BaseItems.Count,
+        ///   "media_percent_complete": ThemedItems.Count / BaseItems.Count * 100,
         /// }
         /// </summary>
         /// <returns>JSON object containing progress data.</returns>
@@ -75,29 +74,30 @@ namespace Jellyfin.Plugin.Themerr.Api
             var mediaWithThemes = 0;
             var mediaPercentComplete = 0;
 
-            var movies = _themerrManager.GetMoviesFromLibrary();
+            var items = _themerrManager.GetTmdbItemsFromLibrary();
 
-            // sort movies by name, then year
-            var enumerable = movies.OrderBy(m => m.Name).ThenBy(m => m.ProductionYear);
+            // sort items by name, then year
+            var enumerable = items.OrderBy(i => i.Name).ThenBy(i => i.ProductionYear);
 
-            foreach (var movie in enumerable)
+            foreach (var item in enumerable)
             {
-                var year = movie.ProductionYear;
-                var issueUrl = _themerrManager.GetIssueUrl(movie);
-                var themeProvider = _themerrManager.GetThemeProvider(movie);
-                var item = new
+                var year = item.ProductionYear;
+                var issueUrl = _themerrManager.GetIssueUrl(item);
+                var themeProvider = _themerrManager.GetThemeProvider(item);
+                var tmpItem = new
                 {
-                    name = movie.Name,
-                    id = movie.Id,
+                    name = item.Name,
+                    id = item.Id,
                     issue_url = issueUrl,
                     theme_provider = themeProvider,
+                    type = item.GetType().Name,  // Movie, Series, etc.
                     year = year
                 };
-                tmpItems.Add(item);
+                tmpItems.Add(tmpItem);
 
                 mediaCount++;
 
-                var themeSongs = movie.GetThemeSongs();
+                var themeSongs = item.GetThemeSongs();
                 if (themeSongs.Count > 0)
                 {
                     mediaWithThemes++;

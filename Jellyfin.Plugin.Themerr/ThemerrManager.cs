@@ -7,6 +7,7 @@ using System.Threading.Tasks;
 using Jellyfin.Data.Enums;
 using MediaBrowser.Controller.Entities;
 using MediaBrowser.Controller.Entities.Movies;
+using MediaBrowser.Controller.Entities.TV;
 using MediaBrowser.Controller.Library;
 using MediaBrowser.Controller.Plugins;
 using MediaBrowser.Model.Entities;
@@ -14,9 +15,6 @@ using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
 using YoutubeExplode;
 using YoutubeExplode.Videos.Streams;
-
-// TODO: Add support for TV shows
-// using MediaBrowser.Controller.Entities.TV;
 
 namespace Jellyfin.Plugin.Themerr
 {
@@ -94,59 +92,71 @@ namespace Jellyfin.Plugin.Themerr
         }
 
         /// <summary>
-        /// Get all movies from the library that have a tmdb id.
+        /// Get all supported items from the library that have a tmdb id.
         /// </summary>
-        /// <returns>List of <see cref="Movie"/>.</returns>
-        public IEnumerable<Movie> GetMoviesFromLibrary()
+        /// <returns>List of <see cref="BaseItem"/> objects.</returns>
+        public IEnumerable<BaseItem> GetTmdbItemsFromLibrary()
         {
-            var movies = _libraryManager.GetItemList(new InternalItemsQuery
+            var items = _libraryManager.GetItemList(new InternalItemsQuery
             {
-                IncludeItemTypes = new[] {BaseItemKind.Movie},
+                IncludeItemTypes = new[]
+                {
+                    BaseItemKind.Movie,
+                    BaseItemKind.Series
+                },
                 IsVirtualItem = false,
                 Recursive = true,
                 HasTmdbId = true
             });
 
-            var movieList = new List<Movie>();
-            if (movies == null || movies.Count == 0)
+            var itemList = new List<BaseItem>();
+            if (items == null || items.Count == 0)
             {
-                return movieList;
+                return itemList;
             }
 
-            foreach (var movie in movies)
-            {
-                if (movie is Movie m)
-                {
-                    movieList.Add(m);
-                }
-            }
+            itemList.AddRange(items.Where(item => item is Movie or Series));
 
-            return movieList;
+            return itemList;
         }
 
         /// <summary>
-        /// Enumerate through all movies in the library and downloads their theme songs as required.
+        /// Enumerate through all supported items in the library and downloads their theme songs as required.
         /// </summary>
         /// <returns>A <see cref="Task"/> representing the asynchronous operation.</returns>
         public Task UpdateAll()
         {
-            var movies = GetMoviesFromLibrary();
-            foreach (var movie in movies)
+            var items = GetTmdbItemsFromLibrary();
+            foreach (var item in items)
             {
-                ProcessMovieTheme(movie);
+                ProcessItemTheme(item);
             }
 
             return Task.CompletedTask;
         }
 
         /// <summary>
-        /// Download the theme song for a movie if it doesn't already exist.
+        /// Download the theme song for a media item if it doesn't already exist.
         /// </summary>
-        /// <param name="movie">The Jellyfin movie object.</param>
-        public void ProcessMovieTheme(Movie movie)
+        /// <param name="item">The Jellyfin media object.</param>
+        public void ProcessItemTheme(BaseItem item)
         {
-            var themePath = GetThemePath(movie);
-            var themerrDataPath = GetThemerrDataPath(movie);
+            // get themerrDB database type, used to create the themerrdb url
+            var dbType = item switch
+            {
+                Movie _ => "movies",
+                Series _ => "tv_shows",
+                _ => null
+            };
+
+            // return if dbType is null
+            if (string.IsNullOrEmpty(dbType))
+            {
+                return;
+            }
+
+            var themePath = GetThemePath(item);
+            var themerrDataPath = GetThemerrDataPath(item);
 
             if (!ContinueDownload(themePath, themerrDataPath))
             {
@@ -156,12 +166,12 @@ namespace Jellyfin.Plugin.Themerr
             var existingYoutubeThemeUrl = GetExistingThemerrDataValue("youtube_theme_url", themerrDataPath);
 
             // get tmdb id
-            var tmdbId = GetTmdbId(movie);
+            var tmdbId = GetTmdbId(item);
 
             // create themerrdb url
-            var themerrDbUrl = CreateThemerrDbLink(tmdbId);
+            var themerrDbUrl = CreateThemerrDbLink(tmdbId, dbType);
 
-            var youtubeThemeUrl = GetYoutubeThemeUrl(themerrDbUrl, movie);
+            var youtubeThemeUrl = GetYoutubeThemeUrl(themerrDbUrl, item);
 
             // skip if no youtube theme url in ThemerrDB or
             // if the youtube themes match AND the theme_md5 is unknown
@@ -184,35 +194,35 @@ namespace Jellyfin.Plugin.Themerr
                 return;
             }
 
-            movie.RefreshMetadata(CancellationToken.None);
+            item.RefreshMetadata(CancellationToken.None);
         }
 
         /// <summary>
-        /// Get TMDB id from a movie.
+        /// Get TMDB id from an item.
         /// </summary>
-        /// <param name="movie">The Jellyfin movie object.</param>
+        /// <param name="item">The Jellyfin media object.</param>
         /// <returns>TMDB id.</returns>
-        public string GetTmdbId(Movie movie)
+        public string GetTmdbId(BaseItem item)
         {
-            var tmdbId = movie.GetProviderId(MetadataProvider.Tmdb);
+            var tmdbId = item.GetProviderId(MetadataProvider.Tmdb);
             return tmdbId;
         }
 
         /// <summary>
         /// Get the theme provider.
         /// </summary>
-        /// <param name="movie">The Jellyfin movie object.</param>
+        /// <param name="item">The Jellyfin media object.</param>
         /// <returns>The theme provider.</returns>
-        public string GetThemeProvider(Movie movie)
+        public string GetThemeProvider(BaseItem item)
         {
             // check if item has a theme song
-            var themeSongs = movie.GetThemeSongs();
+            var themeSongs = item.GetThemeSongs();
             if (themeSongs == null || themeSongs.Count == 0)
             {
                 return null;
             }
 
-            var themerrDataPath = GetThemerrDataPath(movie);
+            var themerrDataPath = GetThemerrDataPath(item);
             var themerrHash = GetExistingThemerrDataValue("theme_md5", themerrDataPath);
             var themeHash = GetMd5Hash(themeSongs[0].Path);
 
@@ -267,40 +277,51 @@ namespace Jellyfin.Plugin.Themerr
         /// <summary>
         /// Get the path to the theme song.
         /// </summary>
-        /// <param name="movie">The Jellyfin movie object.</param>
+        /// <param name="item">The Jellyfin media object.</param>
         /// <returns>The path to the theme song.</returns>
-        public string GetThemePath(Movie movie)
+        public string GetThemePath(BaseItem item)
         {
-            return $"{movie.ContainingFolderPath}/theme.mp3";
+            return item switch
+            {
+                Movie movie => System.IO.Path.Join(movie.ContainingFolderPath, "theme.mp3"),
+                Series series => System.IO.Path.Join(series.Path, "theme.mp3"),
+                _ => null
+            };
         }
 
         /// <summary>
         /// Get the path to the themerr data file.
         /// </summary>
-        /// <param name="movie">The Jellyfin movie object.</param>
+        /// <param name="item">The Jellyfin media object.</param>
         /// <returns>The path to the themerr data file.</returns>
-        public string GetThemerrDataPath(Movie movie)
+        public string GetThemerrDataPath(BaseItem item)
         {
-            return $"{movie.ContainingFolderPath}/themerr.json";
+            return item switch
+            {
+                Movie movie => System.IO.Path.Join(movie.ContainingFolderPath, "themerr.json"),
+                Series series => System.IO.Path.Join(series.Path, "themerr.json"),
+                _ => null
+            };
         }
 
         /// <summary>
         /// Create a link to the themerr database.
         /// </summary>
         /// <param name="tmdbId">The tmdb id.</param>
+        /// <param name="dbType">The database type.</param>
         /// <returns>The themerr database link.</returns>
-        public string CreateThemerrDbLink(string tmdbId)
+        public string CreateThemerrDbLink(string tmdbId, string dbType)
         {
-            return $"https://app.lizardbyte.dev/ThemerrDB/movies/themoviedb/{tmdbId}.json";
+            return $"https://app.lizardbyte.dev/ThemerrDB/{dbType}/themoviedb/{tmdbId}.json";
         }
 
         /// <summary>
         /// Get the YouTube theme url from the themerr database.
         /// </summary>
         /// <param name="themerrDbUrl">The themerr database url.</param>
-        /// <param name="movie">The Jellyfin movie object.</param>
+        /// <param name="item">The Jellyfin media object.</param>
         /// <returns>The YouTube theme url.</returns>
-        public string GetYoutubeThemeUrl(string themerrDbUrl, Movie movie)
+        public string GetYoutubeThemeUrl(string themerrDbUrl, BaseItem item)
         {
             var client = new HttpClient();
 
@@ -313,9 +334,9 @@ namespace Jellyfin.Plugin.Themerr
             catch (Exception)
             {
                 _logger.LogWarning(
-                    "Missing from ThemerrDB: {MovieTitle}, contribute:\n  {IssueUrl}",
-                    movie.Name,
-                    GetIssueUrl(movie));
+                    "Missing from ThemerrDB: {ItemTitle}, contribute:\n  {IssueUrl}",
+                    item.Name,
+                    GetIssueUrl(item));
                 return string.Empty;
             }
         }
@@ -325,18 +346,37 @@ namespace Jellyfin.Plugin.Themerr
         ///
         /// This url can be used to easily add/edit theme songs in ThemerrDB.
         /// </summary>
-        /// <param name="movie">The Jellyfin movie object.</param>
+        /// <param name="item">The Jellyfin media object.</param>
         /// <returns>The ThemerrDB issue url.</returns>
-        public string GetIssueUrl(Movie movie)
+        public string GetIssueUrl(BaseItem item)
         {
-            // url components
-            const string issueBase =
-                "https://github.com/LizardByte/ThemerrDB/issues/new?assignees=&labels=request-theme&template=theme.yml&title=[MOVIE]:%20";
-            const string databaseBase = "https://www.themoviedb.org/movie/";
+            string issueBaseTitle = item switch
+            {
+                Movie _ => "MOVIE",
+                Series _ => "TV SHOW",
+                _ => null
+            };
 
-            var urlEncodedName = movie.Name.Replace(" ", "%20");
-            var year = movie.ProductionYear;
-            var tmdbId = GetTmdbId(movie);
+            string tmdbEndpoint = item switch
+            {
+                Movie _ => "movie",
+                Series _ => "tv",
+                _ => null
+            };
+
+            // return if either is null
+            if (string.IsNullOrEmpty(issueBaseTitle) || string.IsNullOrEmpty(tmdbEndpoint))
+            {
+                return null;
+            }
+
+            // url components
+            string issueBase = $"https://github.com/LizardByte/ThemerrDB/issues/new?assignees=&labels=request-theme&template=theme.yml&title=[{issueBaseTitle}]:%20";
+            string databaseBase = $"https://www.themoviedb.org/{tmdbEndpoint}/";
+
+            var urlEncodedName = item.Name.Replace(" ", "%20");
+            var year = item.ProductionYear;
+            var tmdbId = GetTmdbId(item);
 
             var issueUrl = $"{issueBase}{urlEncodedName}%20({year})&database_url={databaseBase}{tmdbId}";
             return issueUrl;

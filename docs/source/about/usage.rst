@@ -11,10 +11,12 @@ Enable Themes
 #. Select `Display` from the user section.
 #. Within the `Library` section, ensure `Theme songs` is enabled.
 
-Movie Directory Structure
--------------------------
+Directory Structure
+-------------------
 
-.. Attention:: Jellyfin requires movies to be stored in separate subdirectories, with each movie in its own folder.
+.. Attention:: Jellyfin requires your media to be stored in separate subdirectories, with each movie/show in its
+   own folder. See `Movies <https://jellyfin.org/docs/general/server/media/movies/>`__
+   or `TV Shows <https://jellyfin.org/docs/general/server/media/shows/>`__ for more information.
 
 Task Activation
 ---------------

@@ -1,3 +1,5 @@
+using MediaBrowser.Controller.Entities.Movies;
+using MediaBrowser.Controller.Entities.TV;
 using MediaBrowser.Controller.Library;
 using Microsoft.Extensions.Logging;
 using Moq;
@@ -183,52 +185,68 @@ public class TestThemerrManager
 
     [Fact]
     [Trait("Category", "Unit")]
-    private void TestGetMoviesFromLibrary()
+    private void TestGetTmdbItemsFromLibrary()
     {
-        var movies = _themerrManager.GetMoviesFromLibrary();
+        var items = _themerrManager.GetTmdbItemsFromLibrary();
 
-        // movies list should be empty
-        Assert.Empty(movies);
+        // items list should be empty
+        Assert.Empty(items);
 
-        // todo: test with actual movies
+        // todo: test with actual items
     }
 
     // todo: fix this test
     // [Fact]
     // [Trait("Category", "Unit")]
-    // private void TestProcessMovieTheme()
+    // private void TestProcessItemTheme()
     // {
     //     // get fixture movies
-    //     var mockMovies = FixtureJellyfinServer.MockMovies();
+    //     var mockItems = FixtureJellyfinServer.MockItems();
     //
-    //     Assert.True(mockMovies.Count > 0, "mockMovies.Count is not greater than 0");
+    //     Assert.True(mockItems.Count > 0, "mockItems.Count is not greater than 0");
     //
-    //     foreach (var movie in mockMovies)
+    //     foreach (var item in mockItems)
     //     {
-    //         // get the movie theme
-    //         _themerrManager.ProcessMovieTheme(movie);
+    //         // get the item theme
+    //         _themerrManager.ProcessItemTheme(item);
     //
-    //         Assert.True(File.Exists(_themerrManager.GetThemePath(movie)), $"File {_themerrManager.GetThemePath(movie)} does not exist");
+    //         Assert.True(File.Exists(_themerrManager.GetThemePath(item)), $"File {_themerrManager.GetThemePath(item)} does not exist");
     //     }
     // }
 
     [Fact]
     [Trait("Category", "Unit")]
+    private void TestProcessItemThemeUnsupportedType()
+    {
+        // get fixture items
+        var mockItems = FixtureJellyfinServer.UnsupportedMockItems();
+
+        foreach (var item in mockItems)
+        {
+            // get the item theme
+            _themerrManager.ProcessItemTheme(item);
+
+            Assert.False(File.Exists(_themerrManager.GetThemePath(item)), $"File {_themerrManager.GetThemePath(item)} exists");
+        }
+    }
+
+    [Fact]
+    [Trait("Category", "Unit")]
     private void TestGetTmdbId()
     {
-        // get fixture movies
-        var mockMovies = FixtureJellyfinServer.MockMovies();
+        // get fixture items
+        var mockItems = FixtureJellyfinServer.MockItems();
 
-        foreach (var movie in mockMovies)
+        foreach (var item in mockItems)
         {
-            // get the movie theme
-            var tmdbId = _themerrManager.GetTmdbId(movie);
+            // get the item theme
+            var tmdbId = _themerrManager.GetTmdbId(item);
 
             // ensure tmdbId is not empty
             Assert.NotEmpty(tmdbId);
 
-            // ensure tmdbId is the same as the one in the movie fixture
-            Assert.Equal(movie.ProviderIds[MetadataProvider.Tmdb.ToString()], tmdbId);
+            // ensure tmdbId is the same as the one in the item fixture
+            Assert.Equal(item.ProviderIds[MetadataProvider.Tmdb.ToString()], tmdbId);
         }
     }
 
@@ -237,19 +255,19 @@ public class TestThemerrManager
     // [Trait("Category", "Unit")]
     // private void TestGetThemeProvider()
     // {
-    //     // get fixture movies
-    //     var mockMovies = FixtureJellyfinServer.MockMovies();
+    //     // get fixture items
+    //     var mockItems = FixtureJellyfinServer.MockItems();
     //
-    //     foreach (var movie in mockMovies)
+    //     foreach (var item in mockItems)
     //     {
-    //         // get the movie theme
-    //         var themeProvider = _themerrManager.GetThemeProvider(movie);
+    //         // get the item theme
+    //         var themeProvider = _themerrManager.GetThemeProvider(item);
     //
     //         // ensure themeProvider null
     //         Assert.Null(themeProvider);
     //     }
     //
-    //     // todo: test with actual movies
+    //     // todo: test with actual items
     // }
 
     [Fact]
@@ -334,15 +352,15 @@ public class TestThemerrManager
     [Trait("Category", "Unit")]
     private void TestGetThemePath()
     {
-        // get fixture movies
-        var mockMovies = FixtureJellyfinServer.MockMovies();
+        // get fixture items
+        var mockItems = FixtureJellyfinServer.MockItems();
 
-        Assert.True(mockMovies.Count > 0, "mockMovies.Count is not greater than 0");
+        Assert.True(mockItems.Count > 0, "mockItems.Count is not greater than 0");
 
-        foreach (var movie in mockMovies)
+        foreach (var item in mockItems)
         {
-            // get the movie theme
-            var themePath = _themerrManager.GetThemePath(movie);
+            // get the item theme
+            var themePath = _themerrManager.GetThemePath(item);
 
             // ensure path ends with theme.mp3
             Assert.EndsWith("theme.mp3", themePath);
@@ -351,17 +369,36 @@ public class TestThemerrManager
 
     [Fact]
     [Trait("Category", "Unit")]
+    private void TestGetThemePathUnsupportedType()
+    {
+        // get fixture items
+        var mockItems = FixtureJellyfinServer.UnsupportedMockItems();
+
+        Assert.True(mockItems.Count > 0, "mockItems.Count is not greater than 0");
+
+        foreach (var item in mockItems)
+        {
+            // get the item theme
+            var themePath = _themerrManager.GetThemePath(item);
+
+            // ensure path is null
+            Assert.Null(themePath);
+        }
+    }
+
+    [Fact]
+    [Trait("Category", "Unit")]
     private void TestGetThemerrDataPath()
     {
-        // get fixture movies
-        var mockMovies = FixtureJellyfinServer.MockMovies();
+        // get fixture items
+        var mockItems = FixtureJellyfinServer.MockItems();
 
-        Assert.True(mockMovies.Count > 0, "mockMovies.Count is not greater than 0");
+        Assert.True(mockItems.Count > 0, "mockItems.Count is not greater than 0");
 
-        foreach (var movie in mockMovies)
+        foreach (var item in mockItems)
         {
-            // get the movie theme
-            var themerrDataPath = _themerrManager.GetThemerrDataPath(movie);
+            // get the item theme
+            var themerrDataPath = _themerrManager.GetThemerrDataPath(item);
 
             // ensure path ends with theme.mp3
             Assert.EndsWith("themerr.json", themerrDataPath);
@@ -370,17 +407,49 @@ public class TestThemerrManager
 
     [Fact]
     [Trait("Category", "Unit")]
+    private void TestGetThemerrDataPathUnsupportedType()
+    {
+        // get fixture items
+        var mockItems = FixtureJellyfinServer.UnsupportedMockItems();
+
+        Assert.True(mockItems.Count > 0, "mockItems.Count is not greater than 0");
+
+        foreach (var item in mockItems)
+        {
+            // get the item theme
+            var themerrDataPath = _themerrManager.GetThemerrDataPath(item);
+
+            // ensure path is null
+            Assert.Null(themerrDataPath);
+        }
+    }
+
+    [Fact]
+    [Trait("Category", "Unit")]
     private void TestCreateThemerrDbLink()
     {
-        // get fixture movies
-        var mockMovies = FixtureJellyfinServer.MockMovies();
+        // get fixture items
+        var mockItems = FixtureJellyfinServer.MockItems();
 
-        Assert.True(mockMovies.Count > 0, "mockMovies.Count is not greater than 0");
+        Assert.True(mockItems.Count > 0, "mockItems.Count is not greater than 0");
 
-        foreach (var movie in mockMovies)
+        foreach (var item in mockItems)
         {
-            var tmdbId = movie.ProviderIds[MetadataProvider.Tmdb.ToString()];
-            var themerrDbUrl = _themerrManager.CreateThemerrDbLink(tmdbId);
+            var dbType = item switch
+            {
+                Movie _ => "movies",
+                Series _ => "tv_shows",
+                _ => null
+            };
+
+            // return if dbType is null
+            if (string.IsNullOrEmpty(dbType))
+            {
+                Assert.Fail($"Unknown item type: {item.GetType()}");
+            }
+
+            var tmdbId = item.ProviderIds[MetadataProvider.Tmdb.ToString()];
+            var themerrDbUrl = _themerrManager.CreateThemerrDbLink(tmdbId, dbType);
 
             TestLogger.Info($"themerrDbLink: {themerrDbUrl}");
 
@@ -392,20 +461,33 @@ public class TestThemerrManager
     [Trait("Category", "Unit")]
     private void TestGetYoutubeThemeUrl()
     {
-        // get fixture movies
-        var mockMovies = FixtureJellyfinServer.MockMovies();
+        // get fixture items
+        var mockItems = FixtureJellyfinServer.MockItems();
 
-        Assert.True(mockMovies.Count > 0, "mockMovies.Count is not greater than 0");
+        Assert.True(mockItems.Count > 0, "mockItems.Count is not greater than 0");
 
-        // loop over each movie
-        foreach (var movie in mockMovies)
+        // loop over each item
+        foreach (var item in mockItems)
         {
+            var dbType = item switch
+            {
+                Movie _ => "movies",
+                Series _ => "tv_shows",
+                _ => null
+            };
+
+            // return if dbType is null
+            if (string.IsNullOrEmpty(dbType))
+            {
+                Assert.Fail($"Unknown item type: {item.GetType()}");
+            }
+
             // get themerrDbUrl
-            var tmdbId = _themerrManager.GetTmdbId(movie);
-            var themerrDbLink = _themerrManager.CreateThemerrDbLink(tmdbId);
+            var tmdbId = _themerrManager.GetTmdbId(item);
+            var themerrDbLink = _themerrManager.CreateThemerrDbLink(tmdbId, dbType);
 
             // get the new youtube theme url
-            var youtubeThemeUrl = _themerrManager.GetYoutubeThemeUrl(themerrDbLink, movie);
+            var youtubeThemeUrl = _themerrManager.GetYoutubeThemeUrl(themerrDbLink, item);
 
             // log
             TestLogger.Info($"youtubeThemeUrl: {youtubeThemeUrl}");
@@ -418,20 +500,33 @@ public class TestThemerrManager
     [Trait("Category", "Unit")]
     private void TestGetYoutubeThemeUrlExceptions()
     {
-        // get fixture movies
-        var mockMovies = FixtureJellyfinServer.MockMovies2();
+        // get fixture items
+        var mockItems = FixtureJellyfinServer.MockItems2();
 
-        Assert.True(mockMovies.Count > 0, "mockMovies.Count is not greater than 0");
+        Assert.True(mockItems.Count > 0, "mockItems.Count is not greater than 0");
 
-        // loop over each movie
-        foreach (var movie in mockMovies)
+        // loop over each item
+        foreach (var item in mockItems)
         {
+            var dbType = item switch
+            {
+                Movie _ => "movies",
+                Series _ => "tv_shows",
+                _ => null
+            };
+
+            // return if dbType is null
+            if (string.IsNullOrEmpty(dbType))
+            {
+                Assert.Fail($"Unknown item type: {item.GetType()}");
+            }
+
             // get themerrDbUrl
-            var tmdbId = _themerrManager.GetTmdbId(movie);
-            var themerrDbLink = _themerrManager.CreateThemerrDbLink(tmdbId);
+            var tmdbId = _themerrManager.GetTmdbId(item);
+            var themerrDbLink = _themerrManager.CreateThemerrDbLink(tmdbId, dbType);
 
             // get the new youtube theme url
-            var youtubeThemeUrl = _themerrManager.GetYoutubeThemeUrl(themerrDbLink, movie);
+            var youtubeThemeUrl = _themerrManager.GetYoutubeThemeUrl(themerrDbLink, item);
 
             Assert.Empty(youtubeThemeUrl);
         }
@@ -441,22 +536,42 @@ public class TestThemerrManager
     [Trait("Category", "Unit")]
     private void TestGetIssueUrl()
     {
-        // get fixture movies
-        var mockMovies = FixtureJellyfinServer.MockMovies();
+        // get fixture items
+        var mockItems = FixtureJellyfinServer.MockItems();
 
-        Assert.True(mockMovies.Count > 0, "mockMovies.Count is not greater than 0");
+        Assert.True(mockItems.Count > 0, "mockItems.Count is not greater than 0");
 
-        // loop over each movie
-        foreach (var movie in mockMovies)
+        // loop over each item
+        foreach (var item in mockItems)
         {
+            var issueType = item switch
+            {
+                Movie _ => "MOVIE",
+                Series _ => "TV SHOW",
+                _ => null
+            };
+
+            var tmdbEndpoint = item switch
+            {
+                Movie _ => "movie",
+                Series _ => "tv",
+                _ => null
+            };
+
+            // return if dbType is null
+            if (string.IsNullOrEmpty(issueType) || string.IsNullOrEmpty(tmdbEndpoint))
+            {
+                Assert.Fail($"Unknown item type: {item.GetType()}");
+            }
+
             // parts of expected url
-            var tmdbId = _themerrManager.GetTmdbId(movie);
-            var encodedName = movie.Name.Replace(" ", "%20");
-            var year = movie.ProductionYear;
-            var expectedUrl = $"https://github.com/LizardByte/ThemerrDB/issues/new?assignees=&labels=request-theme&template=theme.yml&title=[MOVIE]:%20{encodedName}%20({year})&database_url=https://www.themoviedb.org/movie/{tmdbId}";
+            var tmdbId = _themerrManager.GetTmdbId(item);
+            var encodedName = item.Name.Replace(" ", "%20");
+            var year = item.ProductionYear;
+            var expectedUrl = $"https://github.com/LizardByte/ThemerrDB/issues/new?assignees=&labels=request-theme&template=theme.yml&title=[{issueType}]:%20{encodedName}%20({year})&database_url=https://www.themoviedb.org/{tmdbEndpoint}/{tmdbId}";
 
             // get the new youtube theme url
-            var issueUrl = _themerrManager.GetIssueUrl(movie);
+            var issueUrl = _themerrManager.GetIssueUrl(item);
 
             Assert.NotEmpty(issueUrl);
 
@@ -465,6 +580,25 @@ public class TestThemerrManager
 
             // ensure issue url matches expected url
             Assert.Equal(expectedUrl, issueUrl);
+        }
+    }
+
+    [Fact]
+    [Trait("Category", "Unit")]
+    private void TestGetIssueUrlUnsupportedType()
+    {
+        // get fixture items
+        var mockItems = FixtureJellyfinServer.UnsupportedMockItems();
+
+        Assert.True(mockItems.Count > 0, "mockItems.Count is not greater than 0");
+
+        // loop over each item
+        foreach (var item in mockItems)
+        {
+            // get the new youtube theme url
+            var issueUrl = _themerrManager.GetIssueUrl(item);
+
+            Assert.Null(issueUrl);
         }
     }
 

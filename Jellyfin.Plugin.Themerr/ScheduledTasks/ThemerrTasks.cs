@@ -40,7 +40,7 @@ namespace Jellyfin.Plugin.Themerr.ScheduledTasks
         /// <summary>
         /// Gets the description of the task.
         /// </summary>
-        public string Description => "Scans all libraries to download Movie Theme Songs";
+        public string Description => "Scans all libraries to download supported Theme Songs";
 
         /// <summary>
         /// Gets the category of the task.
@@ -55,7 +55,7 @@ namespace Jellyfin.Plugin.Themerr.ScheduledTasks
         /// <returns>A <see cref="Task"/> representing the asynchronous operation.</returns>
         public async Task ExecuteAsync(IProgress<double> progress, CancellationToken cancellationToken)
         {
-            _logger.LogInformation("Starting plugin, Downloading Movie Theme Songs...");
+            _logger.LogInformation("Starting plugin, Downloading supported Theme Songs...");
             await _themerrManager.UpdateAll();
             _logger.LogInformation("All theme songs downloaded");
         }
