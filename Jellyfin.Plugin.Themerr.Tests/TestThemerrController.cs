@@ -1,5 +1,6 @@
 ﻿using System.Collections;
 using Jellyfin.Plugin.Themerr.Api;
+using MediaBrowser.Controller.Configuration;
 using MediaBrowser.Controller.Library;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
@@ -25,7 +26,18 @@ public class TestThemerrController
 
         Mock<ILibraryManager> mockLibraryManager = new();
         Mock<ILogger<ThemerrManager>> mockLogger = new();
-        _controller = new ThemerrController(mockLibraryManager.Object, mockLogger.Object);
+        Mock<IServerConfigurationManager> mockServerConfigurationManager = new();
+
+        // Create a TestableServerConfiguration with UICulture set to "en-US"
+        var testableServerConfiguration = new TestableServerConfiguration("en-US");
+
+        // Setup the Configuration property of the IServerConfigurationManager mock to return the TestableServerConfiguration
+        mockServerConfigurationManager.Setup(x => x.Configuration).Returns(testableServerConfiguration);
+
+        _controller = new ThemerrController(
+            mockLibraryManager.Object,
+            mockLogger.Object,
+            mockServerConfigurationManager.Object);
     }
 
     /// <summary>
@@ -55,5 +67,70 @@ public class TestThemerrController
         Assert.Equal(0, (((JsonResult)result).Value?.GetType().GetProperty("items")?.GetValue(((JsonResult)result).Value, null) as ArrayList)?.Count);
 
         // todo: add tests for when there are items
+    }
+
+    /// <summary>
+    /// Test GetTranslations from API.
+    /// </summary>
+    [Fact]
+    [Trait("Category", "Unit")]
+    public void TestGetTranslations()
+    {
+        var actionResult = _controller.GetTranslations();
+        Assert.IsType<OkObjectResult>(actionResult);
+
+        // Cast the result to OkObjectResult to access the data
+        var okResult = actionResult as OkObjectResult;
+
+        // Access the data returned by the API
+        var data = okResult?.Value as Dictionary<string, object>;
+
+        Assert.NotNull(data);
+
+        // Assert the data contains the expected keys
+        Assert.True(data.ContainsKey("locale"));
+        Assert.True(data.ContainsKey("fallback"));
+    }
+
+    /// <summary>
+    /// Test GetCultureResource function.
+    /// </summary>
+    [Fact]
+    [Trait("Category", "Unit")]
+    public void TestGetCultureResource()
+    {
+        // list of english cultures
+        var enCultures = new List<string>
+        {
+            "de",
+            "en",
+            "en-GB",
+            "en-US",
+            "es",
+            "fr",
+            "it",
+            "ru",
+            "sv",
+            "zh"
+        };
+
+        foreach (var t in enCultures)
+        {
+            var result = _controller.GetCultureResource(t);
+            Assert.IsType<List<string>>(result);
+
+            // replace - with _ in the culture
+            var t2 = t.Replace("-", "_");
+
+            // en is not included in the list
+            if (t != "en")
+            {
+                // assert that `en_<>.json` is in the list
+                Assert.Contains(t2 + ".json", result);
+            }
+
+            // assert that `en` is NOT in the list
+            Assert.DoesNotContain("en.json", result);
+        }
     }
 }

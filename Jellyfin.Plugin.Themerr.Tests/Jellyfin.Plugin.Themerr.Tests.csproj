@@ -31,6 +31,10 @@
   </ItemGroup>
 
   <ItemGroup>
+    <EmbeddedResource Include="..\Jellyfin.Plugin.ThemerrLocale\**" />
+  </ItemGroup>
+
+  <ItemGroup>
     <None Update="data\**">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>

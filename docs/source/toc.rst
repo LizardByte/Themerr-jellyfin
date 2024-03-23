@@ -15,6 +15,7 @@
 
    contributing/database
    contributing/build
+   contributing/localization
    contributing/testing
 
 .. toctree::

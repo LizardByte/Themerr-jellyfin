@@ -20,7 +20,7 @@
                             <span>Discord</span>
                         </button>
                         <a is="emby-linkbutton" class="raised button-alt headerHelpButton emby-button" target="_blank"
-                           href="https://app.lizardbyte.dev/support">Support Center</a>
+                           href="https://app.lizardbyte.dev/support" data-localize="support_center">Support Center</a>
                     </div>
                     <div id="DiscordWidget" style="display: none;">
                         <widgetbot
@@ -32,7 +32,7 @@
                         <br>
                     </div>
                     <div class="verticalSection">
-                        <p>This plugin relies on the TMDB provider.
+                        <p data-localize="plugin_relies">This plugin relies on the TMDB provider.
                             Please make sure it is enabled!</p>
                         <br>
                     </div>
@@ -40,25 +40,25 @@
 
                 <form id="ThemerrConfigForm">
                     <div class="inputContainer">
-                        <label class="inputLabel inputLabelUnfocused" for="UpdateInterval">
+                        <label class="inputLabel inputLabelUnfocused" for="UpdateInterval" data-localize="update_interval">
                             Update Interval
                         </label>
                         <input id="UpdateInterval" name="UpdateInterval"
                                type="number" is="emby-input" min="15" />
-                        <div class="fieldDescription">
+                        <div class="fieldDescription" data-localize="update_interval_desc">
                             The interval, in minutes, between theme song updates.
                         </div>
                     </div>
                     <div>
                         <button is="emby-button" type="submit" class="raised button-submit block emby-button">
-                            <span>Save</span>
+                            <span data-localize="save">Save</span>
                         </button>
                     </div>
                     <br>
                     <div>
                         <button is="emby-button" type="button" class="raised block" id="refresh-library"
                                 onclick=download()>
-                            <span>Update Theme Songs</span>
+                            <span data-localize="update_theme_songs">Update Theme Songs</span>
                         </button>
                     </div>
                 </form>
@@ -86,14 +86,14 @@
                     pluginUniqueId: '84b59a39-bde4-42f4-adbd-c39882cbb772'
                 }
             }
-            
+
             function getLogPrefix() {
                 return '[Themerr] - '
             }
-            
+
             ThemerrConfig = getThemerrConfig()
             LogPrefix = getLogPrefix()
-            
+
             // if ApiClient is not defined, define it
             if (typeof ApiClient === 'undefined') {
                 _ApiClient = new ApiClient()
@@ -124,6 +124,44 @@
                     e.preventDefault()
                     return false
                 })
+
+            let translations = {};
+            function getTranslations() {
+                return new Promise((resolve, reject) => {
+                    let request = {
+                        url: _ApiClient.getUrl('/Themerr/GetTranslations'),
+                        type: 'GET',
+                        dataType: 'json'  // this should automatically return response.json()
+                    }
+
+                    _ApiClient.fetch(request).then(function (response) {
+                        console.log(LogPrefix + "translations: " + response)
+
+                        translations = response
+                        resolve();  // Resolve the Promise when the request is complete
+                    }).catch(function () {
+                        // this message cannot be translated due to translations not being loaded
+                        let message = "Unexpected error occurred getting translations."
+                        Dashboard.alert({
+                            message: message
+                        })
+                        console.log(LogPrefix + message)
+                        reject();  // Reject the Promise if there's an error
+                    })
+                })
+            }
+
+            function translate(key) {
+                if (translations['locale'] && translations['locale'][key] !== undefined) {
+                    return translations['locale'][key];
+                } else if (translations['fallback'] && translations['fallback'][key] !== undefined) {
+                    return translations['fallback'][key];
+                } else {
+                    console.log(LogPrefix + "Error translating string: " + key);
+                    return key;
+                }
+            }
+
             function download() {
                 let request = {
                     url: _ApiClient.getUrl('/Themerr/TriggerUpdate'),
@@ -131,11 +169,11 @@
                 }
 
                 _ApiClient.fetch(request).then(function () {
-                    let message = "Updating theme songs..."
+                    let message = translate('updating_theme_songs')
                     Dashboard.alert(message)
                     console.log(LogPrefix + message)
                 }).catch(function () {
-                    let message = "Unexpected error occurred!"
+                    let message = translate('unexpected_error_occured')
                     Dashboard.alert({
                         message: message
 
@@ -185,7 +223,7 @@
                     progressBarForeground.setAttribute('class', 'itemProgressBarForeground')
                     progressBarForeground.setAttribute('style', 'width: ' + response["media_percent_complete"] + '%;')
                     progressBar.appendChild(progressBarForeground)
-                    
+
                     // progress bar text
                     let progressBarText = document.createElement('span')
                     progressBarText.setAttribute('style', 'margin-left: 0.5em;')
@@ -216,7 +254,7 @@
                         let tableHeaderColumn = document.createElement('th')
                         tableHeaderColumn.setAttribute('class', 'detailTableHeaderCell')
                         tableHeaderColumn.setAttribute('scope', 'col')
-                        tableHeaderColumn.innerHTML = columns[column]
+                        tableHeaderColumn.innerText = translate(columns[column].toLowerCase())
                         tableHeaderRow.appendChild(tableHeaderColumn)
                     }
 
@@ -238,17 +276,17 @@
                         // create table columns
                         let tableColumnTitle = document.createElement('td')
                         tableColumnTitle.setAttribute('class', 'detailTableBodyCell')
-                        tableColumnTitle.innerHTML = response["items"][item]["name"]
+                        tableColumnTitle.innerText = response["items"][item]["name"]
                         tableRow.appendChild(tableColumnTitle)
 
                         let tableColumnYear = document.createElement('td')
                         tableColumnYear.setAttribute('class', 'detailTableBodyCell')
-                        tableColumnYear.innerHTML = response["items"][item]["year"]
+                        tableColumnYear.innerText = response["items"][item]["year"]
                         tableRow.appendChild(tableColumnYear)
-                        
+
                         let tableColumnType = document.createElement('td')
                         tableColumnType.setAttribute('class', 'detailTableBodyCell')
-                        tableColumnType.innerHTML = response["items"][item]["type"]
+                        tableColumnType.innerText = translate(response["items"][item]["type"].toLowerCase())
                         tableRow.appendChild(tableColumnType)
 
                         let contributeButton = document.createElement('a')
@@ -270,37 +308,55 @@
                         statusSpan.setAttribute('class', 'material-icons')
                         statusText.setAttribute('class', 'detailTableBodyCell')
                         if (response["items"][item]["theme_provider"] === 'themerr') {
-                            contributeButton.innerHTML = 'Edit'
+                            contributeButton.innerText = translate('edit_button')
                             statusSpan.classList.add('check')
                             statusSpan.setAttribute('style', 'margin-right: 6px; color: #00ff00;')
-                            statusText.innerText = 'Themerr provided'
+                            statusText.innerText = translate('themerr_provided')
                         } else if (response["items"][item]["theme_provider"] === 'user') {
-                            contributeButton.innerHTML = 'Contribute'
+                            contributeButton.innerText = translate('contribute_button')
                             statusSpan.classList.add('person')
                             statusSpan.setAttribute('style', 'margin-right: 6px; color: #00a4dc;')
-                            statusText.innerText = 'User provided'
+                            statusText.innerText = translate('user_provided')
                         } else {
-                            contributeButton.innerHTML = 'Add'
+                            contributeButton.innerText = translate('add_button')
                             statusSpan.classList.add('cancel')
                             statusSpan.setAttribute('style', 'margin-right: 6px; color: #ff0000;')
-                            statusText.innerText = 'No theme song'
+                            statusText.innerText = translate('no_theme_song')
                         }
                         tableColumnStatus.appendChild(statusSpan)
                         tableColumnStatus.appendChild(statusText)
                         tableRow.appendChild(tableColumnStatus)
                     }
-
-                }).catch(function () {
-                    let message = "Unexpected error occurred creating progress dashboard."
+                }).catch(function (error) {
+                    let message = translate('unexpected_error_occured_creating_dashboard')
                     Dashboard.alert({
                         message: message
                     })
                     console.log(LogPrefix + message)
+                    console.log(LogPrefix + error)
                 })
             }
 
+            function localize() {
+                if (!translations) {
+                    return;
+                }
+                let elements = document.querySelectorAll('[data-localize]')
+                for (let element of elements) {
+                    let key = element.getAttribute('data-localize');
+                    element.innerText = translate(key);
+                }
+            }
+
+            function initializePage() {
+                getTranslations().then(() => {
+                    localize();
+                })
+                updateProgress();
+            }
+
             // on ready
-            updateProgress()
+            initializePage();
         </script>
     </div>
 </body>

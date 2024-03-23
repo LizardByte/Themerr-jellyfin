@@ -111,14 +111,8 @@ sphinx_csharp_ext_search_pages = {
     'Jellyfin.Controller.MediaBrowser.Common.Plugins': (
         'https://github.com/jellyfin/jellyfin/blob/v10.8.13/MediaBrowser.Common/Plugins/%s.cs',
     ),
-    'Jellyfin.Controller.MediaBrowser.Model.Plugins': (
-        'https://github.com/jellyfin/jellyfin/blob/v10.8.13/MediaBrowser.Model/Plugins/%s.cs',
-    ),
-    'Jellyfin.Controller.MediaBrowser.Model.Serialization': (
-        'https://github.com/jellyfin/jellyfin/blob/v10.8.13/MediaBrowser.Model/Serialization/%s.cs',
-    ),
-    'Jellyfin.Controller.MediaBrowser.Model.Tasks': (
-        'https://github.com/jellyfin/jellyfin/blob/v10.8.13/MediaBrowser.Model/Tasks/%s.cs',
+    'Jellyfin.Controller.MediaBrowser.Controller.Configuration': (
+        'https://github.com/jellyfin/jellyfin/blob/v10.8.13/MediaBrowser.Controller/Configuration/%s.cs',
     ),
     'Jellyfin.Controller.MediaBrowser.Controller.Entities': (
         'https://github.com/jellyfin/jellyfin/blob/v10.8.13/MediaBrowser.Controller/Entities/%s.cs',
@@ -134,6 +128,15 @@ sphinx_csharp_ext_search_pages = {
     ),
     'Jellyfin.Controller.MediaBrowser.Controller.Plugins': (
         'https://github.com/jellyfin/jellyfin/blob/v10.8.13/MediaBrowser.Controller/Plugins/%s.cs',
+    ),
+    'Jellyfin.Controller.MediaBrowser.Model.Plugins': (
+        'https://github.com/jellyfin/jellyfin/blob/v10.8.13/MediaBrowser.Model/Plugins/%s.cs',
+    ),
+    'Jellyfin.Controller.MediaBrowser.Model.Serialization': (
+        'https://github.com/jellyfin/jellyfin/blob/v10.8.13/MediaBrowser.Model/Serialization/%s.cs',
+    ),
+    'Jellyfin.Controller.MediaBrowser.Model.Tasks': (
+        'https://github.com/jellyfin/jellyfin/blob/v10.8.13/MediaBrowser.Model/Tasks/%s.cs',
     ),
 }
 
@@ -186,6 +189,38 @@ sphinx_csharp_ext_type_map = {
             'PluginManifest',
         ],
     },
+    'Jellyfin.Controller.MediaBrowser.Controller.Configuration': {
+        '': [
+            'IServerConfigurationManager',
+        ],
+    },
+    'Jellyfin.Controller.MediaBrowser.Controller.Entities': {
+        '': [
+            'BaseItem',
+        ],
+    },
+    'Jellyfin.Controller.MediaBrowser.Controller.Entities.Library': {
+        '': [
+            'ILibraryManager',
+        ],
+    },
+    'Jellyfin.Controller.MediaBrowser.Controller.Entities.Movies': {
+        '': [
+            'BoxSet',
+            'Movie',
+        ],
+    },
+    'Jellyfin.Controller.MediaBrowser.Controller.Entities.TV': {
+        '': [
+            'Series',
+        ],
+    },
+    'Jellyfin.Controller.MediaBrowser.Controller.Plugins': {
+        '': [
+            'IRunBeforeStartup',
+            'IServerEntryPoint',
+        ],
+    },
     'Jellyfin.Controller.MediaBrowser.Model.Plugins': {
         '': [
             'BasePluginConfiguration',
@@ -215,33 +250,6 @@ sphinx_csharp_ext_type_map = {
             'TaskResults',
             'TaskState',
             'TaskTriggerInfo',
-        ],
-    },
-    'Jellyfin.Controller.MediaBrowser.Controller.Entities': {
-        '': [
-            'BaseItem',
-        ],
-    },
-    'Jellyfin.Controller.MediaBrowser.Controller.Entities.Library': {
-        '': [
-            'ILibraryManager',
-        ],
-    },
-    'Jellyfin.Controller.MediaBrowser.Controller.Entities.Movies': {
-        '': [
-            'BoxSet',
-            'Movie',
-        ],
-    },
-    'Jellyfin.Controller.MediaBrowser.Controller.Entities.TV': {
-        '': [
-            'Series',
-        ],
-    },
-    'Jellyfin.Controller.MediaBrowser.Controller.Plugins': {
-        '': [
-            'IRunBeforeStartup',
-            'IServerEntryPoint',
         ],
     },
 }
