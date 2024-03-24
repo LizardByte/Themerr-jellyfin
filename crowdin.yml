@@ -9,9 +9,9 @@
 
 "files": [
   {
-    "source": "/Jellyfin.Plugin.Themerr/Locale/en.json",
+    "source": "/Locale/en.json",
     "dest": "/themerr-jellyfin.json",
-    "translation": "/Jellyfin.Plugin.Themerr/Locale/%two_letters_code%.%file_extension%",
+    "translation": "/Locale/%two_letters_code%.%file_extension%",
     "update_option": "update_as_unapproved"
   }
 ]

@@ -10,8 +10,8 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <FrameworkReference Include="Microsoft.AspNetCore.App" />
     <PackageReference Include="Jellyfin.Controller" Version="10.8.13" />
-    <PackageReference Include="Microsoft.AspNetCore.Mvc" Version="2.2.0" />
     <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
     <PackageReference Include="YoutubeExplode" Version="6.3.12" />
   </ItemGroup>
@@ -21,7 +21,9 @@
   </ItemGroup>
 
   <ItemGroup>
-    <EmbeddedResource Include="Locale\**" />
+    <EmbeddedResource Include="..\Locale\*.json">
+      <LogicalName>Jellyfin.Plugin.Themerr.Locale.%(Filename)%(Extension)</LogicalName>
+    </EmbeddedResource>
   </ItemGroup>
 
   <ItemGroup>

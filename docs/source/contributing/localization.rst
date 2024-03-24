@@ -34,7 +34,7 @@ The implementation uses a JSON key-value pair to map the strings to their respec
 
 The following is a simple example of how to use it.
 
-- Add the string to `Jellyfin.Plugin.Themerr/Locale/en.json`, in English.
+- Add the string to `Locale/en.json`, in English.
    .. code-block:: json
 
       {
