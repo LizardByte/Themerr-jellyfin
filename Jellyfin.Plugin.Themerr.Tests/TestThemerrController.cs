@@ -97,42 +97,35 @@ public class TestThemerrController
     /// <summary>
     /// Test GetCultureResource function.
     /// </summary>
-    [Fact]
+    /// <param name="culture">The culture to test.</param>
+    [Theory]
     [Trait("Category", "Unit")]
-    public void TestGetCultureResource()
+    [InlineData("de")]
+    [InlineData("en")]
+    [InlineData("en-GB")]
+    [InlineData("en-US")]
+    [InlineData("es")]
+    [InlineData("fr")]
+    [InlineData("it")]
+    [InlineData("ru")]
+    [InlineData("sv")]
+    [InlineData("zh")]
+    public void TestGetCultureResource(string culture)
     {
-        // list of english cultures
-        var enCultures = new List<string>
+        var result = _controller.GetCultureResource(culture);
+        Assert.IsType<List<string>>(result);
+
+        // replace - with _ in the culture
+        var culture2 = culture.Replace("-", "_");
+
+        // en is not included in the list
+        if (culture != "en")
         {
-            "de",
-            "en",
-            "en-GB",
-            "en-US",
-            "es",
-            "fr",
-            "it",
-            "ru",
-            "sv",
-            "zh"
-        };
-
-        foreach (var t in enCultures)
-        {
-            var result = _controller.GetCultureResource(t);
-            Assert.IsType<List<string>>(result);
-
-            // replace - with _ in the culture
-            var t2 = t.Replace("-", "_");
-
-            // en is not included in the list
-            if (t != "en")
-            {
-                // assert that `en_<>.json` is in the list
-                Assert.Contains(t2 + ".json", result);
-            }
-
-            // assert that `en` is NOT in the list
-            Assert.DoesNotContain("en.json", result);
+            // assert that `en_<>.json` is in the list
+            Assert.Contains(culture2 + ".json", result);
         }
+
+        // assert that `en` is NOT in the list
+        Assert.DoesNotContain("en.json", result);
     }
 }

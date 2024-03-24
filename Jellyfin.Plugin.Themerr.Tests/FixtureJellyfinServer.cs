@@ -12,10 +12,25 @@ namespace Jellyfin.Plugin.Themerr.Tests;
 public class FixtureJellyfinServer
 {
     /// <summary>
-    /// Mock media items to use for testing
+    /// Gets a list of mock items.
+    /// </summary>
+    public static IEnumerable<object[]> MockItemsData => MockItems().Select(item => new object[] { item });
+
+    /// <summary>
+    /// Gets a list of mock items.
+    /// </summary>
+    public static IEnumerable<object[]> MockItems2Data => MockItems2().Select(item => new object[] { item });
+
+    /// <summary>
+    /// Gets a list of unsupported mock items.
+    /// </summary>
+    public static IEnumerable<object[]> UnsupportedMockItemsData => UnsupportedMockItems().Select(item => new object[] { item });
+
+    /// <summary>
+    /// Mock media items to use for testing.
     /// </summary>
     /// <returns>List containing mock <see cref="BaseItem"/> objects.</returns>
-    public static List<BaseItem> MockItems()
+    private static List<BaseItem> MockItems()
     {
         return new List<BaseItem>
         {
@@ -83,10 +98,10 @@ public class FixtureJellyfinServer
     }
 
     /// <summary>
-    /// Mock items without an associated theme in ThemerrDB to use for testing
+    /// Mock items without an associated theme in ThemerrDB to use for testing.
     /// </summary>
     /// <returns>List containing mock <see cref="BaseItem"/> objects.</returns>
-    public static List<BaseItem> MockItems2()
+    private static List<BaseItem> MockItems2()
     {
         return new List<BaseItem>
         {
@@ -114,10 +129,10 @@ public class FixtureJellyfinServer
     }
 
     /// <summary>
-    /// Mock items which are not supported by Themerr
+    /// Mock items which are not supported by Themerr.
     /// </summary>
     /// <returns>List containing mock <see cref="BaseItem"/> objects.</returns>
-    public static List<BaseItem> UnsupportedMockItems()
+    private static List<BaseItem> UnsupportedMockItems()
     {
         return new List<BaseItem>
         {
@@ -133,14 +148,13 @@ public class FixtureJellyfinServer
     }
 
     /// <summary>
-    /// Create mock items from stub video
+    /// Create mock items from stub video.
     /// </summary>
-    [Fact]
+    [Theory]
     [Trait("Category", "Init")]
-    private void CreateMockItems()
+    [MemberData(nameof(MockItemsData))]
+    private void CreateMockItems(BaseItem item)
     {
-        var mockItems = MockItems();
-
         // get the stub video path based on the directory of this file
         var stubVideoPath = Path.Combine(
             Directory.GetCurrentDirectory(),
@@ -149,50 +163,47 @@ public class FixtureJellyfinServer
 
         Assert.True(File.Exists(stubVideoPath), "Could not find ./data/video_stub.mp4");
 
-        foreach (var item in mockItems)
+        // copy the ./data/video_stub.mp4 to the movie folder "movie.Name (movie.ProductionYear)"
+        var itemFolder = Path.Combine(
+            "themerr_jellyfin_tests",
+            $"{item.Name} ({item.ProductionYear})");
+
+        // create the movie folder
+        Directory.CreateDirectory(itemFolder);
+
+        string? itemVideoPath = null;
+        if (item is Movie)
         {
-            // copy the ./data/video_stub.mp4 to the movie folder "movie.Name (movie.ProductionYear)"
-            var itemFolder = Path.Combine(
-                "themerr_jellyfin_tests",
-                $"{item.Name} ({item.ProductionYear})");
-
-            // create the movie folder
-            Directory.CreateDirectory(itemFolder);
-
-            string? itemVideoPath = null;
-            if (item is Movie)
-            {
-                // copy the video_stub.mp4 to the movie folder, renaming it based on movie name
-                itemVideoPath = Path.Combine(
-                    itemFolder,
-                    $"{item.Name} ({item.ProductionYear}).mp4");
-            }
-            else if (item is Series)
-            {
-                // season folder
-                var seasonFolder = Path.Combine(
-                    itemFolder,
-                    "Season 01");
-                Directory.CreateDirectory(seasonFolder);
-
-                // copy the video_stub.mp4 to the season folder, renaming it based on series name
-                itemVideoPath = Path.Combine(
-                    seasonFolder,
-                    $"{item.Name} ({item.ProductionYear}) - S01E01 - Episode Name.mp4");
-            }
-            else
-            {
-                Assert.Fail($"Unknown item type: {item.GetType()}");
-            }
-
-            // if file does not exist
-            if (!File.Exists(itemVideoPath))
-            {
-                // copy the stub video to the item folder
-                File.Copy(stubVideoPath, itemVideoPath);
-            }
-
-            Assert.True(File.Exists(itemVideoPath), $"Could not find {itemVideoPath}");
+            // copy the video_stub.mp4 to the movie folder, renaming it based on movie name
+            itemVideoPath = Path.Combine(
+                itemFolder,
+                $"{item.Name} ({item.ProductionYear}).mp4");
         }
+        else if (item is Series)
+        {
+            // season folder
+            var seasonFolder = Path.Combine(
+                itemFolder,
+                "Season 01");
+            Directory.CreateDirectory(seasonFolder);
+
+            // copy the video_stub.mp4 to the season folder, renaming it based on series name
+            itemVideoPath = Path.Combine(
+                seasonFolder,
+                $"{item.Name} ({item.ProductionYear}) - S01E01 - Episode Name.mp4");
+        }
+        else
+        {
+            Assert.Fail($"Unknown item type: {item.GetType()}");
+        }
+
+        // if file does not exist
+        if (!File.Exists(itemVideoPath))
+        {
+            // copy the stub video to the item folder
+            File.Copy(stubVideoPath, itemVideoPath);
+        }
+
+        Assert.True(File.Exists(itemVideoPath), $"Could not find {itemVideoPath}");
     }
 }
