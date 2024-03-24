@@ -164,6 +164,7 @@ sphinx_csharp_ext_type_map = {
         ],
         'Extensions.Logging': [
             'ILogger',
+            'ILoggerFactory',
         ],
     },
     'Jellyfin.Controller.MediaBrowser.Common.Configuration': {

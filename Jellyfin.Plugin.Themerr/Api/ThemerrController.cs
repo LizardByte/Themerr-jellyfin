@@ -27,7 +27,7 @@ namespace Jellyfin.Plugin.Themerr.Api
     public class ThemerrController : ControllerBase
     {
         private readonly ThemerrManager _themerrManager;
-        private readonly ILogger<ThemerrManager> _logger;
+        private readonly ILogger<ThemerrController> _logger;
         private readonly IServerConfigurationManager _configurationManager;
 
         /// <summary>
@@ -36,12 +36,14 @@ namespace Jellyfin.Plugin.Themerr.Api
         /// <param name="libraryManager">The library manager.</param>
         /// <param name="logger">The logger.</param>
         /// <param name="configurationManager">The configuration manager.</param>
+        /// <param name="loggerFactory">The logger factory.</param>
         public ThemerrController(
             ILibraryManager libraryManager,
-            ILogger<ThemerrManager> logger,
-            IServerConfigurationManager configurationManager)
+            ILogger<ThemerrController> logger,
+            IServerConfigurationManager configurationManager,
+            ILoggerFactory loggerFactory)
         {
-            _themerrManager = new ThemerrManager(libraryManager,  logger);
+            _themerrManager = new ThemerrManager(libraryManager,  loggerFactory.CreateLogger<ThemerrManager>());
             _logger = logger;
             _configurationManager = configurationManager;
         }

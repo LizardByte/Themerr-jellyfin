@@ -116,6 +116,15 @@ dotnet_diagnostic.s2094.severity = None
 # Fix this implementation of 'IDisposable' to conform to the dispose pattern.
 dotnet_diagnostic.s3881.severity = None
 
+# Logging in a catch clause should pass the caught exception as a parameter.
+dotnet_diagnostic.s6667.severity = error
+
+# Logging arguments should be passed to the correct parameter.
+dotnet_diagnostic.s6668.severity = error
+
+# Update this logger to use its enclosing type.
+dotnet_diagnostic.s6672.severity = error
+
 
 ## StyleCop.Analyzers
 
