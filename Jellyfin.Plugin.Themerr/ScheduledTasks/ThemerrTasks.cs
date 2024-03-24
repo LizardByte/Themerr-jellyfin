@@ -13,7 +13,7 @@ namespace Jellyfin.Plugin.Themerr.ScheduledTasks
     /// </summary>
     public class ThemerrTasks : IScheduledTask
     {
-        private readonly ILogger<ThemerrManager> _logger;
+        private readonly ILogger<ThemerrTasks> _logger;
         private readonly ThemerrManager _themerrManager;
 
         /// <summary>
@@ -21,10 +21,14 @@ namespace Jellyfin.Plugin.Themerr.ScheduledTasks
         /// </summary>
         /// <param name="libraryManager">The library manager.</param>
         /// <param name="logger">The logger.</param>
-        public ThemerrTasks(ILibraryManager libraryManager, ILogger<ThemerrManager> logger)
+        /// <param name="loggerFactory">The logger factory.</param>
+        public ThemerrTasks(
+            ILibraryManager libraryManager,
+            ILogger<ThemerrTasks> logger,
+            ILoggerFactory loggerFactory)
         {
             _logger = logger;
-            _themerrManager = new ThemerrManager(libraryManager,  logger);
+            _themerrManager = new ThemerrManager(libraryManager,  loggerFactory.CreateLogger<ThemerrManager>());
         }
 
         /// <summary>

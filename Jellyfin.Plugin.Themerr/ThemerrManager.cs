@@ -84,7 +84,7 @@ namespace Jellyfin.Plugin.Themerr
             }
             catch (Exception e)
             {
-                _logger.LogError("Unable to download {VideoUrl} to {Destination}: {Error}", videoUrl, destination, e);
+                _logger.LogError(e, "Unable to download {VideoUrl} to {Destination}", videoUrl, destination);
                 return false;
             }
 
@@ -331,12 +331,9 @@ namespace Jellyfin.Plugin.Themerr
                 dynamic jsonData = JsonConvert.DeserializeObject(jsonString);
                 return jsonData?.youtube_theme_url;
             }
-            catch (Exception)
+            catch (Exception e)
             {
-                _logger.LogWarning(
-                    "Missing from ThemerrDB: {ItemTitle}, contribute:\n  {IssueUrl}",
-                    item.Name,
-                    GetIssueUrl(item));
+                _logger.LogWarning(e, "Missing from ThemerrDB: {ItemTitle}, contribute:\n  {IssueUrl}", item.Name, GetIssueUrl(item));
                 return string.Empty;
             }
         }
@@ -405,7 +402,7 @@ namespace Jellyfin.Plugin.Themerr
             }
             catch (Exception e)
             {
-                _logger.LogError("Unable to save themerr data to {ThemerrDataPath}: {Error}", themerrDataPath, e);
+                _logger.LogError(e, "Unable to save themerr data to {ThemerrDataPath}", themerrDataPath);
             }
 
             return success && WaitForFile(themerrDataPath, 10000);

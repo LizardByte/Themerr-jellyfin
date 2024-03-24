@@ -25,8 +25,9 @@ public class TestThemerrController
         TestLogger.Initialize(output);
 
         Mock<ILibraryManager> mockLibraryManager = new();
-        Mock<ILogger<ThemerrManager>> mockLogger = new();
+        Mock<ILogger<ThemerrController>> mockLogger = new();
         Mock<IServerConfigurationManager> mockServerConfigurationManager = new();
+        Mock<ILoggerFactory> mockLoggerFactory = new();
 
         // Create a TestableServerConfiguration with UICulture set to "en-US"
         var testableServerConfiguration = new TestableServerConfiguration("en-US");
@@ -37,7 +38,8 @@ public class TestThemerrController
         _controller = new ThemerrController(
             mockLibraryManager.Object,
             mockLogger.Object,
-            mockServerConfigurationManager.Object);
+            mockServerConfigurationManager.Object,
+            mockLoggerFactory.Object);
     }
 
     /// <summary>
