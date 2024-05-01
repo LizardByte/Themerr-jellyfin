@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Net.Http;
@@ -371,7 +371,7 @@ namespace Jellyfin.Plugin.Themerr
             string issueBase = $"https://github.com/LizardByte/ThemerrDB/issues/new?assignees=&labels=request-theme&template=theme.yml&title=[{issueBaseTitle}]:%20";
             string databaseBase = $"https://www.themoviedb.org/{tmdbEndpoint}/";
 
-            var urlEncodedName = item.Name.Replace(" ", "%20");
+            var urlEncodedName = Uri.EscapeDataString(item.Name);
             var year = item.ProductionYear;
             var tmdbId = GetTmdbId(item);
 
