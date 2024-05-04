@@ -1,4 +1,4 @@
-using MediaBrowser.Controller.Entities;
+﻿using MediaBrowser.Controller.Entities;
 using MediaBrowser.Controller.Entities.Movies;
 using MediaBrowser.Controller.Entities.TV;
 using MediaBrowser.Controller.Library;
@@ -483,7 +483,7 @@ public class TestThemerrManager
 
         // parts of expected url
         var tmdbId = _themerrManager.GetTmdbId(item);
-        var encodedName = item.Name.Replace(" ", "%20");
+        var encodedName = Uri.EscapeDataString(item.Name);
         var year = item.ProductionYear;
         var expectedUrl = $"https://github.com/LizardByte/ThemerrDB/issues/new?assignees=&labels=request-theme&template=theme.yml&title=[{issueType}]:%20{encodedName}%20({year})&database_url=https://www.themoviedb.org/{tmdbEndpoint}/{tmdbId}";
 
