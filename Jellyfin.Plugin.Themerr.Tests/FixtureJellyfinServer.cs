@@ -93,6 +93,16 @@ public class FixtureJellyfinServer
                     { MetadataProvider.Imdb.ToString(), "tt2661044"},
                     { MetadataProvider.Tmdb.ToString(), "48866"},
                 }
+            },
+            new Series
+            {
+                Name = "Steins;Gate",
+                ProductionYear = 2011,
+                ProviderIds = new Dictionary<string, string>
+                {
+                    { MetadataProvider.Imdb.ToString(), "tt1910272"},
+                    { MetadataProvider.Tmdb.ToString(), "42509"},
+                }
             }
         };
     }
