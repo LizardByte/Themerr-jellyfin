@@ -1,6 +1,7 @@
 # syntax=docker/dockerfile:1.4
 # artifacts: false
-# platforms: linux/amd64,linux/arm64/v8
+# platforms: linux/amd64
+# Linuxserver.io docker mods are not multiplatform, so no point in enabling "linux/arm64/v8"
 # cannot enable "linux/arm/v7" due to issue with dotnet
 FROM ubuntu:24.04 AS base
 
@@ -14,6 +15,8 @@ ARG COMMIT
 ARG GITHUB_SHA=$COMMIT
 # note: BUILD_VERSION may be blank, COMMIT is also available
 
+ENV VIRTUAL_ENV=/opt/venv
+
 SHELL ["/bin/bash", "-o", "pipefail", "-c"]
 # install dependencies
 # dotnet deps: https://learn.microsoft.com/en-us/dotnet/core/install/linux-ubuntu#dependencies
@@ -24,13 +27,14 @@ apt-get install -y --no-install-recommends \
   libc6 \
   libgcc-s1 \
   libgssapi-krb5-2 \
-  libicu70 \
+  libicu74 \
   liblttng-ust1 \
   libssl3 \
   libstdc++6 \
   libunwind8 \
   python3 \
   python3-pip \
+  python3-venv \
   unzip \
   wget \
   zlib1g
@@ -48,8 +52,15 @@ chmod +x ./dotnet-install.sh
 ./dotnet-install.sh --channel 6.0
 _DOTNET
 
-# add dotnet to path
-ENV PATH="${PATH}:/root/.dotnet"
+# create venv
+RUN <<_VENV
+#!/bin/bash
+# create and source the virtual environment
+python3 -m venv ${VIRTUAL_ENV}
+_VENV
+
+# add dotnet and venv to path
+ENV PATH="/root/.dotnet:${VIRTUAL_ENV}/bin:${PATH}"
 
 # create build dir and copy GitHub repo there
 COPY --link . /build
