@@ -151,6 +151,9 @@ namespace Jellyfin.Plugin.Themerr.Api
             // Get the current assembly
             var assembly = Assembly.GetExecutingAssembly();
 
+            // Initialize the result dictionary
+            var result = new Dictionary<string, object>();
+
             for (var i = 0; i < filePaths.Count; i++)
             {
                 // construct the resource name
@@ -167,9 +170,6 @@ namespace Jellyfin.Plugin.Themerr.Api
                     continue;
                 }
 
-                // Initialize the result dictionary
-                var result = new Dictionary<string, object>();
-
                 // read the resource content
                 using var reader = new StreamReader(stream);
                 var json = reader.ReadToEnd();
@@ -179,35 +179,33 @@ namespace Jellyfin.Plugin.Themerr.Api
 
                 // Add the localized strings to the 'locale' key
                 result["locale"] = localizedStrings;
-
-                // Now get the fallback resource
-                var fallbackResourceName = "Jellyfin.Plugin.Themerr.Locale.en.json";
-                using var fallbackStream = assembly.GetManifestResourceStream(fallbackResourceName);
-
-                if (fallbackStream != null)
-                {
-                    // read the fallback resource content
-                    using var fallbackReader = new StreamReader(fallbackStream);
-                    var fallbackJson = fallbackReader.ReadToEnd();
-
-                    // deserialize the fallback JSON content into a dictionary
-                    var fallbackLocalizedStrings =
-                        JsonConvert.DeserializeObject<Dictionary<string, string>>(fallbackJson);
-
-                    // Add the fallback localized strings to the 'fallback' key
-                    result["fallback"] = fallbackLocalizedStrings;
-                }
-                else
-                {
-                    _logger.LogError("Fallback locale resource does not exist: {ResourceName}", fallbackResourceName);
-                }
-
-                // return the result as a JSON object
-                return Ok(result);
             }
 
-            // return an error if we get this far
-            return StatusCode(StatusCodes.Status500InternalServerError);
+            // Now get the fallback resource
+            var fallbackResourceName = "Jellyfin.Plugin.Themerr.Locale.en.json";
+            using var fallbackStream = assembly.GetManifestResourceStream(fallbackResourceName);
+
+            if (fallbackStream != null)
+            {
+                // read the fallback resource content
+                using var fallbackReader = new StreamReader(fallbackStream);
+                var fallbackJson = fallbackReader.ReadToEnd();
+
+                // deserialize the fallback JSON content into a dictionary
+                var fallbackLocalizedStrings =
+                    JsonConvert.DeserializeObject<Dictionary<string, string>>(fallbackJson);
+
+                // Add the fallback localized strings to the 'fallback' key
+                result["fallback"] = fallbackLocalizedStrings;
+            }
+            else
+            {
+                _logger.LogError("Fallback locale resource does not exist: {ResourceName}", fallbackResourceName);
+                return StatusCode(StatusCodes.Status500InternalServerError);
+            }
+
+            // return the result as a JSON object
+            return Ok(result);
         }
 
         /// <summary>
