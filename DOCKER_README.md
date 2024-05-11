@@ -18,12 +18,5 @@ If adding multiple mods, enter them in an array separated by `|`, such as
 
 ### Supported Architectures
 
-Specifying `lizardbyte/themerr-jellyfin:latest` or `ghcr.io/lizardbyte/themerr-jellyfin:latest` should retrieve the correct
-image for your architecture.
-
-The architectures supported by this image are:
-
-| Architecture | Available |
-|:------------:|:---------:|
-|    x86-64    |     ✅     |
-|    arm64     |     ✅     |
+Linuxserver.io docker mods do not support multi-arch images; however this image should run on any architecture. If
+you have issues with this image on a specific architecture, please open an issue on GitHub.
