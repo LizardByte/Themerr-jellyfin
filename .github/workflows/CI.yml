@@ -66,7 +66,7 @@ jobs:
           output: ./build
           version: ${{ needs.setup_release.outputs.release_version }}
           dotnet-config: Release
-          dotnet-target: net6.0
+          dotnet-target: net8.0
           verbosity: debug
 
       - name: Unit Test

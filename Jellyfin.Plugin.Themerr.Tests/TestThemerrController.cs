@@ -1,7 +1,9 @@
 ﻿using System.Collections;
 using Jellyfin.Plugin.Themerr.Api;
+using MediaBrowser.Common.Configuration;
 using MediaBrowser.Controller.Configuration;
 using MediaBrowser.Controller.Library;
+using MediaBrowser.Model.Serialization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
 using Moq;
@@ -24,10 +26,12 @@ public class TestThemerrController
     {
         TestLogger.Initialize(output);
 
+        Mock<IApplicationPaths> mockApplicationPaths = TestHelper.GetMockApplicationPaths();
         Mock<ILibraryManager> mockLibraryManager = new();
         Mock<ILogger<ThemerrController>> mockLogger = new();
         Mock<IServerConfigurationManager> mockServerConfigurationManager = new();
         Mock<ILoggerFactory> mockLoggerFactory = new();
+        Mock<IXmlSerializer> mockXmlSerializer = new();
 
         // Create a TestableServerConfiguration with UICulture set to "en-US"
         var testableServerConfiguration = new TestableServerConfiguration("en-US");
@@ -36,10 +40,12 @@ public class TestThemerrController
         mockServerConfigurationManager.Setup(x => x.Configuration).Returns(testableServerConfiguration);
 
         _controller = new ThemerrController(
+            mockApplicationPaths.Object,
             mockLibraryManager.Object,
             mockLogger.Object,
             mockServerConfigurationManager.Object,
-            mockLoggerFactory.Object);
+            mockLoggerFactory.Object,
+            mockXmlSerializer.Object);
     }
 
     /// <summary>
