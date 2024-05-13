@@ -5,12 +5,15 @@ using System.Net.Http;
 using System.Threading;
 using System.Threading.Tasks;
 using Jellyfin.Data.Enums;
+using Jellyfin.Plugin.Themerr.Configuration;
+using MediaBrowser.Common.Configuration;
+using MediaBrowser.Common.Plugins;
 using MediaBrowser.Controller.Entities;
 using MediaBrowser.Controller.Entities.Movies;
 using MediaBrowser.Controller.Entities.TV;
 using MediaBrowser.Controller.Library;
-using MediaBrowser.Controller.Plugins;
 using MediaBrowser.Model.Entities;
+using MediaBrowser.Model.Serialization;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
 using YoutubeExplode;
@@ -21,7 +24,7 @@ namespace Jellyfin.Plugin.Themerr
     /// <summary>
     /// The main entry point for the plugin.
     /// </summary>
-    public class ThemerrManager : IServerEntryPoint
+    public class ThemerrManager : BasePlugin<PluginConfiguration>
     {
         private readonly ILibraryManager _libraryManager;
         private readonly Timer _timer;
@@ -30,14 +33,26 @@ namespace Jellyfin.Plugin.Themerr
         /// <summary>
         /// Initializes a new instance of the <see cref="ThemerrManager"/> class.
         /// </summary>
+        /// <param name="applicationPaths">The application paths.</param>
         /// <param name="libraryManager">The library manager.</param>
         /// <param name="logger">The logger.</param>
-        public ThemerrManager(ILibraryManager libraryManager, ILogger<ThemerrManager> logger)
+        /// <param name="xmlSerializer">The XML serializer.</param>
+        public ThemerrManager(
+            IApplicationPaths applicationPaths,
+            ILibraryManager libraryManager,
+            ILogger<ThemerrManager> logger,
+            IXmlSerializer xmlSerializer)
+            : base(applicationPaths, xmlSerializer)
         {
             _libraryManager = libraryManager;
             _logger = logger;
             _timer = new Timer(_ => OnTimerElapsed(), null, Timeout.Infinite, Timeout.Infinite);
         }
+
+        /// <summary>
+        /// Gets the plugin instance.
+        /// </summary>
+        public override string Name => "Themerr";
 
         /// <summary>
         /// Get a value from the themerr data file if it exists.

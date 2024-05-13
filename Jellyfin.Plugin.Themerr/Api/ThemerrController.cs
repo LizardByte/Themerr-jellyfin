@@ -6,8 +6,11 @@ using System.Linq;
 using System.Net.Mime;
 using System.Reflection;
 using System.Threading.Tasks;
+using MediaBrowser.Common.Api;
+using MediaBrowser.Common.Configuration;
 using MediaBrowser.Controller.Configuration;
 using MediaBrowser.Controller.Library;
+using MediaBrowser.Model.Serialization;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
@@ -20,7 +23,7 @@ namespace Jellyfin.Plugin.Themerr.Api
     /// The Themerr api controller.
     /// </summary>
     [ApiController]
-    [Authorize(Policy = "DefaultAuthorization")]
+    [Authorize(Policy = Policies.RequiresElevation)]
     [Route("Themerr")]
     [Produces(MediaTypeNames.Application.Json)]
 
@@ -33,17 +36,25 @@ namespace Jellyfin.Plugin.Themerr.Api
         /// <summary>
         /// Initializes a new instance of the <see cref="ThemerrController"/> class.
         /// </summary>
+        /// <param name="applicationPaths">The application paths.</param>
         /// <param name="libraryManager">The library manager.</param>
         /// <param name="logger">The logger.</param>
         /// <param name="configurationManager">The configuration manager.</param>
         /// <param name="loggerFactory">The logger factory.</param>
+        /// <param name="xmlSerializer">The XML serializer.</param>
         public ThemerrController(
+            IApplicationPaths applicationPaths,
             ILibraryManager libraryManager,
             ILogger<ThemerrController> logger,
             IServerConfigurationManager configurationManager,
-            ILoggerFactory loggerFactory)
+            ILoggerFactory loggerFactory,
+            IXmlSerializer xmlSerializer)
         {
-            _themerrManager = new ThemerrManager(libraryManager,  loggerFactory.CreateLogger<ThemerrManager>());
+            _themerrManager = new ThemerrManager(
+                applicationPaths,
+                libraryManager,
+                loggerFactory.CreateLogger<ThemerrManager>(),
+                xmlSerializer);
             _logger = logger;
             _configurationManager = configurationManager;
         }
