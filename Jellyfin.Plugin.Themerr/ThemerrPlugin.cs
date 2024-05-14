@@ -57,8 +57,8 @@ namespace Jellyfin.Plugin.Themerr
                 new PluginPageInfo
                 {
                     Name = Name,
-                    EmbeddedResourcePath = $"{GetType().Namespace}.Configuration.configPage.html"
-                }
+                    EmbeddedResourcePath = $"{GetType().Namespace}.Configuration.configPage.html",
+                },
             };
         }
     }

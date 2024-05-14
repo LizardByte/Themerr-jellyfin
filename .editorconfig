@@ -102,19 +102,22 @@ csharp_style_var_elsewhere = true:silent
 ## SonarAnalyzers.CSharp
 
 # Remove this commented out code.
-dotnet_diagnostic.s125.severity = None
+dotnet_diagnostic.s125.severity = warning
 
 # Complete the task associated to this 'TODO' comment.
-dotnet_diagnostic.s1135.severity = None
+dotnet_diagnostic.s1135.severity = warning
 
 # Remove the unused local variable 'foo'.
 dotnet_diagnostic.S1481.severity = error
 
 # Remove this empty class, write its code or make it an "interface".
-dotnet_diagnostic.s2094.severity = None
+dotnet_diagnostic.s2094.severity = error
+
+# Either implement 'IDisposable.Dispose', or totally rename this method to prevent confusion.
+dotnet_diagnostic.s2953.severity = error
 
 # Fix this implementation of 'IDisposable' to conform to the dispose pattern.
-dotnet_diagnostic.s3881.severity = None
+dotnet_diagnostic.s3881.severity = warning
 
 # Logging in a catch clause should pass the caught exception as a parameter.
 dotnet_diagnostic.s6667.severity = error
@@ -124,6 +127,9 @@ dotnet_diagnostic.s6668.severity = error
 
 # Update this logger to use its enclosing type.
 dotnet_diagnostic.s6672.severity = error
+
+# REST API controller actions should be annotated with the appropriate HTTP verb attribute.
+dotnet_diagnostic.s6965.severity = error
 
 
 ## StyleCop.Analyzers
@@ -135,10 +141,10 @@ dotnet_diagnostic.sa0001.severity = None
 dotnet_diagnostic.sa1101.severity = None
 
 # Opening brace should be followed by a space
-dotnet_diagnostic.sa1012.severity = None
+dotnet_diagnostic.sa1012.severity = error
 
 # Closing brace should be preceded by a space
-dotnet_diagnostic.sa1013.severity = None
+dotnet_diagnostic.sa1013.severity = error
 
 # Code should not contain trailing whitespace
 dotnet_diagnostic.SA1028.severity = error
@@ -150,10 +156,10 @@ dotnet_diagnostic.sa1200.severity = None
 dotnet_diagnostic.sa1309.severity = None
 
 # Use trailing comma in multi-line initializers
-dotnet_diagnostic.sa1413.severity = None
+dotnet_diagnostic.sa1413.severity = error
 
 # Single-line comments should not be followed by blank line
-dotnet_diagnostic.sa1512.severity = None
+dotnet_diagnostic.sa1512.severity = error
 
 # The file header is missing or not located at the top of the file
 dotnet_diagnostic.sa1633.severity = None

@@ -112,7 +112,7 @@ namespace Jellyfin.Plugin.Themerr.Api
                     issue_url = issueUrl,
                     theme_provider = themeProvider,
                     type = item.GetType().Name,  // Movie, Series, etc.
-                    year = year
+                    year = year,
                 };
                 tmpItems.Add(tmpItem);
 
@@ -134,7 +134,7 @@ namespace Jellyfin.Plugin.Themerr.Api
             {
                 items = tmpItems,
                 media_count = mediaCount,
-                media_percent_complete = mediaPercentComplete
+                media_percent_complete = mediaPercentComplete,
             };
 
             _logger.LogInformation("Progress Items: {Items}", JsonConvert.SerializeObject(tmpObject));
@@ -157,7 +157,7 @@ namespace Jellyfin.Plugin.Themerr.Api
             _logger.LogInformation("Server culture: {ServerCulture}", culture);
 
             // get file paths from LocalizationManager
-            var filePaths = GetCultureResource(culture);
+            var filePaths = _themerrManager.GetCultureResource(culture);
 
             // Get the current assembly
             var assembly = Assembly.GetExecutingAssembly();
@@ -217,33 +217,6 @@ namespace Jellyfin.Plugin.Themerr.Api
 
             // return the result as a JSON object
             return Ok(result);
-        }
-
-        /// <summary>
-        /// Get the resources of the given culture.
-        /// </summary>
-        ///
-        /// <param name="culture">The culture to get the resource for.</param>
-        /// <returns>A list of file names.</returns>
-        public List<string> GetCultureResource(string culture)
-        {
-            string tmp;
-            var fileNames = new List<string>();
-            var parts = culture.Split('-');
-
-            if (parts.Length == 2)
-            {
-                tmp = parts[0].ToLowerInvariant() + "_" + parts[1].ToUpperInvariant();
-                fileNames.Add(tmp + ".json");
-            }
-
-            tmp = parts[0].ToLowerInvariant();
-            if (tmp != "en")
-            {
-                fileNames.Add(tmp + ".json");
-            }
-
-            return fileNames;
         }
     }
 }

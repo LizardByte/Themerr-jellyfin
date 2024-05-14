@@ -24,7 +24,7 @@ namespace Jellyfin.Plugin.Themerr
     /// <summary>
     /// The main entry point for the plugin.
     /// </summary>
-    public class ThemerrManager : BasePlugin<PluginConfiguration>
+    public class ThemerrManager : BasePlugin<PluginConfiguration>, IDisposable
     {
         private readonly ILibraryManager _libraryManager;
         private readonly Timer _timer;
@@ -73,7 +73,7 @@ namespace Jellyfin.Plugin.Themerr
         }
 
         /// <summary>
-        /// Save a mp3 file from a youtube video url.
+        /// Save a mp3 file from a YouTube video url.
         /// </summary>
         /// <param name="destination">The destination path.</param>
         /// <param name="videoUrl">The YouTube video url.</param>
@@ -117,11 +117,11 @@ namespace Jellyfin.Plugin.Themerr
                 IncludeItemTypes = new[]
                 {
                     BaseItemKind.Movie,
-                    BaseItemKind.Series
+                    BaseItemKind.Series,
                 },
                 IsVirtualItem = false,
                 Recursive = true,
-                HasTmdbId = true
+                HasTmdbId = true,
             });
 
             var itemList = new List<BaseItem>();
@@ -161,7 +161,7 @@ namespace Jellyfin.Plugin.Themerr
             {
                 Movie _ => "movies",
                 Series _ => "tv_shows",
-                _ => null
+                _ => null,
             };
 
             // return if dbType is null
@@ -188,8 +188,8 @@ namespace Jellyfin.Plugin.Themerr
 
             var youtubeThemeUrl = GetYoutubeThemeUrl(themerrDbUrl, item);
 
-            // skip if no youtube theme url in ThemerrDB or
-            // if the youtube themes match AND the theme_md5 is unknown
+            // skip if no YouTube theme url in ThemerrDB or
+            // if the YouTube themes match AND the theme_md5 is unknown
             if (string.IsNullOrEmpty(youtubeThemeUrl) ||
                 (youtubeThemeUrl == existingYoutubeThemeUrl &&
                  !string.IsNullOrEmpty(GetExistingThemerrDataValue("theme_md5", themerrDataPath))))
@@ -300,7 +300,7 @@ namespace Jellyfin.Plugin.Themerr
             {
                 Movie movie => System.IO.Path.Join(movie.ContainingFolderPath, "theme.mp3"),
                 Series series => System.IO.Path.Join(series.Path, "theme.mp3"),
-                _ => null
+                _ => null,
             };
         }
 
@@ -315,7 +315,7 @@ namespace Jellyfin.Plugin.Themerr
             {
                 Movie movie => System.IO.Path.Join(movie.ContainingFolderPath, "themerr.json"),
                 Series series => System.IO.Path.Join(series.Path, "themerr.json"),
-                _ => null
+                _ => null,
             };
         }
 
@@ -366,14 +366,14 @@ namespace Jellyfin.Plugin.Themerr
             {
                 Movie _ => "MOVIE",
                 Series _ => "TV SHOW",
-                _ => null
+                _ => null,
             };
 
             string tmdbEndpoint = item switch
             {
                 Movie _ => "movie",
                 Series _ => "tv",
-                _ => null
+                _ => null,
             };
 
             // return if either is null
@@ -408,7 +408,7 @@ namespace Jellyfin.Plugin.Themerr
             {
                 downloaded_timestamp = DateTime.UtcNow,
                 theme_md5 = GetMd5Hash(themePath),
-                youtube_theme_url = youtubeThemeUrl
+                youtube_theme_url = youtubeThemeUrl,
             };
             try
             {
@@ -485,6 +485,33 @@ namespace Jellyfin.Plugin.Themerr
         }
 
         /// <summary>
+        /// Get the resources of the given culture.
+        /// </summary>
+        ///
+        /// <param name="culture">The culture to get the resource for.</param>
+        /// <returns>A list of file names.</returns>
+        public List<string> GetCultureResource(string culture)
+        {
+            string tmp;
+            var fileNames = new List<string>();
+            var parts = culture.Split('-');
+
+            if (parts.Length == 2)
+            {
+                tmp = parts[0].ToLowerInvariant() + "_" + parts[1].ToUpperInvariant();
+                fileNames.Add(tmp + ".json");
+            }
+
+            tmp = parts[0].ToLowerInvariant();
+            if (tmp != "en")
+            {
+                fileNames.Add(tmp + ".json");
+            }
+
+            return fileNames;
+        }
+
+        /// <summary>
         /// Run the task, asynchronously.
         /// </summary>
         /// <returns>A <see cref="Task"/> representing the asynchronous operation.</returns>
@@ -499,6 +526,7 @@ namespace Jellyfin.Plugin.Themerr
         public void Dispose()
         {
             // Cleanup
+            _timer?.Dispose();
         }
 
         /// <summary>

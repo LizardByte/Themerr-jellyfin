@@ -41,14 +41,14 @@ public class TestThemerrManager
     }
 
     /// <summary>
-    /// Gets a list of Youtube URLs.
+    /// Gets a list of YouTube URLs.
     /// </summary>
     public static IEnumerable<object[]> YoutubeUrls => new List<object[]>
     {
         new object[] { "https://www.youtube.com/watch?v=dQw4w9WgXcQ" },
         new object[] { "https://www.youtube.com/watch?v=yPYZpwSpKmA" },
         new object[] { "https://www.youtube.com/watch?v=Ghmd4QzT9YY" },
-        new object[] { "https://www.youtube.com/watch?v=LVEWkghDh9A" }
+        new object[] { "https://www.youtube.com/watch?v=LVEWkghDh9A" },
     };
 
     [Fact]
@@ -120,12 +120,12 @@ public class TestThemerrManager
         // valid mp3 signatures dictionary with offsets
         var validMp3Signatures = new Dictionary<string, int>
         {
-            {"66-74-79-70-64-61-73-68", 4},  // Mp4 container?
-            {"66-74-79-70-69-73-6F-6D", 4},  // Mp4 container
-            {"49-44-33", 0},  // ID3
-            {"FF-FB", 0},  // MPEG-1 Layer 3
-            {"FF-F3", 0},  // MPEG-1 Layer 3
-            {"FF-F2", 0},  // MPEG-1 Layer 3
+            { "66-74-79-70-64-61-73-68", 4 },  // Mp4 container?
+            { "66-74-79-70-69-73-6F-6D", 4 },  // Mp4 container
+            { "49-44-33", 0 },  // ID3
+            { "FF-FB", 0 },  // MPEG-1 Layer 3
+            { "FF-F3", 0 },  // MPEG-1 Layer 3
+            { "FF-F2", 0 },  // MPEG-1 Layer 3
         };
 
         // log beginning of fileBytesHex
@@ -238,20 +238,22 @@ public class TestThemerrManager
         Assert.Equal(item.ProviderIds[MetadataProvider.Tmdb.ToString()], tmdbId);
     }
 
+    /*
     // todo: fix this test
-    // [Theory]
-    // [Trait("Category", "Unit")]
-    // [MemberData(nameof(FixtureJellyfinServer.MockItemsData), MemberType = typeof(FixtureJellyfinServer))]
-    // private void TestGetThemeProvider(BaseItem item)
-    // {
-    //     // get the item theme
-    //     var themeProvider = _themerrManager.GetThemeProvider(item);
-    //
-    //     // ensure themeProvider null
-    //     Assert.Null(themeProvider);
-    //
-    //     // todo: test with actual items
-    // }
+    [Theory]
+    [Trait("Category", "Unit")]
+    [MemberData(nameof(FixtureJellyfinServer.MockItemsData), MemberType = typeof(FixtureJellyfinServer))]
+    private void TestGetThemeProvider(BaseItem item)
+    {
+        // get the item theme
+        var themeProvider = _themerrManager.GetThemeProvider(item);
+
+        // ensure themeProvider null
+        Assert.Null(themeProvider);
+
+        // todo: test with actual items
+    }
+    */
 
     [Fact]
     [Trait("Category", "Unit")]
@@ -388,7 +390,7 @@ public class TestThemerrManager
         {
             Movie _ => "movies",
             Series _ => "tv_shows",
-            _ => null
+            _ => null,
         };
 
         // return if dbType is null
@@ -414,7 +416,7 @@ public class TestThemerrManager
         {
             Movie _ => "movies",
             Series _ => "tv_shows",
-            _ => null
+            _ => null,
         };
 
         // return if dbType is null
@@ -427,7 +429,7 @@ public class TestThemerrManager
         var tmdbId = _themerrManager.GetTmdbId(item);
         var themerrDbLink = _themerrManager.CreateThemerrDbLink(tmdbId, dbType);
 
-        // get the new youtube theme url
+        // get the new YouTube theme url
         var youtubeThemeUrl = _themerrManager.GetYoutubeThemeUrl(themerrDbLink, item);
 
         // log
@@ -445,7 +447,7 @@ public class TestThemerrManager
         {
             Movie _ => "movies",
             Series _ => "tv_shows",
-            _ => null
+            _ => null,
         };
 
         // return if dbType is null
@@ -458,7 +460,7 @@ public class TestThemerrManager
         var tmdbId = _themerrManager.GetTmdbId(item);
         var themerrDbLink = _themerrManager.CreateThemerrDbLink(tmdbId, dbType);
 
-        // get the new youtube theme url
+        // get the new YouTube theme url
         var youtubeThemeUrl = _themerrManager.GetYoutubeThemeUrl(themerrDbLink, item);
 
         Assert.Empty(youtubeThemeUrl);
@@ -473,14 +475,14 @@ public class TestThemerrManager
         {
             Movie _ => "MOVIE",
             Series _ => "TV SHOW",
-            _ => null
+            _ => null,
         };
 
         var tmdbEndpoint = item switch
         {
             Movie _ => "movie",
             Series _ => "tv",
-            _ => null
+            _ => null,
         };
 
         // return if dbType is null
@@ -495,7 +497,7 @@ public class TestThemerrManager
         var year = item.ProductionYear;
         var expectedUrl = $"https://github.com/LizardByte/ThemerrDB/issues/new?assignees=&labels=request-theme&template=theme.yml&title=[{issueType}]:%20{encodedName}%20({year})&database_url=https://www.themoviedb.org/{tmdbEndpoint}/{tmdbId}";
 
-        // get the new youtube theme url
+        // get the new YouTube theme url
         var issueUrl = _themerrManager.GetIssueUrl(item);
 
         Assert.NotEmpty(issueUrl);
@@ -512,7 +514,7 @@ public class TestThemerrManager
     [MemberData(nameof(FixtureJellyfinServer.UnsupportedMockItemsData), MemberType = typeof(FixtureJellyfinServer))]
     private void TestGetIssueUrlUnsupportedType(BaseItem item)
     {
-        // get the new youtube theme url
+        // get the new YouTube theme url
         var issueUrl = _themerrManager.GetIssueUrl(item);
 
         Assert.Null(issueUrl);
@@ -569,5 +571,40 @@ public class TestThemerrManager
         var actualMd5Hash = _themerrManager.GetMd5Hash(stubVideoPath);
 
         Assert.Equal(expectedMd5Hash, actualMd5Hash);
+    }
+
+    /// <summary>
+    /// Test GetCultureResource function.
+    /// </summary>
+    /// <param name="culture">The culture to test.</param>
+    [Theory]
+    [Trait("Category", "Unit")]
+    [InlineData("de")]
+    [InlineData("en")]
+    [InlineData("en-GB")]
+    [InlineData("en-US")]
+    [InlineData("es")]
+    [InlineData("fr")]
+    [InlineData("it")]
+    [InlineData("ru")]
+    [InlineData("sv")]
+    [InlineData("zh")]
+    private void TestGetCultureResource(string culture)
+    {
+        var result = _themerrManager.GetCultureResource(culture);
+        Assert.IsType<List<string>>(result);
+
+        // replace - with _ in the culture
+        var culture2 = culture.Replace("-", "_");
+
+        // en is not included in the list
+        if (culture != "en")
+        {
+            // assert that `en_<>.json` is in the list
+            Assert.Contains(culture2 + ".json", result);
+        }
+
+        // assert that `en` is NOT in the list
+        Assert.DoesNotContain("en.json", result);
     }
 }

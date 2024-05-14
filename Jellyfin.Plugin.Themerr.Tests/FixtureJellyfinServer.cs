@@ -40,9 +40,9 @@ public class FixtureJellyfinServer
                 ProductionYear = 2006,
                 ProviderIds = new Dictionary<string, string>
                 {
-                    { MetadataProvider.Imdb.ToString(), "tt0807840"},
-                    { MetadataProvider.Tmdb.ToString(), "9761"},
-                }
+                    { MetadataProvider.Imdb.ToString(), "tt0807840" },
+                    { MetadataProvider.Tmdb.ToString(), "9761" },
+                },
             },
             new Movie
             {
@@ -50,9 +50,9 @@ public class FixtureJellyfinServer
                 ProductionYear = 2008,
                 ProviderIds = new Dictionary<string, string>
                 {
-                    { MetadataProvider.Imdb.ToString(), "tt1172203"},
-                    { MetadataProvider.Tmdb.ToString(), "20529"},
-                }
+                    { MetadataProvider.Imdb.ToString(), "tt1172203" },
+                    { MetadataProvider.Tmdb.ToString(), "20529" },
+                },
             },
             new Movie
             {
@@ -60,9 +60,9 @@ public class FixtureJellyfinServer
                 ProductionYear = 2008,
                 ProviderIds = new Dictionary<string, string>
                 {
-                    { MetadataProvider.Imdb.ToString(), "tt1254207"},
-                    { MetadataProvider.Tmdb.ToString(), "10378"},
-                }
+                    { MetadataProvider.Imdb.ToString(), "tt1254207" },
+                    { MetadataProvider.Tmdb.ToString(), "10378" },
+                },
             },
             new Movie
             {
@@ -70,9 +70,9 @@ public class FixtureJellyfinServer
                 ProductionYear = 2010,
                 ProviderIds = new Dictionary<string, string>
                 {
-                    { MetadataProvider.Imdb.ToString(), "tt1727587"},
-                    { MetadataProvider.Tmdb.ToString(), "45745"},
-                }
+                    { MetadataProvider.Imdb.ToString(), "tt1727587" },
+                    { MetadataProvider.Tmdb.ToString(), "45745" },
+                },
             },
             new Series
             {
@@ -80,9 +80,9 @@ public class FixtureJellyfinServer
                 ProductionYear = 2011,
                 ProviderIds = new Dictionary<string, string>
                 {
-                    { MetadataProvider.Imdb.ToString(), "tt0944947"},
-                    { MetadataProvider.Tmdb.ToString(), "1399"},
-                }
+                    { MetadataProvider.Imdb.ToString(), "tt0944947" },
+                    { MetadataProvider.Tmdb.ToString(), "1399" },
+                },
             },
             new Series
             {
@@ -90,9 +90,9 @@ public class FixtureJellyfinServer
                 ProductionYear = 2014,
                 ProviderIds = new Dictionary<string, string>
                 {
-                    { MetadataProvider.Imdb.ToString(), "tt2661044"},
-                    { MetadataProvider.Tmdb.ToString(), "48866"},
-                }
+                    { MetadataProvider.Imdb.ToString(), "tt2661044" },
+                    { MetadataProvider.Tmdb.ToString(), "48866" },
+                },
             },
             new Series
             {
@@ -100,10 +100,10 @@ public class FixtureJellyfinServer
                 ProductionYear = 2011,
                 ProviderIds = new Dictionary<string, string>
                 {
-                    { MetadataProvider.Imdb.ToString(), "tt1910272"},
-                    { MetadataProvider.Tmdb.ToString(), "42509"},
-                }
-            }
+                    { MetadataProvider.Imdb.ToString(), "tt1910272" },
+                    { MetadataProvider.Tmdb.ToString(), "42509" },
+                },
+            },
         };
     }
 
@@ -121,9 +121,9 @@ public class FixtureJellyfinServer
                 ProductionYear = 1970,
                 ProviderIds = new Dictionary<string, string>
                 {
-                    { MetadataProvider.Imdb.ToString(), "tt0000000"},
-                    { MetadataProvider.Tmdb.ToString(), "0"},
-                }
+                    { MetadataProvider.Imdb.ToString(), "tt0000000" },
+                    { MetadataProvider.Tmdb.ToString(), "0" },
+                },
             },
             new Series
             {
@@ -131,9 +131,9 @@ public class FixtureJellyfinServer
                 ProductionYear = 1970,
                 ProviderIds = new Dictionary<string, string>
                 {
-                    { MetadataProvider.Imdb.ToString(), "tt0000000"},
-                    { MetadataProvider.Tmdb.ToString(), "0"},
-                }
+                    { MetadataProvider.Imdb.ToString(), "tt0000000" },
+                    { MetadataProvider.Tmdb.ToString(), "0" },
+                },
             },
         };
     }
