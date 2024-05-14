@@ -84,7 +84,7 @@ namespace Jellyfin.Plugin.Themerr.ScheduledTasks
             yield return new TaskTriggerInfo
             {
                 Type = TaskTriggerInfo.TriggerInterval,
-                IntervalTicks = TimeSpan.FromMinutes(ThemerrPlugin.Instance.Configuration.UpdateInterval).Ticks
+                IntervalTicks = TimeSpan.FromMinutes(ThemerrPlugin.Instance.Configuration.UpdateInterval).Ticks,
             };
         }
     }

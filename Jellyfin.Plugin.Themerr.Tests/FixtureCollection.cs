@@ -1,6 +1,3 @@
-using MetadataProvider = MediaBrowser.Model.Entities.MetadataProvider;
-using Movie = MediaBrowser.Controller.Entities.Movies.Movie;
-
 namespace Jellyfin.Plugin.Themerr.Tests;
 
 /// <summary>

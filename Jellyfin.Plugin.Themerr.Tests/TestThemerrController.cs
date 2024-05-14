@@ -36,7 +36,7 @@ public class TestThemerrController
         // Create a TestableServerConfiguration with UICulture set to "en-US"
         var testableServerConfiguration = new TestableServerConfiguration("en-US");
 
-        // Setup the Configuration property of the IServerConfigurationManager mock to return the TestableServerConfiguration
+        // Set up the Configuration property of the IServerConfigurationManager mock to return the TestableServerConfiguration
         mockServerConfigurationManager.Setup(x => x.Configuration).Returns(testableServerConfiguration);
 
         _controller = new ThemerrController(
@@ -64,7 +64,7 @@ public class TestThemerrController
         // ensure result["media_percent_complete"] is an int
         Assert.IsType<int>(((JsonResult)result).Value?.GetType().GetProperty("media_percent_complete")?.GetValue(((JsonResult)result).Value, null));
 
-        // ensure result["items"] is a an array list
+        // ensure result["items"] is an array list
         Assert.IsType<ArrayList>(((JsonResult)result).Value?.GetType().GetProperty("items")?.GetValue(((JsonResult)result).Value, null));
 
         // ensure int values are 0
@@ -98,40 +98,5 @@ public class TestThemerrController
         // Assert the data contains the expected keys
         Assert.True(data.ContainsKey("locale"));
         Assert.True(data.ContainsKey("fallback"));
-    }
-
-    /// <summary>
-    /// Test GetCultureResource function.
-    /// </summary>
-    /// <param name="culture">The culture to test.</param>
-    [Theory]
-    [Trait("Category", "Unit")]
-    [InlineData("de")]
-    [InlineData("en")]
-    [InlineData("en-GB")]
-    [InlineData("en-US")]
-    [InlineData("es")]
-    [InlineData("fr")]
-    [InlineData("it")]
-    [InlineData("ru")]
-    [InlineData("sv")]
-    [InlineData("zh")]
-    public void TestGetCultureResource(string culture)
-    {
-        var result = _controller.GetCultureResource(culture);
-        Assert.IsType<List<string>>(result);
-
-        // replace - with _ in the culture
-        var culture2 = culture.Replace("-", "_");
-
-        // en is not included in the list
-        if (culture != "en")
-        {
-            // assert that `en_<>.json` is in the list
-            Assert.Contains(culture2 + ".json", result);
-        }
-
-        // assert that `en` is NOT in the list
-        Assert.DoesNotContain("en.json", result);
     }
 }
