@@ -99,7 +99,7 @@ jobs:
 
       - name: Create/Update GitHub Release
         if: ${{ needs.setup_release.outputs.publish_release == 'true' }}
-        uses: LizardByte/create-release-action@v2023.1219.224026
+        uses: LizardByte/create-release-action@v2024.511.153520
         with:
           allowUpdates: true
           body: ''
