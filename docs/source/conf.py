@@ -8,6 +8,31 @@
 from datetime import datetime
 import os
 import subprocess
+import xml.etree.ElementTree as ET
+
+
+def get_dotnet_version(file_path: str):
+    tree = ET.parse(file_path)
+    root = tree.getroot()
+
+    for item in root.iter('PropertyGroup'):
+        for child in item:
+            if 'TargetFramework' in child.tag:
+                # Split the string on 'net' and return the second part
+                return child.text.split('net')[1]
+
+    return None
+
+
+def get_jellyfin_version(file_path: str):
+    tree = ET.parse(file_path)
+    root = tree.getroot()
+
+    for item in root.iter('PackageReference'):
+        if item.attrib['Include'] == "Jellyfin.Controller":
+            return item.attrib['Version']
+
+    return None
 
 
 # -- Path setup --------------------------------------------------------------
@@ -24,6 +49,11 @@ root_dir = os.path.dirname(source_dir)  # the root folder directory
 project = 'Themerr-jellyfin'
 project_copyright = f'{datetime.now ().year}, {project}'
 author = 'ReenigneArcher'
+
+csproj_file = os.path.join(root_dir, 'Jellyfin.Plugin.Themerr', 'Jellyfin.Plugin.Themerr.csproj')
+
+dotnet_version = get_dotnet_version(file_path=csproj_file)
+jellyfin_version = get_jellyfin_version(file_path=csproj_file)
 
 # The full version, including alpha/beta/rc tags
 # https://docs.readthedocs.io/en/stable/reference/environment-variables.html#envvar-READTHEDOCS_VERSION
@@ -100,43 +130,43 @@ todo_include_todos = True
 #    'package name': ('direct link to %s', 'alternate backup link or search page')
 sphinx_csharp_ext_search_pages = {
     'System': (
-        'https://learn.microsoft.com/en-us/dotnet/api/system.%s?view=net-6.0',
+        f'https://learn.microsoft.com/en-us/dotnet/api/system.%s?view=net-{dotnet_version}',
     ),
     'Microsoft': (
-        'https://learn.microsoft.com/en-us/dotnet/api/microsoft.%s?view=dotnet-plat-ext-6.0',
+        f'https://learn.microsoft.com/en-us/dotnet/api/microsoft.%s?view=dotnet-plat-ext-{dotnet_version}',
     ),
     'Jellyfin.Controller.MediaBrowser.Common.Configuration': (
-        'https://github.com/jellyfin/jellyfin/blob/v10.8.13/MediaBrowser.Common/Configuration/%s.cs',
+        f'https://github.com/jellyfin/jellyfin/blob/v{jellyfin_version}/MediaBrowser.Common/Configuration/%s.cs',
     ),
     'Jellyfin.Controller.MediaBrowser.Common.Plugins': (
-        'https://github.com/jellyfin/jellyfin/blob/v10.8.13/MediaBrowser.Common/Plugins/%s.cs',
+        f'https://github.com/jellyfin/jellyfin/blob/v{jellyfin_version}/MediaBrowser.Common/Plugins/%s.cs',
     ),
     'Jellyfin.Controller.MediaBrowser.Controller.Configuration': (
-        'https://github.com/jellyfin/jellyfin/blob/v10.8.13/MediaBrowser.Controller/Configuration/%s.cs',
+        f'https://github.com/jellyfin/jellyfin/blob/v{jellyfin_version}/MediaBrowser.Controller/Configuration/%s.cs',
     ),
     'Jellyfin.Controller.MediaBrowser.Controller.Entities': (
-        'https://github.com/jellyfin/jellyfin/blob/v10.8.13/MediaBrowser.Controller/Entities/%s.cs',
+        f'https://github.com/jellyfin/jellyfin/blob/v{jellyfin_version}/MediaBrowser.Controller/Entities/%s.cs',
     ),
     'Jellyfin.Controller.MediaBrowser.Controller.Entities.Movies': (
-        'https://github.com/jellyfin/jellyfin/blob/v10.8.13/MediaBrowser.Controller/Entities/Movies/%s.cs',
+        f'https://github.com/jellyfin/jellyfin/blob/v{jellyfin_version}/MediaBrowser.Controller/Entities/Movies/%s.cs',
     ),
     'Jellyfin.Controller.MediaBrowser.Controller.Entities.TV': (
-        'https://github.com/jellyfin/jellyfin/blob/v10.8.13/MediaBrowser.Controller/Entities/TV/%s.cs',
+        f'https://github.com/jellyfin/jellyfin/blob/v{jellyfin_version}/MediaBrowser.Controller/Entities/TV/%s.cs',
     ),
     'Jellyfin.Controller.MediaBrowser.Controller.Entities.Library': (
-        'https://github.com/jellyfin/jellyfin/blob/v10.8.13/MediaBrowser.Controller/Library/%s.cs',
+        f'https://github.com/jellyfin/jellyfin/blob/v{jellyfin_version}/MediaBrowser.Controller/Library/%s.cs',
     ),
     'Jellyfin.Controller.MediaBrowser.Controller.Plugins': (
-        'https://github.com/jellyfin/jellyfin/blob/v10.8.13/MediaBrowser.Controller/Plugins/%s.cs',
+        f'https://github.com/jellyfin/jellyfin/blob/v{jellyfin_version}/MediaBrowser.Controller/Plugins/%s.cs',
     ),
     'Jellyfin.Controller.MediaBrowser.Model.Plugins': (
-        'https://github.com/jellyfin/jellyfin/blob/v10.8.13/MediaBrowser.Model/Plugins/%s.cs',
+        f'https://github.com/jellyfin/jellyfin/blob/v{jellyfin_version}/MediaBrowser.Model/Plugins/%s.cs',
     ),
     'Jellyfin.Controller.MediaBrowser.Model.Serialization': (
-        'https://github.com/jellyfin/jellyfin/blob/v10.8.13/MediaBrowser.Model/Serialization/%s.cs',
+        f'https://github.com/jellyfin/jellyfin/blob/v{jellyfin_version}/MediaBrowser.Model/Serialization/%s.cs',
     ),
     'Jellyfin.Controller.MediaBrowser.Model.Tasks': (
-        'https://github.com/jellyfin/jellyfin/blob/v10.8.13/MediaBrowser.Model/Tasks/%s.cs',
+        f'https://github.com/jellyfin/jellyfin/blob/v{jellyfin_version}/MediaBrowser.Model/Tasks/%s.cs',
     ),
 }
 
@@ -219,7 +249,6 @@ sphinx_csharp_ext_type_map = {
     'Jellyfin.Controller.MediaBrowser.Controller.Plugins': {
         '': [
             'IRunBeforeStartup',
-            'IServerEntryPoint',
         ],
     },
     'Jellyfin.Controller.MediaBrowser.Model.Plugins': {
