@@ -80,6 +80,14 @@ public class TestThemerrManager
 
         Assert.Null(_themerrManager.GetExistingThemerrDataValue("any_key", themerrDataPath));
 
+        // ensure null when the json is invalid
+        themerrDataPath = Path.Combine(
+            Directory.GetCurrentDirectory(),
+            "data",
+            "invalid.json");
+
+        Assert.Null(_themerrManager.GetExistingThemerrDataValue("any_key", themerrDataPath));
+
         // test empty json file
         themerrDataPath = Path.Combine(
             Directory.GetCurrentDirectory(),
@@ -459,6 +467,10 @@ public class TestThemerrManager
         // get themerrDbUrl
         var tmdbId = _themerrManager.GetTmdbId(item);
         var themerrDbLink = _themerrManager.CreateThemerrDbLink(tmdbId, dbType);
+
+        // log
+        TestLogger.Info($"tmdbId: {tmdbId}");
+        TestLogger.Info($"themerrDbLink: {themerrDbLink}");
 
         // get the new YouTube theme url
         var youtubeThemeUrl = _themerrManager.GetYoutubeThemeUrl(themerrDbLink, item);

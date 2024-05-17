@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Net;
 using System.Net.Http;
 using System.Threading;
 using System.Threading.Tasks;
@@ -68,8 +69,17 @@ namespace Jellyfin.Plugin.Themerr
             }
 
             var jsonString = System.IO.File.ReadAllText(themerrDataPath);
-            dynamic jsonData = JsonConvert.DeserializeObject(jsonString);
-            return jsonData?[key];
+
+            try
+            {
+                dynamic jsonData = JsonConvert.DeserializeObject(jsonString);
+                return jsonData?[key];
+            }
+            catch (JsonReaderException e)
+            {
+                _logger.LogError(e, "Unable to parse themerr data file: {ThemerrDataPath}\n{JsonString}", themerrDataPath, jsonString);
+                return null;
+            }
         }
 
         /// <summary>
@@ -339,18 +349,30 @@ namespace Jellyfin.Plugin.Themerr
         public string GetYoutubeThemeUrl(string themerrDbUrl, BaseItem item)
         {
             var client = new HttpClient();
+            HttpResponseMessage response;
 
             try
             {
-                var jsonString = client.GetStringAsync(themerrDbUrl).Result;
-                dynamic jsonData = JsonConvert.DeserializeObject(jsonString);
-                return jsonData?.youtube_theme_url;
+                response = client.GetAsync(themerrDbUrl).GetAwaiter().GetResult();
             }
             catch (Exception e)
             {
-                _logger.LogWarning(e, "Missing from ThemerrDB: {ItemTitle}, contribute:\n  {IssueUrl}", item.Name, GetIssueUrl(item));
+                _logger.LogError(e, "Error retrieving from ThemerrDB: {ItemName}", item.Name);
                 return string.Empty;
             }
+
+            if (response.StatusCode == HttpStatusCode.NotFound)
+            {
+                _logger.LogWarning(
+                    "ThemerrDB entry not found (404): {ItemName}, contribute:\n  {IssueUrl}",
+                    item.Name,
+                    GetIssueUrl(item));
+                return string.Empty;
+            }
+
+            var jsonString = response.Content.ReadAsStringAsync().GetAwaiter().GetResult();
+            dynamic jsonData = JsonConvert.DeserializeObject(jsonString);
+            return jsonData?.youtube_theme_url;
         }
 
         /// <summary>
