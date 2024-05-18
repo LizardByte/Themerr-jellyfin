@@ -58,18 +58,18 @@ public class TestThemerrController
         var result = _controller.GetProgress();
         Assert.IsType<JsonResult>(result);
 
-        // ensure result["media_count"] is an int
+        // ensure the following properties are int
         Assert.IsType<int>(((JsonResult)result).Value?.GetType().GetProperty("media_count")?.GetValue(((JsonResult)result).Value, null));
-
-        // ensure result["media_percent_complete"] is an int
-        Assert.IsType<int>(((JsonResult)result).Value?.GetType().GetProperty("media_percent_complete")?.GetValue(((JsonResult)result).Value, null));
+        Assert.IsType<int>(((JsonResult)result).Value?.GetType().GetProperty("media_with_themes")?.GetValue(((JsonResult)result).Value, null));
+        Assert.IsType<int>(((JsonResult)result).Value?.GetType().GetProperty("total_pages")?.GetValue(((JsonResult)result).Value, null));
 
         // ensure result["items"] is an array list
         Assert.IsType<ArrayList>(((JsonResult)result).Value?.GetType().GetProperty("items")?.GetValue(((JsonResult)result).Value, null));
 
         // ensure int values are 0
         Assert.Equal(0, ((JsonResult)result).Value?.GetType().GetProperty("media_count")?.GetValue(((JsonResult)result).Value, null));
-        Assert.Equal(0, ((JsonResult)result).Value?.GetType().GetProperty("media_percent_complete")?.GetValue(((JsonResult)result).Value, null));
+        Assert.Equal(0, ((JsonResult)result).Value?.GetType().GetProperty("media_with_themes")?.GetValue(((JsonResult)result).Value, null));
+        Assert.Equal(0, ((JsonResult)result).Value?.GetType().GetProperty("total_pages")?.GetValue(((JsonResult)result).Value, null));
 
         // ensure array list has no items
         Assert.Equal(0, (((JsonResult)result).Value?.GetType().GetProperty("items")?.GetValue(((JsonResult)result).Value, null) as ArrayList)?.Count);
