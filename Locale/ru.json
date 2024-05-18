@@ -1,7 +1,9 @@
 ﻿{
   "add_button": "Добавить",
+  "completion_dashboard": "Панель завершения",
   "contribute": "Внести вклад",
   "contribute_button": "Внести вклад",
+  "dashboard_loading": "Загрузка панели...",
   "edit_button": "Редактирование",
   "movie": "Фильм",
   "no_theme_song": "Нет треков с темой",

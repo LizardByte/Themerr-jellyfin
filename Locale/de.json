@@ -1,7 +1,9 @@
 ﻿{
   "add_button": "Neu",
+  "completion_dashboard": "Abschluss-Dashboard",
   "contribute": "Mitwirken",
   "contribute_button": "Mitwirken",
+  "dashboard_loading": "Dashboard wird geladen...",
   "edit_button": "Bearbeiten",
   "movie": "Film",
   "no_theme_song": "Kein Titeltitel",

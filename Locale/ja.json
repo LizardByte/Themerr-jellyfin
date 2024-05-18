@@ -1,7 +1,9 @@
 ﻿{
   "add_button": "追加",
+  "completion_dashboard": "完了ダッシュボード",
   "contribute": "貢献",
   "contribute_button": "貢献",
+  "dashboard_loading": "ダッシュボードの読み込み中...",
   "edit_button": "編集",
   "movie": "映画",
   "no_theme_song": "テーマの曲がありません",
