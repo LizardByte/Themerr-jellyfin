@@ -66,7 +66,18 @@
                 <br>
                 <!-- Create Theme Progress Dashboard -->
                 <form>
-                    <div id="ThemerrDashboard"></div>
+                    <div id="ThemerrDashboardLoading">
+                        <h2 data-localize="dashboard_loading">Dashboard Loading...</h2>
+                        <div is="emby-progressbar" class="itemProgressBar" style="height: 20px;">
+                            <div class="itemProgressBarForeground" style="width: 0;">
+                                <span style="margin-left: 0.5em;">0%</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div id="ThemerrDashboard" style="display: none;">
+                        <h2 data-localize="completion_dashboard">Completion Dashboard</h2>
+                    </div>
                 </form>
             </div>
         </div>
@@ -191,150 +202,203 @@
                 }
             }
 
-            function updateProgress() {
-                let request = {
-                    url: _ApiClient.getUrl('/Themerr/GetProgress'),
-                    type: 'GET',
-                    dataType: 'json'  // this should automatically return response.json()
+            async function updateProgress() {
+                let all_items = []
+                let page = 1
+                let pageSize = 10
+                let total_media_count = 0
+                let total_media_with_themes = 0
+                let total_pages = 1
+
+                for (; page <= total_pages; page++) {
+                    let request = {
+                        url: _ApiClient.getUrl(
+                            '/Themerr/GetProgress',
+                            {
+                                page: page,
+                                pageSize: pageSize
+                            },
+                        ),
+                        type: 'GET',
+                        dataType: 'json'  // this should automatically return response.json()
+                    };
+
+                    try {
+                        let response = await _ApiClient.fetch(request);
+
+                        console.log(LogPrefix + "processing page " + page + " of " + response["total_pages"]);
+                        console.log(LogPrefix + "media_count: " + response["media_count"]);
+                        console.log(LogPrefix + "media_with_themes: " + response["media_with_themes"]);
+
+                        if (response["media_count"] === 0 && page === 1) {
+                            let message = "No media found!";
+                            console.log(LogPrefix + message);
+                            return;
+                        }
+
+                        total_media_count += response["media_count"];
+                        total_media_with_themes += response["media_with_themes"];
+                        all_items = all_items.concat(response["items"]);
+
+                        total_pages = response["total_pages"];  // Update totalPages
+                    } catch (error) {
+                        let message = translate('unexpected_error_occured_creating_dashboard');
+                        Dashboard.alert({
+                            message: message
+                        });
+                        console.log(LogPrefix + message);
+                        console.log(LogPrefix + error);
+                    }
+
+                    // Calculate the loading progress percentage
+                    let progressPercentage = Math.round((page / total_pages) * 100);
+
+                    // Update the loading progress bar
+                    let progressBar = document.querySelector('#ThemerrDashboardLoading .itemProgressBarForeground');
+                    progressBar.style.width = progressPercentage + '%';
+                    progressBar.querySelector('span').innerText = progressPercentage + '%';
                 }
 
-                _ApiClient.fetch(request).then(function (response) {
-                    console.log(LogPrefix + "media_count: " + response["media_count"])
-                    console.log(LogPrefix + "media_percent_complete: " + response["media_percent_complete"])
+                // add an arbitrary delay
+                await new Promise(r => setTimeout(r, 1000));
 
-                    if (response["media_count"] === 0) {
-                        let message = "No media found!"
-                        console.log(LogPrefix + message)
-                        return
+                // hide the loading progress bar
+                let progressBar = document.querySelector('#ThemerrDashboardLoading');
+                progressBar.style.display = 'none';
+
+                // create the dashboard
+                createDashboard(total_media_count, total_media_with_themes, all_items);
+            }
+
+            function createDashboard(total_media_count, total_media_with_themes, all_items) {
+                // get dashboard container
+                let ThemerrDashboard = document.querySelector('#ThemerrDashboard')
+
+                // show the dashboard
+                ThemerrDashboard.style.display = 'block'
+
+                // create progress bar
+                let progressBar = document.createElement('div')
+                progressBar.setAttribute('is', 'emby-progressbar')
+                progressBar.setAttribute('class', 'itemProgressBar')
+                progressBar.setAttribute('style', 'height: 20px;')
+                ThemerrDashboard.appendChild(progressBar)
+
+                // calculate percent complete
+                let percentComplete = 0
+                if (total_media_count > 0) {
+                    percentComplete = Math.round((total_media_with_themes / total_media_count) * 100)
+                }
+
+                // progress bar foreground
+                let progressBarForeground = document.createElement('div')
+                progressBarForeground.setAttribute('class', 'itemProgressBarForeground')
+                progressBarForeground.setAttribute('style', 'width: ' + percentComplete + '%;')
+                progressBar.appendChild(progressBarForeground)
+
+                // progress bar text
+                let progressBarText = document.createElement('span')
+                progressBarText.setAttribute('style', 'margin-left: 0.5em;')
+                progressBarText.innerText = percentComplete + '%'
+                progressBarForeground.appendChild(progressBarText)
+
+                // add break
+                ThemerrDashboard.appendChild(document.createElement('br'))
+
+                // create table
+                let table = document.createElement('table')
+                table.setAttribute('id', 'ThemerrProgressTable')
+                table.setAttribute('class', 'detailTable')
+                ThemerrDashboard.appendChild(table)
+
+                // create table header
+                let tableHeader = document.createElement('thead')
+                table.appendChild(tableHeader)
+
+                // create table header row
+                let tableHeaderRow = document.createElement('tr')
+                tableHeader.appendChild(tableHeaderRow)
+
+                let columns = ['Title', 'Year', 'Type', 'Contribute', 'Status']
+
+                // create table header columns
+                for (let column in columns) {
+                    let tableHeaderColumn = document.createElement('th')
+                    tableHeaderColumn.setAttribute('class', 'detailTableHeaderCell')
+                    tableHeaderColumn.setAttribute('scope', 'col')
+                    tableHeaderColumn.innerText = translate(columns[column].toLowerCase())
+                    tableHeaderRow.appendChild(tableHeaderColumn)
+                }
+
+                // loop over items
+                for (let item in all_items) {
+                    console.log(LogPrefix + "------------------")
+                    console.log(LogPrefix + "item: " + item)
+                    console.log(LogPrefix + "name: " + all_items[item]["name"])
+                    console.log(LogPrefix + "id: " + all_items[item]["id"])
+                    console.log(LogPrefix + "issue_url: " + all_items[item]["issue_url"])
+                    console.log(LogPrefix + "type: " + all_items[item]["type"])
+                    console.log(LogPrefix + "theme_provider: " + all_items[item]["theme_provider"])
+                    console.log(LogPrefix + "year: " + all_items[item]["year"])
+
+                    // create table row
+                    let tableRow = document.createElement('tr')
+                    table.appendChild(tableRow)
+
+                    // create table columns
+                    let tableColumnTitle = document.createElement('td')
+                    tableColumnTitle.setAttribute('class', 'detailTableBodyCell')
+                    tableColumnTitle.innerText = all_items[item]["name"]
+                    tableRow.appendChild(tableColumnTitle)
+
+                    let tableColumnYear = document.createElement('td')
+                    tableColumnYear.setAttribute('class', 'detailTableBodyCell')
+                    tableColumnYear.innerText = all_items[item]["year"]
+                    tableRow.appendChild(tableColumnYear)
+
+                    let tableColumnType = document.createElement('td')
+                    tableColumnType.setAttribute('class', 'detailTableBodyCell')
+                    tableColumnType.innerText = translate(all_items[item]["type"].toLowerCase())
+                    tableRow.appendChild(tableColumnType)
+
+                    let contributeButton = document.createElement('a')
+                    contributeButton.setAttribute('is', 'emby-linkbutton')
+                    contributeButton.setAttribute('class', 'raised headerHelpButton button-submit emby-button')
+                    contributeButton.setAttribute('target', '_blank')
+                    contributeButton.setAttribute('href', all_items[item]["issue_url"])
+                    // text added when status is set
+
+                    let tableColumnContribute = document.createElement('td')
+                    tableColumnContribute.appendChild(contributeButton)
+                    tableRow.appendChild(tableColumnContribute)
+
+                    let tableColumnStatus = document.createElement('td')
+                    tableColumnStatus.setAttribute('class', 'detailTableBodyCell')
+
+                    let statusSpan = document.createElement('span')
+                    let statusText = document.createElement('span')
+                    statusSpan.setAttribute('class', 'material-icons')
+                    statusText.setAttribute('class', 'detailTableBodyCell')
+                    if (all_items[item]["theme_provider"] === 'themerr') {
+                        contributeButton.innerText = translate('edit_button')
+                        statusSpan.classList.add('check')
+                        statusSpan.setAttribute('style', 'margin-right: 6px; color: #00ff00;')
+                        statusText.innerText = translate('themerr_provided')
+                    } else if (all_items[item]["theme_provider"] === 'user') {
+                        contributeButton.innerText = translate('contribute_button')
+                        statusSpan.classList.add('person')
+                        statusSpan.setAttribute('style', 'margin-right: 6px; color: #00a4dc;')
+                        statusText.innerText = translate('user_provided')
+                    } else {
+                        contributeButton.innerText = translate('add_button')
+                        statusSpan.classList.add('cancel')
+                        statusSpan.setAttribute('style', 'margin-right: 6px; color: #ff0000;')
+                        statusText.innerText = translate('no_theme_song')
                     }
-
-                    // get dashboard container
-                    let ThemerrDashboard = document.querySelector('#ThemerrDashboard')
-
-                    // create progress bar
-                    let progressBar = document.createElement('div')
-                    progressBar.setAttribute('is', 'emby-progressbar')
-                    progressBar.setAttribute('class', 'itemProgressBar')
-                    progressBar.setAttribute('style', 'height: 20px;')
-                    ThemerrDashboard.appendChild(progressBar)
-
-                    // progress bar foreground
-                    let progressBarForeground = document.createElement('div')
-                    progressBarForeground.setAttribute('class', 'itemProgressBarForeground')
-                    progressBarForeground.setAttribute('style', 'width: ' + response["media_percent_complete"] + '%;')
-                    progressBar.appendChild(progressBarForeground)
-
-                    // progress bar text
-                    let progressBarText = document.createElement('span')
-                    progressBarText.setAttribute('style', 'margin-left: 0.5em;')
-                    progressBarText.innerText = response["media_percent_complete"] + '%'
-                    progressBarForeground.appendChild(progressBarText)
-
-                    // add break
-                    ThemerrDashboard.appendChild(document.createElement('br'))
-
-                    // create table
-                    let table = document.createElement('table')
-                    table.setAttribute('id', 'ThemerrProgressTable')
-                    table.setAttribute('class', 'detailTable')
-                    ThemerrDashboard.appendChild(table)
-
-                    // create table header
-                    let tableHeader = document.createElement('thead')
-                    table.appendChild(tableHeader)
-
-                    // create table header row
-                    let tableHeaderRow = document.createElement('tr')
-                    tableHeader.appendChild(tableHeaderRow)
-
-                    let columns = ['Title', 'Year', 'Type', 'Contribute', 'Status']
-
-                    // create table header columns
-                    for (let column in columns) {
-                        let tableHeaderColumn = document.createElement('th')
-                        tableHeaderColumn.setAttribute('class', 'detailTableHeaderCell')
-                        tableHeaderColumn.setAttribute('scope', 'col')
-                        tableHeaderColumn.innerText = translate(columns[column].toLowerCase())
-                        tableHeaderRow.appendChild(tableHeaderColumn)
-                    }
-
-                    // loop over items
-                    for (let item in response["items"]) {
-                        console.log(LogPrefix + "------------------")
-                        console.log(LogPrefix + "item: " + item)
-                        console.log(LogPrefix + "name: " + response["items"][item]["name"])
-                        console.log(LogPrefix + "id: " + response["items"][item]["id"])
-                        console.log(LogPrefix + "issue_url: " + response["items"][item]["issue_url"])
-                        console.log(LogPrefix + "type: " + response["items"][item]["type"])
-                        console.log(LogPrefix + "theme_provider: " + response["items"][item]["theme_provider"])
-                        console.log(LogPrefix + "year: " + response["items"][item]["year"])
-
-                        // create table row
-                        let tableRow = document.createElement('tr')
-                        table.appendChild(tableRow)
-
-                        // create table columns
-                        let tableColumnTitle = document.createElement('td')
-                        tableColumnTitle.setAttribute('class', 'detailTableBodyCell')
-                        tableColumnTitle.innerText = response["items"][item]["name"]
-                        tableRow.appendChild(tableColumnTitle)
-
-                        let tableColumnYear = document.createElement('td')
-                        tableColumnYear.setAttribute('class', 'detailTableBodyCell')
-                        tableColumnYear.innerText = response["items"][item]["year"]
-                        tableRow.appendChild(tableColumnYear)
-
-                        let tableColumnType = document.createElement('td')
-                        tableColumnType.setAttribute('class', 'detailTableBodyCell')
-                        tableColumnType.innerText = translate(response["items"][item]["type"].toLowerCase())
-                        tableRow.appendChild(tableColumnType)
-
-                        let contributeButton = document.createElement('a')
-                        contributeButton.setAttribute('is', 'emby-linkbutton')
-                        contributeButton.setAttribute('class', 'raised headerHelpButton button-submit emby-button')
-                        contributeButton.setAttribute('target', '_blank')
-                        contributeButton.setAttribute('href', response["items"][item]["issue_url"])
-                        // text added when status is set
-
-                        let tableColumnContribute = document.createElement('td')
-                        tableColumnContribute.appendChild(contributeButton)
-                        tableRow.appendChild(tableColumnContribute)
-
-                        let tableColumnStatus = document.createElement('td')
-                        tableColumnStatus.setAttribute('class', 'detailTableBodyCell')
-
-                        let statusSpan = document.createElement('span')
-                        let statusText = document.createElement('span')
-                        statusSpan.setAttribute('class', 'material-icons')
-                        statusText.setAttribute('class', 'detailTableBodyCell')
-                        if (response["items"][item]["theme_provider"] === 'themerr') {
-                            contributeButton.innerText = translate('edit_button')
-                            statusSpan.classList.add('check')
-                            statusSpan.setAttribute('style', 'margin-right: 6px; color: #00ff00;')
-                            statusText.innerText = translate('themerr_provided')
-                        } else if (response["items"][item]["theme_provider"] === 'user') {
-                            contributeButton.innerText = translate('contribute_button')
-                            statusSpan.classList.add('person')
-                            statusSpan.setAttribute('style', 'margin-right: 6px; color: #00a4dc;')
-                            statusText.innerText = translate('user_provided')
-                        } else {
-                            contributeButton.innerText = translate('add_button')
-                            statusSpan.classList.add('cancel')
-                            statusSpan.setAttribute('style', 'margin-right: 6px; color: #ff0000;')
-                            statusText.innerText = translate('no_theme_song')
-                        }
-                        tableColumnStatus.appendChild(statusSpan)
-                        tableColumnStatus.appendChild(statusText)
-                        tableRow.appendChild(tableColumnStatus)
-                    }
-                }).catch(function (error) {
-                    let message = translate('unexpected_error_occured_creating_dashboard')
-                    Dashboard.alert({
-                        message: message
-                    })
-                    console.log(LogPrefix + message)
-                    console.log(LogPrefix + error)
-                })
+                    tableColumnStatus.appendChild(statusSpan)
+                    tableColumnStatus.appendChild(statusText)
+                    tableRow.appendChild(tableColumnStatus)
+                }
             }
 
             function localize() {

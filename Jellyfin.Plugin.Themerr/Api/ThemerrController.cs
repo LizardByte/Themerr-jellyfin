@@ -84,23 +84,30 @@ namespace Jellyfin.Plugin.Themerr.Api
         ///   "media_percent_complete": ThemedItems.Count / BaseItems.Count * 100,
         /// }
         /// </summary>
+        /// <param name="page">The page number to return.</param>
+        /// <param name="pageSize">The number of items to return per page.</param>
         /// <returns>JSON object containing progress data.</returns>
         [HttpGet("GetProgress")]
         [ProducesResponseType(StatusCodes.Status200OK)]
-        public ActionResult GetProgress()
+        public ActionResult GetProgress(int page = 1, int pageSize = 10)
         {
             var tmpItems = new ArrayList();
 
             var mediaCount = 0;
             var mediaWithThemes = 0;
-            var mediaPercentComplete = 0;
 
             var items = _themerrManager.GetTmdbItemsFromLibrary();
 
             // sort items by name, then year
-            var enumerable = items.OrderBy(i => i.Name).ThenBy(i => i.ProductionYear);
+            var enumerable = items.OrderBy(i => i.Name).ThenBy(i => i.ProductionYear).ToList();
 
-            foreach (var item in enumerable)
+            // calculate total media count before applying pagination
+            var totalMediaCount = enumerable.Count;
+
+            // apply pagination
+            var pagedItems = enumerable.Skip((page - 1) * pageSize).Take(pageSize);
+
+            foreach (var item in pagedItems)
             {
                 var year = item.ProductionYear;
                 var issueUrl = _themerrManager.GetIssueUrl(item);
@@ -125,16 +132,12 @@ namespace Jellyfin.Plugin.Themerr.Api
                 }
             }
 
-            if (mediaCount > 0)
-            {
-                mediaPercentComplete = (int)Math.Round((double)mediaWithThemes / mediaCount * 100);
-            }
-
             var tmpObject = new
             {
                 items = tmpItems,
                 media_count = mediaCount,
-                media_percent_complete = mediaPercentComplete,
+                media_with_themes = mediaWithThemes,
+                total_pages = (int)Math.Ceiling((double)totalMediaCount / pageSize),
             };
 
             _logger.LogInformation("Progress Items: {Items}", JsonConvert.SerializeObject(tmpObject));
