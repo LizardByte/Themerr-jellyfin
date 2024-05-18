@@ -1,7 +1,9 @@
 ﻿{
   "add_button": "Lägg till",
+  "completion_dashboard": "Översiktspanel för färdigställande",
   "contribute": "Bidra",
   "contribute_button": "Bidra",
+  "dashboard_loading": "Instrumentpanel Laddar...",
   "edit_button": "Redigera",
   "movie": "Film",
   "no_theme_song": "Ingen temalåt",
