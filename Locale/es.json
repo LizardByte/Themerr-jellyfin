@@ -1,7 +1,9 @@
 ﻿{
   "add_button": "Añadir",
+  "completion_dashboard": "Tablero de finalización",
   "contribute": "Contribuir",
   "contribute_button": "Contribuir",
+  "dashboard_loading": "Cargando panel...",
   "edit_button": "Editar",
   "movie": "Película",
   "no_theme_song": "Sin tema musical",
