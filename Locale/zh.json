@@ -1,7 +1,9 @@
 ﻿{
   "add_button": "添加",
+  "completion_dashboard": "完成仪表板",
   "contribute": "贡献",
   "contribute_button": "贡献",
+  "dashboard_loading": "仪表盘加载中...",
   "edit_button": "编辑",
   "movie": "电影",
   "no_theme_song": "没有主题歌曲",
