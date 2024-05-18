@@ -1,7 +1,9 @@
 ﻿{
   "add_button": "Aggiungi",
+  "completion_dashboard": "Dashboard Completamento",
   "contribute": "Contribuisci",
   "contribute_button": "Contribuisci",
+  "dashboard_loading": "Caricamento Dashboard...",
   "edit_button": "Modifica",
   "movie": "Film",
   "no_theme_song": "Nessuna sigla",
