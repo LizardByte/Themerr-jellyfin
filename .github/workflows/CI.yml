@@ -112,7 +112,7 @@ jobs:
 
       - name: Create/Update Jellyfin Release
         if: ${{ needs.setup_release.outputs.publish_release == 'true' }}
-        uses: LizardByte/jellyfin-plugin-repo@v2024.511.164148
+        uses: LizardByte/jellyfin-plugin-repo@v2024.516.183604
         with:
           github_token: ${{ secrets.GH_BOT_TOKEN }}
           committer_email: ${{ secrets.GH_BOT_EMAIL }}
