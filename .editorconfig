@@ -101,6 +101,9 @@ csharp_style_var_elsewhere = true:silent
 
 ## SonarAnalyzers.CSharp
 
+# Unreachable code detected
+dotnet_diagnostic.cs0162.severity = error
+
 # Remove this commented out code.
 dotnet_diagnostic.s125.severity = warning
 
@@ -112,6 +115,9 @@ dotnet_diagnostic.S1481.severity = error
 
 # Remove this empty class, write its code or make it an "interface".
 dotnet_diagnostic.s2094.severity = error
+
+# Either log this exception and handle it, or rethrow it with some contextual information.
+dotnet_diagnostic.s2139.severity = error
 
 # Either implement 'IDisposable.Dispose', or totally rename this method to prevent confusion.
 dotnet_diagnostic.s2953.severity = error
