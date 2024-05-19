@@ -4,9 +4,9 @@ image: "themerr-jellyfin.png"
 guid: "e41ef0c4-c413-41ba-b4fa-8c565dc3c969"
 targetAbi: "10.9.1.0"
 framework: "net8.0"
-overview: "Automatically add theme songs to movies using ThemerrDB"
+overview: "Automatically add theme songs to movies and tv shows using ThemerrDB"
 description: >-
-  Automatically add theme songs to movies using ThemerrDB
+  Automatically add theme songs to movies and tv shows using ThemerrDB
 category: "Metadata"
 owner: "LizardByte"
 artifacts:
