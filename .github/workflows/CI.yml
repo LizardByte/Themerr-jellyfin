@@ -10,26 +10,16 @@ on:
   workflow_dispatch:
 
 concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}
+  group: "${{ github.workflow }}-${{ github.ref }}"
   cancel-in-progress: true
 
 jobs:
   setup_release:
     name: Setup Release
     outputs:
-      changelog_changes: ${{ steps.setup_release.outputs.changelog_changes }}
-      changelog_date: ${{ steps.setup_release.outputs.changelog_date }}
-      changelog_exists: ${{ steps.setup_release.outputs.changelog_exists }}
-      changelog_release_exists: ${{ steps.setup_release.outputs.changelog_release_exists }}
-      changelog_url: ${{ steps.setup_release.outputs.changelog_url }}
-      changelog_version: ${{ steps.setup_release.outputs.changelog_version }}
-      publish_pre_release: ${{ steps.setup_release.outputs.publish_pre_release }}
       publish_release: ${{ steps.setup_release.outputs.publish_release }}
-      publish_stable_release: ${{ steps.setup_release.outputs.publish_stable_release }}
-      release_body: ${{ steps.setup_release.outputs.release_body }}
       release_build: ${{ steps.setup_release.outputs.release_build }}
       release_commit: ${{ steps.setup_release.outputs.release_commit }}
-      release_generate_release_notes: ${{ steps.setup_release.outputs.release_generate_release_notes }}
       release_tag: ${{ steps.setup_release.outputs.release_tag }}
       release_version: ${{ steps.setup_release.outputs.release_version }}
     runs-on: ubuntu-latest
@@ -39,7 +29,7 @@ jobs:
 
       - name: Setup Release
         id: setup_release
-        uses: LizardByte/setup-release-action@v2024.516.190324
+        uses: LizardByte/setup-release-action@v2024.520.193857
         with:
           dotnet: true
           github_token: ${{ secrets.GITHUB_TOKEN }}
@@ -99,23 +89,12 @@ jobs:
 
       - name: Create/Update GitHub Release
         if: ${{ needs.setup_release.outputs.publish_release == 'true' }}
-        uses: LizardByte/create-release-action@v2024.516.190229
+        uses: LizardByte/create-release-action@v2024.520.193838
         with:
           allowUpdates: true
-          body: ''
           discussionCategory: announcements
           generateReleaseNotes: true
           name: ${{ needs.setup_release.outputs.release_tag }}
-          prerelease: ${{ needs.setup_release.outputs.publish_pre_release }}
+          prerelease: true
           tag: ${{ needs.setup_release.outputs.release_tag }}
           token: ${{ secrets.GH_BOT_TOKEN }}
-
-      - name: Create/Update Jellyfin Release
-        if: ${{ needs.setup_release.outputs.publish_release == 'true' }}
-        uses: LizardByte/jellyfin-plugin-repo@v2024.516.183604
-        with:
-          github_token: ${{ secrets.GH_BOT_TOKEN }}
-          committer_email: ${{ secrets.GH_BOT_EMAIL }}
-          committer_name: ${{ secrets.GH_BOT_NAME }}
-          release_tag: ${{ needs.setup_release.outputs.release_tag }}
-          zipfile: ./artifacts/themerr-jellyfin.zip

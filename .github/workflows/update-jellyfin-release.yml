@@ -1,0 +1,93 @@
+---
+# This action is a candidate to centrally manage in https://github.com/<organization>/.github/
+# If more Jellyfin plugins are developed, consider moving this action to the organization's .github repository,
+# using the `jellyfin-plugin` repository label to identify repositories that should trigger have this workflow.
+
+# Update Jellyfin repository on release events.
+
+name: Update Jellyfin release
+
+on:
+  release:
+    types: [created, edited, deleted]
+
+concurrency:
+  group: "${{ github.workflow }}-${{ github.event.release.tag_name }}"
+  cancel-in-progress: false
+
+jobs:
+  update-jellyfin-release:
+    if: >-
+      !github.event.release.draft && !github.event.release.prerelease
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check if Jellyfin repo
+        id: isJellyfinRepo
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const repo = context.payload.repository;
+            const repoLabels = await github.repos.listLabelsForRepo({
+              owner: repo.owner.login,
+              repo: repo.name
+            });
+            const isJellyfinRepo = repoLabels.data.some(label => label.name === 'jellyfin-plugin');
+            core.setOutput('isJellyfinRepo', isJellyfinRepo);
+
+      - name: Download release asset
+        id: download
+        if: >-
+          steps.isJellyfinRepo.outputs.isJellyfinRepo == 'true' &&
+          github.event.action != 'deleted'
+        uses: robinraju/release-downloader@v1.10
+        with:
+          repository: "${{ github.repository }}"
+          tag: "${{ github.event.release.tag_name }}"
+          fileName: "*.zip"
+          tarBall: false
+          zipBall: false
+          out-file-path: "release_downloads"
+          extract: false
+
+      - name: Loop through downloaded files
+        if: >-
+          steps.isJellyfinRepo.outputs.isJellyfinRepo == 'true' &&
+          github.event.action != 'deleted'
+        id: loop
+        run: |
+          files=${{ fromJson(steps.download.outputs.downloaded_files) }}
+          file_number=0
+          plugin=""
+          for file in "${files[@]}"; do
+            echo "$file"
+
+            # extract the zip file
+            unzip -o $file -d ./release_downloads/$file_number
+
+            # check if the extracted file contains a meta.json file
+            if [ -f ./release_downloads/$file_number/meta.json ]; then
+              plugin=$file
+              break
+            fi
+
+            file_number=$((file_number+1))
+          done
+
+          if [ -z "$plugin" ]; then
+            echo "No plugin found in the downloaded files"
+            exit 1
+          fi
+
+          echo "plugin_zip=$plugin" >> $GITHUB_OUTPUT
+
+      - name: Create/Update Jellyfin Release
+        if: >-
+          steps.isJellyfinRepo.outputs.isJellyfinRepo == 'true'
+        uses: LizardByte/jellyfin-plugin-repo@v2024.522.143446
+        with:
+          action: ${{ github.event.action == 'deleted' && 'remove' || 'add' }}
+          github_token: ${{ secrets.GH_BOT_TOKEN }}
+          committer_email: ${{ secrets.GH_BOT_EMAIL }}
+          committer_name: ${{ secrets.GH_BOT_NAME }}
+          release_tag: ${{ github.event.release.tag_name }}
+          zipfile: ${{ steps.loop.outputs.plugin_zip }}

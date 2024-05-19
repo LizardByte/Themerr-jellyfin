@@ -29,7 +29,7 @@ on:
   workflow_dispatch:
 
 concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}
+  group: "${{ github.workflow }}-${{ github.ref }}"
   cancel-in-progress: true
 
 jobs:
@@ -102,19 +102,9 @@ jobs:
     needs:
       - check_dockerfiles
     outputs:
-      changelog_changes: ${{ steps.setup_release.outputs.changelog_changes }}
-      changelog_date: ${{ steps.setup_release.outputs.changelog_date }}
-      changelog_exists: ${{ steps.setup_release.outputs.changelog_exists }}
-      changelog_release_exists: ${{ steps.setup_release.outputs.changelog_release_exists }}
-      changelog_url: ${{ steps.setup_release.outputs.changelog_url }}
-      changelog_version: ${{ steps.setup_release.outputs.changelog_version }}
-      publish_pre_release: ${{ steps.setup_release.outputs.publish_pre_release }}
       publish_release: ${{ steps.setup_release.outputs.publish_release }}
-      publish_stable_release: ${{ steps.setup_release.outputs.publish_stable_release }}
-      release_body: ${{ steps.setup_release.outputs.release_body }}
       release_build: ${{ steps.setup_release.outputs.release_build }}
       release_commit: ${{ steps.setup_release.outputs.release_commit }}
-      release_generate_release_notes: ${{ steps.setup_release.outputs.release_generate_release_notes }}
       release_tag: ${{ steps.setup_release.outputs.release_tag }}
       release_version: ${{ steps.setup_release.outputs.release_version }}
     runs-on: ubuntu-latest
@@ -124,7 +114,7 @@ jobs:
 
       - name: Setup Release
         id: setup_release
-        uses: LizardByte/setup-release-action@v2024.516.190324
+        uses: LizardByte/setup-release-action@v2024.520.181643
         with:
           dotnet: ${{ needs.check_dockerfiles.outputs.dotnet }}
           github_token: ${{ secrets.GITHUB_TOKEN }}
@@ -171,7 +161,7 @@ jobs:
 
     steps:
       - name: Maximize build space
-        uses: easimon/maximize-build-space@v8
+        uses: easimon/maximize-build-space@v10
         with:
           root-reserve-mb: 30720  # https://github.com/easimon/maximize-build-space#caveats
           remove-dotnet: 'true'
@@ -287,7 +277,7 @@ jobs:
         id: buildx
 
       - name: Cache Docker Layers
-        uses: actions/cache@v3
+        uses: actions/cache@v4
         with:
           path: /tmp/.buildx-cache
           key: Docker-buildx${{ matrix.tag }}-${{ github.sha }}
@@ -373,21 +363,20 @@ jobs:
 
       - name: Create/Update GitHub Release
         if: ${{ needs.setup_release.outputs.publish_release == 'true' && steps.prepare.outputs.artifacts == 'true' }}
-        uses: LizardByte/create-release-action@v2024.516.190229
+        uses: LizardByte/create-release-action@v2024.520.180003
         with:
           allowUpdates: true
           artifacts: "*artifacts/*"
-          body: ''
           discussionCategory: announcements
           generateReleaseNotes: true
           name: ${{ needs.setup_release.outputs.release_tag }}
-          prerelease: ${{ needs.setup_release.outputs.publish_pre_release }}
+          prerelease: true
           tag: ${{ needs.setup_release.outputs.release_tag }}
           token: ${{ secrets.GH_BOT_TOKEN }}
 
       - name: Update Docker Hub Description
         if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/master' }}
-        uses: peter-evans/dockerhub-description@v3
+        uses: peter-evans/dockerhub-description@v4
         with:
           username: ${{ secrets.DOCKER_HUB_USERNAME }}
           password: ${{ secrets.DOCKER_HUB_PASSWORD }}  # token is not currently supported
