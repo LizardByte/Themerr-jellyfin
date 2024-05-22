@@ -18,6 +18,7 @@ concurrency:
 jobs:
   update-jellyfin-release:
     if: >-
+      github.repository_owner == 'LizardByte' &&
       !github.event.release.draft && !github.event.release.prerelease
     runs-on: ubuntu-latest
     steps:
