@@ -64,10 +64,10 @@ jobs:
           github.event.action != 'deleted'
         id: loop
         run: |
-          files=${{ fromJson(steps.download.outputs.downloaded_files) }}
+          files=$(echo '${{ steps.download.outputs.downloaded_files }}' | jq -r '.[]')
           file_number=0
           plugin=""
-          for file in "${files[@]}"; do
+          for file in $files; do
             echo "$file"
 
             # extract the zip file
@@ -88,6 +88,7 @@ jobs:
           fi
 
           echo "plugin_zip=$plugin" >> $GITHUB_OUTPUT
+          echo "found plugin: $plugin"
 
       - name: Create/Update Jellyfin Release
         if: >-
