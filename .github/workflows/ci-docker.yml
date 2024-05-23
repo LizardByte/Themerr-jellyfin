@@ -114,7 +114,7 @@ jobs:
 
       - name: Setup Release
         id: setup_release
-        uses: LizardByte/setup-release-action@v2024.520.181643
+        uses: LizardByte/setup-release-action@v2024.520.211417
         with:
           dotnet: ${{ needs.check_dockerfiles.outputs.dotnet }}
           github_token: ${{ secrets.GITHUB_TOKEN }}
