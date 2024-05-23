@@ -23,21 +23,30 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Check if Jellyfin repo
-        id: isJellyfinRepo
+        env:
+          TOPIC: jellyfin-plugin
+        id: check
         uses: actions/github-script@v7
         with:
           script: |
-            const repoLabels = await github.rest.issues.listLabelsForRepo({
+            const topic = process.env.TOPIC;
+            console.log(`Checking if repo has topic: ${topic}`);
+
+            const repoTopics = await github.rest.repos.getAllTopics({
               owner: context.repo.owner,
               repo: context.repo.repo
             });
-            const isJellyfinRepo = repoLabels.data.some(label => label.name === 'jellyfin-plugin');
-            core.setOutput('isJellyfinRepo', isJellyfinRepo);
+            console.log(`Repo topics: ${repoTopics.data.names}`);
+
+            const hasTopic = repoTopics.data.names.includes(topic);
+            console.log(`Has topic: ${hasTopic}`);
+
+            core.setOutput('hasTopic', hasTopic);
 
       - name: Download release asset
         id: download
         if: >-
-          steps.isJellyfinRepo.outputs.isJellyfinRepo == 'true' &&
+          steps.check.outputs.hasTopic == 'true' &&
           github.event.action != 'deleted'
         uses: robinraju/release-downloader@v1.10
         with:
@@ -51,7 +60,7 @@ jobs:
 
       - name: Loop through downloaded files
         if: >-
-          steps.isJellyfinRepo.outputs.isJellyfinRepo == 'true' &&
+          steps.check.outputs.hasTopic == 'true' &&
           github.event.action != 'deleted'
         id: loop
         run: |
@@ -82,7 +91,7 @@ jobs:
 
       - name: Create/Update Jellyfin Release
         if: >-
-          steps.isJellyfinRepo.outputs.isJellyfinRepo == 'true'
+          steps.check.outputs.hasTopic == 'true'
         uses: LizardByte/jellyfin-plugin-repo@v2024.522.143446
         with:
           action: ${{ github.event.action == 'deleted' && 'remove' || 'add' }}
