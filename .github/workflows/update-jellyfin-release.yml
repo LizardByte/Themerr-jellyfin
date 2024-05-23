@@ -26,12 +26,10 @@ jobs:
         id: isJellyfinRepo
         uses: actions/github-script@v7
         with:
-          github-token: ${{ secrets.GH_BOT_TOKEN }}
           script: |
-            const repo = context.payload.repository;
-            const repoLabels = await github.repos.listLabelsForRepo({
-              owner: repo.owner.login,
-              repo: repo.name
+            const repoLabels = await github.rest.issues.listLabelsForRepo({
+              owner: context.repo.owner,
+              repo: context.repo.repo
             });
             const isJellyfinRepo = repoLabels.data.some(label => label.name === 'jellyfin-plugin');
             core.setOutput('isJellyfinRepo', isJellyfinRepo);
