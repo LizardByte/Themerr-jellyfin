@@ -18,7 +18,6 @@ jobs:
     name: Setup Release
     outputs:
       publish_release: ${{ steps.setup_release.outputs.publish_release }}
-      release_build: ${{ steps.setup_release.outputs.release_build }}
       release_commit: ${{ steps.setup_release.outputs.release_commit }}
       release_tag: ${{ steps.setup_release.outputs.release_tag }}
       release_version: ${{ steps.setup_release.outputs.release_version }}
