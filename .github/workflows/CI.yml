@@ -18,7 +18,9 @@ jobs:
     name: Setup Release
     outputs:
       publish_release: ${{ steps.setup_release.outputs.publish_release }}
+      release_body: ${{ steps.setup_release.outputs.release_body }}
       release_commit: ${{ steps.setup_release.outputs.release_commit }}
+      release_generate_release_notes: ${{ steps.setup_release.outputs.release_generate_release_notes }}
       release_tag: ${{ steps.setup_release.outputs.release_tag }}
       release_version: ${{ steps.setup_release.outputs.release_version }}
     runs-on: ubuntu-latest
@@ -91,8 +93,9 @@ jobs:
         uses: LizardByte/create-release-action@v2024.524.143912
         with:
           allowUpdates: true
+          body: ${{ needs.setup_release.outputs.release_body }}
           discussionCategory: announcements
-          generateReleaseNotes: true
+          generateReleaseNotes: ${{ needs.setup_release.outputs.release_generate_release_notes }}
           name: ${{ needs.setup_release.outputs.release_tag }}
           prerelease: true
           tag: ${{ needs.setup_release.outputs.release_tag }}
