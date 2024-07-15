@@ -115,7 +115,7 @@ jobs:
 
       - name: Setup Release
         id: setup_release
-        uses: LizardByte/setup-release-action@v2024.608.210128
+        uses: LizardByte/setup-release-action@v2024.714.140421
         with:
           dotnet: ${{ needs.check_dockerfiles.outputs.dotnet }}
           github_token: ${{ secrets.GITHUB_TOKEN }}
@@ -301,7 +301,7 @@ jobs:
       - name: Build artifacts
         if: ${{ steps.prepare.outputs.artifacts == 'true' }}
         id: build_artifacts
-        uses: docker/build-push-action@v5
+        uses: docker/build-push-action@v6
         with:
           context: ./
           file: ${{ matrix.dockerfile }}
@@ -323,7 +323,7 @@ jobs:
 
       - name: Build and push
         id: build
-        uses: docker/build-push-action@v5
+        uses: docker/build-push-action@v6
         with:
           context: ./
           file: ${{ matrix.dockerfile }}
@@ -362,7 +362,7 @@ jobs:
 
       - name: Create/Update GitHub Release
         if: ${{ needs.setup_release.outputs.publish_release == 'true' && steps.prepare.outputs.artifacts == 'true' }}
-        uses: LizardByte/create-release-action@v2024.611.132610
+        uses: LizardByte/create-release-action@v2024.614.221009
         with:
           allowUpdates: true
           artifacts: "*artifacts/*"
