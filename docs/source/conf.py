@@ -47,7 +47,7 @@ root_dir = os.path.dirname(source_dir)  # the root folder directory
 
 # -- Project information -----------------------------------------------------
 project = 'Themerr-jellyfin'
-project_copyright = f'{datetime.now ().year}, {project}'
+project_copyright = f'{datetime.now().year}, {project}'
 author = 'ReenigneArcher'
 
 csproj_file = os.path.join(root_dir, 'Jellyfin.Plugin.Themerr', 'Jellyfin.Plugin.Themerr.csproj')
