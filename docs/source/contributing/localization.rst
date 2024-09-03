@@ -3,7 +3,7 @@
 Themerr-jellyfin and related LizardByte projects are being localized into various languages. The default language is
 `en` (English).
 
- .. image:: https://app.lizardbyte.dev/uno/crowdin/LizardByte_graph.svg
+ .. image:: https://app.lizardbyte.dev/dashboard/crowdin/LizardByte_graph.svg
 
 CrowdIn
 -------
