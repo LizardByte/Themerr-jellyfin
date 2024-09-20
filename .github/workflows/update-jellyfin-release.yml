@@ -93,7 +93,7 @@ jobs:
       - name: Create/Update Jellyfin Release
         if: >-
           steps.check.outputs.hasTopic == 'true'
-        uses: LizardByte/jellyfin-plugin-repo@v2024.715.145527
+        uses: LizardByte/jellyfin-plugin-repo@v2024.919.151635
         with:
           action: ${{ github.event.action == 'deleted' && 'remove' || 'add' }}
           github_token: ${{ secrets.GH_BOT_TOKEN }}
