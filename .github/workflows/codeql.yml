@@ -28,7 +28,7 @@ jobs:
       continue: ${{ steps.continue.outputs.result }}
     steps:
       - name: Get repo languages
-        uses: actions/github-script@v7
+        uses: actions/github-script@v8
         id: lang
         with:
           script: |
@@ -87,7 +87,7 @@ jobs:
             return matrix
 
       - name: Continue
-        uses: actions/github-script@v7
+        uses: actions/github-script@v8
         id: continue
         with:
           script: |
@@ -135,7 +135,7 @@ jobs:
           remove-docker-images: 'true'
 
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           submodules: recursive
 
@@ -150,7 +150,7 @@ jobs:
 
       # Initializes the CodeQL tools for scanning.
       - name: Initialize CodeQL
-        uses: github/codeql-action/init@v3
+        uses: github/codeql-action/init@v4
         with:
           languages: ${{ matrix.language }}
           # If you wish to specify custom queries, you can do so here or in a config file.
@@ -182,10 +182,10 @@ jobs:
       # Autobuild attempts to build any compiled languages (C/C++, C#, Go, Java, or Swift).
       - name: Autobuild
         if: steps.prebuild.outputs.skip_autobuild != 'true'
-        uses: github/codeql-action/autobuild@v3
+        uses: github/codeql-action/autobuild@v4
 
       - name: Perform CodeQL Analysis
-        uses: github/codeql-action/analyze@v3
+        uses: github/codeql-action/analyze@v4
         with:
           category: "/language:${{matrix.language}}"
           output: sarif-results
@@ -202,12 +202,12 @@ jobs:
             -third\-party/**
 
       - name: Upload SARIF
-        uses: github/codeql-action/upload-sarif@v3
+        uses: github/codeql-action/upload-sarif@v4
         with:
           sarif_file: sarif-results/${{ matrix.language }}.sarif
 
       - name: Upload loc as a Build Artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
           name: sarif-results-${{ matrix.language }}-${{ runner.os }}
           path: sarif-results
