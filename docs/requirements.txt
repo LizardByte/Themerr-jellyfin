@@ -3,7 +3,7 @@ furo==2024.7.18
 m2r2==0.3.3.post2
 rstcheck[sphinx]==6.2.4
 rstfmt==0.0.14
-Sphinx==7.2.6
+Sphinx==9.0.0
 sphinx-copybutton==0.5.2
 
 # install submodules
