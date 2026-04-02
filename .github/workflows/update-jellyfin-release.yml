@@ -48,7 +48,7 @@ jobs:
         if: >-
           steps.check.outputs.hasTopic == 'true' &&
           github.event.action != 'deleted'
-        uses: robinraju/release-downloader@v1.11
+        uses: robinraju/release-downloader@v1.12
         with:
           repository: "${{ github.repository }}"
           tag: "${{ github.event.release.tag_name }}"
