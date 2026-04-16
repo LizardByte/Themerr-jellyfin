@@ -19,6 +19,7 @@ namespace Jellyfin.Plugin.Themerr.Tests;
 public class TestThemerrManager
 {
     private readonly ThemerrManager _themerrManager;
+    private readonly ThemerrManager _themerrManagerWithMockYoutube;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="TestThemerrManager"/> class.
@@ -33,11 +34,29 @@ public class TestThemerrManager
         Mock<ILogger<ThemerrManager>> mockLogger = new();
         Mock<IXmlSerializer> mockXmlSerializer = new();
 
+        var audioStubPath = Path.Combine(Directory.GetCurrentDirectory(), "data", "audio_stub.mp3");
+
+        var mockYoutubeClient = new Mock<IYoutubeClientWrapper>();
+        mockYoutubeClient
+            .Setup(y => y.DownloadAudioAsync(It.IsAny<string>(), It.IsAny<string>()))
+            .Returns<string, string>((_, destination) =>
+            {
+                File.Copy(audioStubPath, destination, true);
+                return Task.CompletedTask;
+            });
+
         _themerrManager = new ThemerrManager(
             mockApplicationPaths.Object,
             mockLibraryManager.Object,
             mockLogger.Object,
             mockXmlSerializer.Object);
+
+        _themerrManagerWithMockYoutube = new ThemerrManager(
+            mockApplicationPaths.Object,
+            mockLibraryManager.Object,
+            mockLogger.Object,
+            mockXmlSerializer.Object,
+            mockYoutubeClient.Object);
     }
 
     /// <summary>
@@ -110,7 +129,7 @@ public class TestThemerrManager
         TestLogger.Info($"Attempting to download {videoUrl}");
 
         // run and wait
-        var themeExists = _themerrManager.SaveMp3(destinationFile, videoUrl);
+        var themeExists = _themerrManagerWithMockYoutube.SaveMp3(destinationFile, videoUrl);
         Assert.True(themeExists, $"SaveMp3 did not return True for {videoUrl}");
 
         // check if file exists
@@ -212,12 +231,12 @@ public class TestThemerrManager
     private void TestProcessItemTheme(BaseItem item)
     {
         // get the item theme
-        _themerrManager.ProcessItemTheme(item);
+        _themerrManagerWithMockYoutube.ProcessItemTheme(item);
 
-        Assert.True(File.Exists(_themerrManager.GetThemePath(item)), $"File {_themerrManager.GetThemePath(item)} does not exist");
+        Assert.True(File.Exists(_themerrManagerWithMockYoutube.GetThemePath(item)), $"File {_themerrManagerWithMockYoutube.GetThemePath(item)} does not exist");
 
         // cleanup and delete the file
-        File.Delete(_themerrManager.GetThemePath(item));
+        File.Delete(_themerrManagerWithMockYoutube.GetThemePath(item));
     }
 
     [Theory]
