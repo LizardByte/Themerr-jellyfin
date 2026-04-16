@@ -3,7 +3,7 @@ furo==2024.8.6
 myst-parser==4.0.1
 rstcheck[sphinx]==6.2.5
 rstfmt==0.0.14
-Sphinx==7.2.6
+Sphinx==7.4.7
 sphinx-copybutton==0.5.2
 
 # install submodules
