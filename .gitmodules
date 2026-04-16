@@ -4,7 +4,7 @@
 	branch = master
 [submodule "third-party/jellyfin-web"]
 	path = third-party/jellyfin-web
-	url = https://github.com/jellyfin/jellyfin-web
+	url = https://github.com/jellyfin/jellyfin-web.git
 	branch = master
 [submodule "third-party/sphinx-csharp"]
 	path = third-party/sphinx-csharp

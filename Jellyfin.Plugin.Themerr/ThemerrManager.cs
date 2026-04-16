@@ -539,8 +539,20 @@ namespace Jellyfin.Plugin.Themerr
         /// </summary>
         public void Dispose()
         {
-            // Cleanup
-            _timer?.Dispose();
+            Dispose(true);
+            GC.SuppressFinalize(this);
+        }
+
+        /// <summary>
+        /// Releases unmanaged and optionally managed resources.
+        /// </summary>
+        /// <param name="disposing">Whether managed resources should be disposed.</param>
+        protected virtual void Dispose(bool disposing)
+        {
+            if (disposing)
+            {
+                _timer?.Dispose();
+            }
         }
 
         /// <summary>
