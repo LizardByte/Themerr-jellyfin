@@ -6,10 +6,12 @@
 # Update Jellyfin repository on release events.
 
 name: Update Jellyfin release
+permissions: {}
 
 on:
   release:
-    types: [created, edited, deleted]
+    types:
+      - released  # this triggers when a release is published, but does not include pre-releases or drafts
 
 concurrency:
   group: "${{ github.workflow }}-${{ github.event.release.tag_name }}"
@@ -26,7 +28,7 @@ jobs:
         env:
           TOPIC: jellyfin-plugin
         id: check
-        uses: actions/github-script@v7
+        uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3  # v9.0.0
         with:
           script: |
             const topic = process.env.TOPIC;
@@ -48,7 +50,7 @@ jobs:
         if: >-
           steps.check.outputs.hasTopic == 'true' &&
           github.event.action != 'deleted'
-        uses: robinraju/release-downloader@v1.11
+        uses: robinraju/release-downloader@daf26c55d821e836577a15f77d86ddc078948b05  # v1.12
         with:
           repository: "${{ github.repository }}"
           tag: "${{ github.event.release.tag_name }}"
@@ -67,37 +69,37 @@ jobs:
           files=$(echo '${{ steps.download.outputs.downloaded_files }}' | jq -r '.[]')
           file_number=0
           plugin=""
-          for file in $files; do
-            echo "$file"
+          for file in ${files}; do
+            echo "${file}"
 
             # extract the zip file
-            unzip -o $file -d ./release_downloads/$file_number
+            unzip -o "${file}" -d "./release_downloads/${file_number}"
 
             # check if the extracted file contains a meta.json file
-            if [ -f ./release_downloads/$file_number/meta.json ]; then
-              plugin=$file
+            if [ -f "./release_downloads/${file_number}/meta.json" ]; then
+              plugin=${file}
               break
             fi
 
             file_number=$((file_number+1))
           done
 
-          if [ -z "$plugin" ]; then
+          if [ -z "${plugin}" ]; then
             echo "No plugin found in the downloaded files"
             exit 1
           fi
 
-          echo "plugin_zip=$plugin" >> $GITHUB_OUTPUT
-          echo "found plugin: $plugin"
+          echo "plugin_zip=${plugin}" >> "${GITHUB_OUTPUT}"
+          echo "found plugin: ${plugin}"
 
       - name: Create/Update Jellyfin Release
         if: >-
           steps.check.outputs.hasTopic == 'true'
-        uses: LizardByte/jellyfin-plugin-repo@v2024.919.151635
+        uses: LizardByte/jellyfin-plugin-repo@9b4a092e7fe87c57531949fd601833f7ce30e97c  # v2025.612.131900
         with:
           action: ${{ github.event.action == 'deleted' && 'remove' || 'add' }}
           github_token: ${{ secrets.GH_BOT_TOKEN }}
           committer_email: ${{ secrets.GH_BOT_EMAIL }}
-          committer_name: ${{ secrets.GH_BOT_NAME }}
+          committer_name: ${{ vars.GH_BOT_NAME }}
           release_tag: ${{ github.event.release.tag_name }}
           zipfile: ${{ steps.loop.outputs.plugin_zip }}

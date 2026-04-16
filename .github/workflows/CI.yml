@@ -1,12 +1,12 @@
 ---
 name: CI
+permissions: {}
 
 on:
   pull_request:
-    branches: [master]
-    types: [opened, synchronize, reopened]
   push:
-    branches: [master]
+    branches:
+      - master
   workflow_dispatch:
 
 concurrency:
@@ -14,67 +14,89 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  setup_release:
-    name: Setup Release
+  release-setup:
+    name: Release Setup
     outputs:
-      publish_release: ${{ steps.setup_release.outputs.publish_release }}
-      release_body: ${{ steps.setup_release.outputs.release_body }}
-      release_commit: ${{ steps.setup_release.outputs.release_commit }}
-      release_generate_release_notes: ${{ steps.setup_release.outputs.release_generate_release_notes }}
-      release_tag: ${{ steps.setup_release.outputs.release_tag }}
-      release_version: ${{ steps.setup_release.outputs.release_version }}
+      publish_release: ${{ steps.release-setup.outputs.publish_release }}
+      release_body: ${{ steps.release-setup.outputs.release_body }}
+      release_commit: ${{ steps.release-setup.outputs.release_commit }}
+      release_generate_release_notes: ${{ steps.release-setup.outputs.release_generate_release_notes }}
+      release_tag: ${{ steps.release-setup.outputs.release_tag }}
+      release_version: ${{ steps.release-setup.outputs.release_version }}
+    permissions:
+      contents: write
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6.0.2
 
-      - name: Setup Release
-        id: setup_release
-        uses: LizardByte/setup-release-action@v2024.919.143601
+      - name: Release Setup
+        id: release-setup
+        uses: LizardByte/actions/actions/release_setup@0affa4f7bcb27562658960eee840eff8ff844578  # v2026.328.161128
         with:
           dotnet: true
           github_token: ${{ secrets.GITHUB_TOKEN }}
 
+  build-docker:
+    name: Docker
+    needs: release-setup
+    permissions:
+      contents: read
+      packages: write
+    uses: LizardByte/.github/.github/workflows/__call-docker.yml@master
+    with:
+      docker_hub_username: ${{ vars.DOCKER_HUB_USERNAME }}
+      gh_bot_name: ${{ vars.GH_BOT_NAME }}
+      publish_release: ${{ needs.release-setup.outputs.publish_release }}
+      release_commit: ${{ needs.release-setup.outputs.release_commit }}
+      release_tag: ${{ needs.release-setup.outputs.release_tag }}
+      release_version: ${{ needs.release-setup.outputs.release_version }}
+    secrets:
+      DOCKER_HUB_PASSWORD: ${{ secrets.DOCKER_HUB_PASSWORD }}
+      DOCKER_HUB_ACCESS_TOKEN: ${{ secrets.DOCKER_HUB_ACCESS_TOKEN }}
+      GH_BOT_TOKEN: ${{ secrets.GH_BOT_TOKEN }}
+      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
   build:
-    needs:
-      - setup_release
+    needs: release-setup
     runs-on: ubuntu-latest
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6.0.2
 
       - name: Setup .NET
-        uses: actions/setup-dotnet@v4.0.1
+        uses: actions/setup-dotnet@c2fa09f4bde5ebb9d1777cf28262a3eb3db3ced7  # v5.2.0
         with:
           dotnet-version: "8.0.x"
 
       - name: Build Plugin
         id: jprm
-        uses: oddstr13/jellyfin-plugin-repository-manager@v1.1.1
+        uses: oddstr13/jellyfin-plugin-repository-manager@9497a0a499416cc572ed2e07a391d9f943a37b4d  # v1.1.1
         with:
           path: .
           output: ./build
-          version: ${{ needs.setup_release.outputs.release_version }}
+          version: ${{ needs.release-setup.outputs.release_version }}
           dotnet-config: Release
           dotnet-target: net8.0
           verbosity: debug
 
-      - name: Unit Test
+      - name: Test
         id: test
-        run: |
-          dotnet test /p:CollectCoverage=true /p:CoverletOutputFormat=opencover --logger "console;verbosity=detailed"
+        run: dotnet test /p:CollectCoverage=true /p:CoverletOutputFormat=opencover --logger "console;verbosity=detailed"
 
-      - name: Upload coverage
+      - name: Upload test coverage
         # any except canceled or skipped
         if: >-
           always() &&
           (steps.test.outcome == 'success' || steps.test.outcome == 'failure') &&
           startsWith(github.repository, 'LizardByte/')
-        uses: codecov/codecov-action@v4
+        uses: codecov/codecov-action@57e3a136b779b570ffcdbf80b3bdc90e7fab3de2  # v6.0.0
         with:
           fail_ci_if_error: true
+          report_type: coverage
           token: ${{ secrets.CODECOV_TOKEN }}
+          verbose: true
 
       - name: Rename artifacts
         run: |
@@ -82,20 +104,22 @@ jobs:
           mv ./build/*.zip ./artifacts/themerr-jellyfin.zip
 
       - name: Upload Artifacts
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a  # v7.0.1
         with:
           name: themerr-jellyfin
-          if-no-files-found: error
           path: artifacts/
+          if-no-files-found: error
 
       - name: Create/Update GitHub Release
-        if: ${{ needs.setup_release.outputs.publish_release == 'true' }}
-        uses: LizardByte/create-release-action@v2024.919.143026
+        if: ${{ needs.release-setup.outputs.publish_release == 'true' }}
+        uses: LizardByte/actions/actions/release_create@0affa4f7bcb27562658960eee840eff8ff844578  # v2026.328.161128
         with:
-          allowUpdates: true
-          body: ${{ needs.setup_release.outputs.release_body }}
-          generateReleaseNotes: ${{ needs.setup_release.outputs.release_generate_release_notes }}
-          name: ${{ needs.setup_release.outputs.release_tag }}
+          allowUpdates: false
+          body: ${{ needs.release-setup.outputs.release_body }}
+          draft: true
+          generateReleaseNotes: ${{ needs.release-setup.outputs.release_generate_release_notes }}
+          name: ${{ needs.release-setup.outputs.release_tag }}
           prerelease: true
-          tag: ${{ needs.setup_release.outputs.release_tag }}
+          tag: ${{ needs.release-setup.outputs.release_tag }}
           token: ${{ secrets.GH_BOT_TOKEN }}
+          virustotal_api_key: ${{ secrets.VIRUSTOTAL_API_KEY }}

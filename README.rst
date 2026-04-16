@@ -9,9 +9,9 @@ Themerr-jellyfin is a plugin for Jellyfin that adds theme songs to movies using 
 Integrations
 ------------
 
-.. image:: https://img.shields.io/github/actions/workflow/status/lizardbyte/themerr-jellyfin/CI.yml.svg?branch=master&label=CI%20build&logo=github&style=for-the-badge
+.. image:: https://img.shields.io/github/actions/workflow/status/lizardbyte/themerr-jellyfin/ci.yml.svg?branch=master&label=CI%20build&logo=github&style=for-the-badge
    :alt: GitHub Workflow Status (CI)
-   :target: https://github.com/LizardByte/Themerr-jellyfin/actions/workflows/CI.yml?query=branch%3Amaster
+   :target: https://github.com/LizardByte/Themerr-jellyfin/actions/workflows/ci.yml?query=branch%3Amaster
 
 .. image:: https://img.shields.io/readthedocs/themerr-jellyfin?label=Docs&style=for-the-badge&logo=readthedocs
    :alt: Read the Docs
