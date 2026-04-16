@@ -1,4 +1,4 @@
-# syntax=docker/dockerfile:1.4
+# syntax=docker/dockerfile:1.23
 # artifacts: false
 # platforms: linux/amd64
 # Linuxserver.io docker mods are not multiplatform, so no point in enabling "linux/arm64/v8"
