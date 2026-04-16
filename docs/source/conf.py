@@ -67,7 +67,7 @@ version = os.getenv('READTHEDOCS_VERSION', 'dirty')
 # ones.
 extensions = [
     'breathe',  # c# support for sphinx with doxygen, and sphinx-csharp
-    'm2r2',  # enable markdown files
+    'myst_parser',  # enable markdown files
     'sphinx.ext.autosectionlabel',
     'sphinx.ext.graphviz',  # enable graphs for breathe
     'sphinx.ext.todo',  # enable to-do sections
@@ -85,7 +85,10 @@ extensions = [
 exclude_patterns = ['toc.rst']
 
 # Extensions to include.
-source_suffix = ['.rst', '.md']
+source_suffix = {
+    '.rst': 'restructuredtext',
+    '.md': 'markdown',
+}
 
 
 # -- Options for HTML output -------------------------------------------------
