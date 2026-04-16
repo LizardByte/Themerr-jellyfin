@@ -17,8 +17,6 @@ using MediaBrowser.Model.Entities;
 using MediaBrowser.Model.Serialization;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
-using YoutubeExplode;
-using YoutubeExplode.Videos.Streams;
 
 namespace Jellyfin.Plugin.Themerr
 {
@@ -30,6 +28,7 @@ namespace Jellyfin.Plugin.Themerr
         private readonly ILibraryManager _libraryManager;
         private readonly Timer _timer;
         private readonly ILogger<ThemerrManager> _logger;
+        private readonly IYoutubeClientWrapper _youtubeClientWrapper;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="ThemerrManager"/> class.
@@ -38,16 +37,19 @@ namespace Jellyfin.Plugin.Themerr
         /// <param name="libraryManager">The library manager.</param>
         /// <param name="logger">The logger.</param>
         /// <param name="xmlSerializer">The XML serializer.</param>
+        /// <param name="youtubeClientWrapper">The YouTube client wrapper. Uses the default implementation when null.</param>
         public ThemerrManager(
             IApplicationPaths applicationPaths,
             ILibraryManager libraryManager,
             ILogger<ThemerrManager> logger,
-            IXmlSerializer xmlSerializer)
+            IXmlSerializer xmlSerializer,
+            IYoutubeClientWrapper youtubeClientWrapper = null)
             : base(applicationPaths, xmlSerializer)
         {
             _libraryManager = libraryManager;
             _logger = logger;
             _timer = new Timer(_ => OnTimerElapsed(), null, Timeout.Infinite, Timeout.Infinite);
+            _youtubeClientWrapper = youtubeClientWrapper ?? new YoutubeClientWrapper();
         }
 
         /// <summary>
@@ -94,17 +96,7 @@ namespace Jellyfin.Plugin.Themerr
             {
                 Task.Run(async () =>
                 {
-                    var youtube = new YoutubeClient();
-                    var streamManifest = await youtube.Videos.Streams.GetManifestAsync(videoUrl);
-
-                    // highest bitrate audio mp3 stream
-                    var streamInfo = streamManifest
-                        .GetAudioOnlyStreams()
-                        .Where(s => s.Container == Container.Mp4)
-                        .GetWithHighestBitrate();
-
-                    // Download the stream to a file
-                    await youtube.Videos.Streams.DownloadAsync(streamInfo, destination);
+                    await _youtubeClientWrapper.DownloadAudioAsync(videoUrl, destination);
                 });
             }
             catch (Exception e)
