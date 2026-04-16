@@ -283,6 +283,7 @@ sphinx_csharp_ext_type_map = {
             'TaskResults',
             'TaskState',
             'TaskTriggerInfo',
+            'TaskTriggerInfoType',
         ],
     },
 }

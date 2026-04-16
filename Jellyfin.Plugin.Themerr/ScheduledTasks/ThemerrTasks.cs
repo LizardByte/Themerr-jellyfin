@@ -83,7 +83,7 @@ namespace Jellyfin.Plugin.Themerr.ScheduledTasks
             // Run this task according to the configured interval
             yield return new TaskTriggerInfo
             {
-                Type = TaskTriggerInfo.TriggerInterval,
+                Type = TaskTriggerInfoType.IntervalTrigger,
                 IntervalTicks = TimeSpan.FromMinutes(ThemerrPlugin.Instance.Configuration.UpdateInterval).Ticks,
             };
         }
