@@ -1,6 +1,6 @@
 breathe==4.35.0
 furo==2025.12.19
-myst-parser==4.0.1
+myst-parser==5.0.0
 rstcheck[sphinx]==6.2.5
 rstfmt==0.0.14
 Sphinx==9.1.0
