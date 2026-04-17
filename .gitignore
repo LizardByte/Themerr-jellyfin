@@ -403,3 +403,4 @@ venv/
 
 # exclude build directory
 build/
+.jellyfin/
