@@ -22,19 +22,21 @@ SHELL ["/bin/bash", "-o", "pipefail", "-c"]
 # dotnet deps: https://learn.microsoft.com/en-us/dotnet/core/install/linux-ubuntu#dependencies
 RUN <<_DEPS
 #!/bin/bash
+set -e
 apt-get update -y
 apt-get install -y --no-install-recommends \
+  ca-certificates \
+  libbrotli1 \
   libc6 \
   libgcc-s1 \
   libgssapi-krb5-2 \
-  libicu74 \
-  liblttng-ust1 \
-  libssl3 \
+  libicu78 \
+  libssl3t64 \
   libstdc++6 \
-  libunwind8 \
   python3 \
   python3-pip \
   python3-venv \
+  tzdata \
   unzip \
   wget \
   zlib1g
@@ -46,6 +48,7 @@ _DEPS
 WORKDIR /tmp
 RUN <<_DOTNET
 #!/bin/bash
+set -e
 url="https://dot.net/v1/dotnet-install.sh"
 wget --quiet "$url" -O dotnet-install.sh
 chmod +x ./dotnet-install.sh
@@ -55,6 +58,7 @@ _DOTNET
 # create venv
 RUN <<_VENV
 #!/bin/bash
+set -e
 # create and source the virtual environment
 python3 -m venv ${VIRTUAL_ENV}
 _VENV
@@ -71,6 +75,7 @@ WORKDIR /build
 # update pip
 RUN <<_PIP
 #!/bin/bash
+set -e
 python3 -m pip install --no-cache-dir --upgrade \
   pip setuptools wheel
 python3 -m pip install --no-cache-dir -r requirements-dev.txt
