@@ -340,6 +340,7 @@
                     console.log(LogPrefix + "type: " + all_items[item]["type"])
                     console.log(LogPrefix + "theme_provider: " + all_items[item]["theme_provider"])
                     console.log(LogPrefix + "year: " + all_items[item]["year"])
+                    console.log(LogPrefix + "in_themerr_db: " + all_items[item]["in_themerr_db"])
 
                     // create table row
                     let tableRow = document.createElement('tr')
@@ -397,6 +398,12 @@
                     }
                     tableColumnStatus.appendChild(statusSpan)
                     tableColumnStatus.appendChild(statusText)
+                    if (all_items[item]["theme_provider"] === 'user' && all_items[item]["in_themerr_db"] === true) {
+                        let themerrHint = document.createElement('div')
+                        themerrHint.setAttribute('style', 'font-size: 0.8em; color: grey;')
+                        themerrHint.innerText = translate('available_in_themerr_db')
+                        tableColumnStatus.appendChild(themerrHint)
+                    }
                     tableRow.appendChild(tableColumnStatus)
                 }
             }

@@ -248,6 +248,30 @@ namespace Jellyfin.Plugin.Themerr
         }
 
         /// <summary>
+        /// Check if an item has an entry in the ThemerrDB database.
+        /// </summary>
+        /// <param name="item">The Jellyfin media object.</param>
+        /// <returns>True if the item exists in ThemerrDB, false otherwise.</returns>
+        public bool IsInThemerrDb(BaseItem item)
+        {
+            var dbType = item switch
+            {
+                Movie _ => "movies",
+                Series _ => "tv_shows",
+                _ => null,
+            };
+
+            if (string.IsNullOrEmpty(dbType))
+            {
+                return false;
+            }
+
+            var tmdbId = GetTmdbId(item);
+            var themerrDbUrl = CreateThemerrDbLink(tmdbId, dbType);
+            return !string.IsNullOrEmpty(GetYoutubeThemeUrl(themerrDbUrl, item));
+        }
+
+        /// <summary>
         /// Check if the theme song should be downloaded.
         ///
         /// Various checks are performed to determine if the theme song should be downloaded.

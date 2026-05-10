@@ -467,6 +467,33 @@ public class TestThemerrManager
 
     [Theory]
     [Trait("Category", "Unit")]
+    [MemberData(nameof(FixtureJellyfinServer.MockItemsData), MemberType = typeof(FixtureJellyfinServer))]
+    private void TestIsInThemerrDb(BaseItem item)
+    {
+        var result = _themerrManager.IsInThemerrDb(item);
+        Assert.True(result, $"IsInThemerrDb returned False for {item.Name}");
+    }
+
+    [Theory]
+    [Trait("Category", "Unit")]
+    [MemberData(nameof(FixtureJellyfinServer.MockItems2Data), MemberType = typeof(FixtureJellyfinServer))]
+    private void TestIsInThemerrDbNotFound(BaseItem item)
+    {
+        var result = _themerrManager.IsInThemerrDb(item);
+        Assert.False(result, $"IsInThemerrDb returned True for {item.Name}");
+    }
+
+    [Theory]
+    [Trait("Category", "Unit")]
+    [MemberData(nameof(FixtureJellyfinServer.UnsupportedMockItemsData), MemberType = typeof(FixtureJellyfinServer))]
+    private void TestIsInThemerrDbUnsupportedType(BaseItem item)
+    {
+        var result = _themerrManager.IsInThemerrDb(item);
+        Assert.False(result, $"IsInThemerrDb returned True for unsupported type {item.GetType().Name}");
+    }
+
+    [Theory]
+    [Trait("Category", "Unit")]
     [MemberData(nameof(FixtureJellyfinServer.MockItems2Data), MemberType = typeof(FixtureJellyfinServer))]
     private void TestGetYoutubeThemeUrlExceptions(BaseItem item)
     {

@@ -112,6 +112,19 @@ namespace Jellyfin.Plugin.Themerr.Api
                 var year = item.ProductionYear;
                 var issueUrl = _themerrManager.GetIssueUrl(item);
                 var themeProvider = _themerrManager.GetThemeProvider(item);
+
+                // for "themerr" items we already know they are in ThemerrDB;
+                // for "user" items we need to check; for items with no theme we skip the check
+                bool? inThemerrDb = null;
+                if (themeProvider == "themerr")
+                {
+                    inThemerrDb = true;
+                }
+                else if (themeProvider == "user")
+                {
+                    inThemerrDb = _themerrManager.IsInThemerrDb(item);
+                }
+
                 var tmpItem = new
                 {
                     name = item.Name,
@@ -120,6 +133,7 @@ namespace Jellyfin.Plugin.Themerr.Api
                     theme_provider = themeProvider,
                     type = item.GetType().Name,  // Movie, Series, etc.
                     year = year,
+                    in_themerr_db = inThemerrDb,
                 };
                 tmpItems.Add(tmpItem);
 
