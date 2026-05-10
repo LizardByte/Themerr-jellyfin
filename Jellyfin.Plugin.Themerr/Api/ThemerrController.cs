@@ -113,7 +113,7 @@ namespace Jellyfin.Plugin.Themerr.Api
                 var issueUrl = _themerrManager.GetIssueUrl(item);
                 var themeProvider = _themerrManager.GetThemeProvider(item);
 
-                // for "themerr" items we already know they are in ThemerrDB;
+                // for "themerr" items we already know they are in ThemerrDB
                 // for "user" items we need to check; for items with no theme we skip the check
                 bool? inThemerrDb = null;
                 if (themeProvider == "themerr")
