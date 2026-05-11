@@ -330,6 +330,12 @@
                     tableHeaderRow.appendChild(tableHeaderColumn)
                 }
 
+                const BUTTON_KEYS = { themerr: 'edit_button', user: 'contribute_button' }
+                const STATUS_CONFIG = {
+                    themerr: { icon: 'check', color: '#00ff00', key: 'themerr_provided' },
+                    user: { icon: 'person', color: '#00a4dc', key: 'user_provided' },
+                }
+
                 // loop over items
                 for (let item in all_items) {
                     console.log(LogPrefix + "------------------")
@@ -362,10 +368,13 @@
                     tableColumnType.innerText = translate(all_items[item]["type"].toLowerCase())
                     tableRow.appendChild(tableColumnType)
 
+                    const themeProvider = all_items[item]["theme_provider"]
+                    const inThemerrDb = all_items[item]["in_themerr_db"]
+
                     let tableColumnContribute = document.createElement('td')
                     tableColumnContribute.setAttribute('class', 'detailTableBodyCell')
 
-                    if (all_items[item]["in_themerr_db"] === true && all_items[item]["theme_provider"] !== 'themerr') {
+                    if (inThemerrDb === true && themeProvider !== 'themerr') {
                         let availableText = document.createElement('span')
                         availableText.setAttribute('style', 'font-size: 0.9em; color: grey;')
                         availableText.innerText = translate('available_in_themerr_db')
@@ -376,17 +385,12 @@
                         contributeButton.setAttribute('class', 'raised headerHelpButton button-submit emby-button')
                         contributeButton.setAttribute('target', '_blank')
                         contributeButton.setAttribute('href', all_items[item]["issue_url"])
-                        if (all_items[item]["theme_provider"] === 'themerr') {
-                            contributeButton.innerText = translate('edit_button')
-                        } else if (all_items[item]["theme_provider"] === 'user') {
-                            contributeButton.innerText = translate('contribute_button')
-                        } else {
-                            contributeButton.innerText = translate('add_button')
-                        }
+                        contributeButton.innerText = translate(BUTTON_KEYS[themeProvider] || 'add_button')
                         tableColumnContribute.appendChild(contributeButton)
                     }
                     tableRow.appendChild(tableColumnContribute)
 
+                    const status = STATUS_CONFIG[themeProvider] || { icon: 'cancel', color: '#ff0000', key: 'no_theme_song' }
                     let tableColumnStatus = document.createElement('td')
                     tableColumnStatus.setAttribute('class', 'detailTableBodyCell')
 
@@ -394,19 +398,9 @@
                     let statusText = document.createElement('span')
                     statusSpan.setAttribute('class', 'material-icons')
                     statusText.setAttribute('class', 'detailTableBodyCell')
-                    if (all_items[item]["theme_provider"] === 'themerr') {
-                        statusSpan.classList.add('check')
-                        statusSpan.setAttribute('style', 'margin-right: 6px; color: #00ff00;')
-                        statusText.innerText = translate('themerr_provided')
-                    } else if (all_items[item]["theme_provider"] === 'user') {
-                        statusSpan.classList.add('person')
-                        statusSpan.setAttribute('style', 'margin-right: 6px; color: #00a4dc;')
-                        statusText.innerText = translate('user_provided')
-                    } else {
-                        statusSpan.classList.add('cancel')
-                        statusSpan.setAttribute('style', 'margin-right: 6px; color: #ff0000;')
-                        statusText.innerText = translate('no_theme_song')
-                    }
+                    statusSpan.classList.add(status.icon)
+                    statusSpan.setAttribute('style', 'margin-right: 6px; color: ' + status.color + ';')
+                    statusText.innerText = translate(status.key)
                     tableColumnStatus.appendChild(statusSpan)
                     tableColumnStatus.appendChild(statusText)
                     tableRow.appendChild(tableColumnStatus)
