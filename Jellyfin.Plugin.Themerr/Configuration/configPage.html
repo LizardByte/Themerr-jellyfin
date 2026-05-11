@@ -203,79 +203,54 @@
             }
 
             async function updateProgress() {
-                let all_items = []
-                let page = 1
-                let pageSize = 10
-                let total_media_count = 0
-                let total_media_with_themes = 0
-                let total_pages = 1
+                let request = {
+                    url: _ApiClient.getUrl('/Themerr/GetProgress'),
+                    type: 'GET',
+                    dataType: 'json'
+                };
 
-                for (; page <= total_pages; page++) {
-                    let request = {
-                        url: _ApiClient.getUrl(
-                            '/Themerr/GetProgress',
-                            {
-                                page: page,
-                                pageSize: pageSize
-                            },
-                        ),
-                        type: 'GET',
-                        dataType: 'json'  // this should automatically return response.json()
-                    };
+                try {
+                    let response = await _ApiClient.fetch(request);
 
-                    try {
-                        let response = await _ApiClient.fetch(request);
+                    console.log(LogPrefix + "total_media_count: " + response["total_media_count"]);
+                    console.log(LogPrefix + "total_media_with_themes: " + response["total_media_with_themes"]);
+                    console.log(LogPrefix + "generated_at: " + response["generated_at"]);
 
-                        console.log(LogPrefix + "processing page " + page + " of " + response["total_pages"]);
-                        console.log(LogPrefix + "media_count: " + response["media_count"]);
-                        console.log(LogPrefix + "media_with_themes: " + response["media_with_themes"]);
+                    document.querySelector('#ThemerrDashboardLoading').style.display = 'none';
 
-                        if (response["media_count"] === 0 && page === 1) {
-                            let message = "No media found!";
-                            console.log(LogPrefix + message);
-                            return;
-                        }
-
-                        total_media_count += response["media_count"];
-                        total_media_with_themes += response["media_with_themes"];
-                        all_items = all_items.concat(response["items"]);
-
-                        total_pages = response["total_pages"];  // Update totalPages
-                    } catch (error) {
-                        let message = translate('unexpected_error_occured_creating_dashboard');
-                        Dashboard.alert({
-                            message: message
-                        });
-                        console.log(LogPrefix + message);
-                        console.log(LogPrefix + error);
-                    }
-
-                    // Calculate the loading progress percentage
-                    let progressPercentage = Math.round((page / total_pages) * 100);
-
-                    // Update the loading progress bar
-                    let progressBar = document.querySelector('#ThemerrDashboardLoading .itemProgressBarForeground');
-                    progressBar.style.width = progressPercentage + '%';
-                    progressBar.querySelector('span').innerText = progressPercentage + '%';
+                    createDashboard(
+                        response["total_media_count"],
+                        response["total_media_with_themes"],
+                        response["items"],
+                        response["generated_at"]
+                    );
+                } catch (error) {
+                    let message = translate('unexpected_error_occured_creating_dashboard');
+                    Dashboard.alert({ message: message });
+                    console.log(LogPrefix + message);
+                    console.log(LogPrefix + error);
                 }
-
-                // add an arbitrary delay
-                await new Promise(r => setTimeout(r, 1000));
-
-                // hide the loading progress bar
-                let progressBar = document.querySelector('#ThemerrDashboardLoading');
-                progressBar.style.display = 'none';
-
-                // create the dashboard
-                createDashboard(total_media_count, total_media_with_themes, all_items);
             }
 
-            function createDashboard(total_media_count, total_media_with_themes, all_items) {
+            function createDashboard(total_media_count, total_media_with_themes, all_items, generated_at) {
                 // get dashboard container
                 let ThemerrDashboard = document.querySelector('#ThemerrDashboard')
 
                 // show the dashboard
                 ThemerrDashboard.style.display = 'block'
+
+                if (!generated_at) {
+                    let msg = document.createElement('p')
+                    msg.innerText = translate('no_snapshot_yet')
+                    ThemerrDashboard.appendChild(msg)
+                    return
+                }
+
+                // show snapshot timestamp
+                let generatedAtEl = document.createElement('p')
+                generatedAtEl.setAttribute('style', 'font-size: 0.85em; color: grey; margin: 0 0 0.5em;')
+                generatedAtEl.innerText = translate('snapshot_generated_at') + ' ' + new Date(generated_at).toLocaleString()
+                ThemerrDashboard.appendChild(generatedAtEl)
 
                 // create progress bar
                 let progressBar = document.createElement('div')

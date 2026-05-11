@@ -143,13 +143,71 @@ namespace Jellyfin.Plugin.Themerr
         /// <returns>A <see cref="Task"/> representing the asynchronous operation.</returns>
         public Task UpdateAll()
         {
-            var items = GetTmdbItemsFromLibrary();
+            var items = GetTmdbItemsFromLibrary().ToList();
             foreach (var item in items)
             {
                 ProcessItemTheme(item);
             }
 
+            SaveProgressSnapshot(items);
+
             return Task.CompletedTask;
+        }
+
+        /// <summary>
+        /// Gets the path to the central progress snapshot file.
+        /// </summary>
+        /// <returns>The absolute path to the snapshot JSON file.</returns>
+        public string GetSnapshotPath()
+        {
+            return System.IO.Path.Join(ApplicationPaths.DataPath, "themerr-progress.json");
+        }
+
+        /// <summary>
+        /// Saves a snapshot of all library items and their theme status to a single JSON file.
+        /// Called at the end of <see cref="UpdateAll"/> so the dashboard can load instantly
+        /// without querying the library or ThemerrDB at request time.
+        /// </summary>
+        /// <param name="items">The ordered list of library items already fetched by <see cref="UpdateAll"/>.</param>
+        public void SaveProgressSnapshot(IEnumerable<BaseItem> items)
+        {
+            var orderedItems = items.OrderBy(i => i.Name).ThenBy(i => i.ProductionYear).ToList();
+
+            var snapshotItems = orderedItems.Select(item =>
+            {
+                var themeProvider = GetThemeProvider(item);
+                bool? inThemerrDb = themeProvider == "themerr" ? true : IsInThemerrDb(item);
+                return new
+                {
+                    name = item.Name,
+                    id = item.Id,
+                    issue_url = GetIssueUrl(item),
+                    theme_provider = themeProvider,
+                    type = item.GetType().Name,
+                    year = item.ProductionYear,
+                    in_themerr_db = inThemerrDb,
+                };
+            }).ToList();
+
+            var totalMediaWithThemes = snapshotItems.Count(i => i.theme_provider != null);
+
+            var snapshot = new
+            {
+                generated_at = DateTime.UtcNow,
+                total_media_count = snapshotItems.Count,
+                total_media_with_themes = totalMediaWithThemes,
+                items = snapshotItems,
+            };
+
+            try
+            {
+                System.IO.File.WriteAllText(GetSnapshotPath(), JsonConvert.SerializeObject(snapshot, Formatting.Indented));
+                _logger.LogInformation("Progress snapshot saved to {SnapshotPath}", GetSnapshotPath());
+            }
+            catch (Exception e)
+            {
+                _logger.LogError(e, "Failed to save progress snapshot to {SnapshotPath}", GetSnapshotPath());
+            }
         }
 
         /// <summary>

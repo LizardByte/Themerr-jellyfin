@@ -16,6 +16,7 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
 
 namespace Jellyfin.Plugin.Themerr.Api
 {
@@ -77,86 +78,38 @@ namespace Jellyfin.Plugin.Themerr.Api
         /// <summary>
         /// Get the data required to populate the progress dashboard.
         ///
-        /// Loop over all Jellyfin libraries and supported items, creating a json object with the following structure:
-        /// {
-        ///   "items": [BaseItems],
-        ///   "media_count": BaseItems.Count,
-        ///   "media_percent_complete": ThemedItems.Count / BaseItems.Count * 100,
-        /// }
+        /// Reads from the pre-generated snapshot written by <see cref="ThemerrManager.SaveProgressSnapshot"/>.
+        /// Returns all items in a single response.
         /// </summary>
-        /// <param name="page">The page number to return.</param>
-        /// <param name="pageSize">The number of items to return per page.</param>
         /// <returns>JSON object containing progress data.</returns>
         [HttpGet("GetProgress")]
         [ProducesResponseType(StatusCodes.Status200OK)]
-        public ActionResult GetProgress(int page = 1, int pageSize = 10)
+        public ActionResult GetProgress()
         {
-            var tmpItems = new ArrayList();
+            var snapshotPath = _themerrManager.GetSnapshotPath();
 
-            var mediaCount = 0;
-            var mediaWithThemes = 0;
-
-            var items = _themerrManager.GetTmdbItemsFromLibrary();
-
-            // sort items by name, then year
-            var enumerable = items.OrderBy(i => i.Name).ThenBy(i => i.ProductionYear).ToList();
-
-            // calculate total media count before applying pagination
-            var totalMediaCount = enumerable.Count;
-
-            // apply pagination
-            var pagedItems = enumerable.Skip((page - 1) * pageSize).Take(pageSize);
-
-            foreach (var item in pagedItems)
+            if (!System.IO.File.Exists(snapshotPath))
             {
-                var year = item.ProductionYear;
-                var issueUrl = _themerrManager.GetIssueUrl(item);
-                var themeProvider = _themerrManager.GetThemeProvider(item);
-
-                // for "themerr" items we already know they are in ThemerrDB
-                // for all other items (user-supplied or no theme), query ThemerrDB
-                bool? inThemerrDb;
-                if (themeProvider == "themerr")
-                {
-                    inThemerrDb = true;
-                }
-                else
-                {
-                    inThemerrDb = _themerrManager.IsInThemerrDb(item);
-                }
-
-                var tmpItem = new
-                {
-                    name = item.Name,
-                    id = item.Id,
-                    issue_url = issueUrl,
-                    theme_provider = themeProvider,
-                    type = item.GetType().Name,  // Movie, Series, etc.
-                    year = year,
-                    in_themerr_db = inThemerrDb,
-                };
-                tmpItems.Add(tmpItem);
-
-                mediaCount++;
-
-                var themeSongs = item.GetThemeSongs();
-                if (themeSongs.Count > 0)
-                {
-                    mediaWithThemes++;
-                }
+                return Content(
+                    JsonConvert.SerializeObject(new
+                    {
+                        items = Array.Empty<object>(),
+                        total_media_count = 0,
+                        total_media_with_themes = 0,
+                        generated_at = (string)null,
+                    }),
+                    "application/json");
             }
 
-            var tmpObject = new
-            {
-                items = tmpItems,
-                media_count = mediaCount,
-                media_with_themes = mediaWithThemes,
-                total_pages = (int)Math.Ceiling((double)totalMediaCount / pageSize),
-            };
+            var snapshotJson = System.IO.File.ReadAllText(snapshotPath);
+            var snapshot = JObject.Parse(snapshotJson);
 
-            _logger.LogInformation("Progress Items: {Items}", JsonConvert.SerializeObject(tmpObject));
+            _logger.LogInformation(
+                "GetProgress: {TotalMediaCount} items, generated at {GeneratedAt}",
+                (int)snapshot["total_media_count"],
+                (string)snapshot["generated_at"]);
 
-            return new JsonResult(tmpObject);
+            return Content(snapshotJson, "application/json");
         }
 
         /// <summary>
