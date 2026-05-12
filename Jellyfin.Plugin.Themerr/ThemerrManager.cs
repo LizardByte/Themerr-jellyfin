@@ -90,22 +90,18 @@ namespace Jellyfin.Plugin.Themerr
         /// <param name="destination">The destination path.</param>
         /// <param name="videoUrl">The YouTube video url.</param>
         /// <returns>True if the file was saved successfully, false otherwise.</returns>
-        public bool SaveMp3(string destination, string videoUrl)
+        public async Task<bool> SaveMp3(string destination, string videoUrl)
         {
             try
             {
-                Task.Run(async () =>
-                {
-                    await _youtubeClientWrapper.DownloadAudioAsync(videoUrl, destination);
-                });
+                await _youtubeClientWrapper.DownloadAudioAsync(videoUrl, destination);
+                return true;
             }
             catch (Exception e)
             {
                 _logger.LogError(e, "Unable to download {VideoUrl} to {Destination}", videoUrl, destination);
                 return false;
             }
-
-            return WaitForFile(destination, 30000);
         }
 
         /// <summary>
@@ -141,17 +137,15 @@ namespace Jellyfin.Plugin.Themerr
         /// Enumerate through all supported items in the library and downloads their theme songs as required.
         /// </summary>
         /// <returns>A <see cref="Task"/> representing the asynchronous operation.</returns>
-        public Task UpdateAll()
+        public async Task UpdateAll()
         {
             var items = GetTmdbItemsFromLibrary().ToList();
             foreach (var item in items)
             {
-                ProcessItemTheme(item);
+                await ProcessItemTheme(item);
             }
 
             SaveProgressSnapshot(items);
-
-            return Task.CompletedTask;
         }
 
         /// <summary>
@@ -214,7 +208,7 @@ namespace Jellyfin.Plugin.Themerr
         /// Download the theme song for a media item if it doesn't already exist.
         /// </summary>
         /// <param name="item">The Jellyfin media object.</param>
-        public void ProcessItemTheme(BaseItem item)
+        public async Task ProcessItemTheme(BaseItem item)
         {
             // get themerrDB database type, used to create the themerrdb url
             var dbType = item switch
@@ -224,7 +218,6 @@ namespace Jellyfin.Plugin.Themerr
                 _ => null,
             };
 
-            // return if dbType is null
             if (string.IsNullOrEmpty(dbType))
             {
                 return;
@@ -235,41 +228,53 @@ namespace Jellyfin.Plugin.Themerr
 
             if (!ContinueDownload(themePath, themerrDataPath))
             {
+                _logger.LogDebug("Skipping {ItemName}: theme already exists and was not supplied by Themerr", item.Name);
+                return;
+            }
+
+            var tmdbId = GetTmdbId(item);
+            var themerrDbUrl = CreateThemerrDbLink(tmdbId, dbType);
+            var youtubeThemeUrl = GetYoutubeThemeUrl(themerrDbUrl, item);
+
+            if (string.IsNullOrEmpty(youtubeThemeUrl))
+            {
+                _logger.LogDebug("Skipping {ItemName}: no YouTube theme URL in ThemerrDB", item.Name);
                 return;
             }
 
             var existingYoutubeThemeUrl = GetExistingThemerrDataValue("youtube_theme_url", themerrDataPath);
-
-            // get tmdb id
-            var tmdbId = GetTmdbId(item);
-
-            // create themerrdb url
-            var themerrDbUrl = CreateThemerrDbLink(tmdbId, dbType);
-
-            var youtubeThemeUrl = GetYoutubeThemeUrl(themerrDbUrl, item);
-
-            // skip if no YouTube theme url in ThemerrDB or
-            // if the YouTube themes match AND the theme_md5 is unknown
-            if (string.IsNullOrEmpty(youtubeThemeUrl) ||
-                (youtubeThemeUrl == existingYoutubeThemeUrl &&
-                 !string.IsNullOrEmpty(GetExistingThemerrDataValue("theme_md5", themerrDataPath))))
+            if (youtubeThemeUrl == existingYoutubeThemeUrl &&
+                !string.IsNullOrEmpty(GetExistingThemerrDataValue("theme_md5", themerrDataPath)))
             {
+                _logger.LogDebug("Skipping {ItemName}: theme is already up to date", item.Name);
                 return;
             }
 
-            var successMp3 = SaveMp3(themePath, youtubeThemeUrl);
+            _logger.LogInformation("Downloading theme for {ItemName} from {YoutubeThemeUrl}", item.Name, youtubeThemeUrl);
+
+            var successMp3 = await SaveMp3(themePath, youtubeThemeUrl);
             if (!successMp3)
             {
+                _logger.LogWarning("Failed to download theme for {ItemName}", item.Name);
                 return;
             }
 
             var successThemerrData = SaveThemerrData(themePath, themerrDataPath, youtubeThemeUrl);
             if (!successThemerrData)
             {
+                _logger.LogWarning("Failed to save Themerr metadata for {ItemName}", item.Name);
                 return;
             }
 
-            item.RefreshMetadata(CancellationToken.None);
+            _logger.LogInformation("Theme saved for {ItemName}", item.Name);
+            try
+            {
+                await item.RefreshMetadata(CancellationToken.None);
+            }
+            catch (Exception e)
+            {
+                _logger.LogWarning(e, "Failed to refresh metadata for {ItemName}", item.Name);
+            }
         }
 
         /// <summary>

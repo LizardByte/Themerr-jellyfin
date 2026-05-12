@@ -119,7 +119,7 @@ public class TestThemerrManager
     [Theory]
     [Trait("Category", "Unit")]
     [MemberData(nameof(YoutubeUrls))]
-    private void TestSaveMp3(string videoUrl)
+    private async Task TestSaveMp3(string videoUrl)
     {
         // set destination with themerr_jellyfin_tests as the folder name
         var destinationFile = Path.Combine(
@@ -129,7 +129,7 @@ public class TestThemerrManager
         TestLogger.Info($"Attempting to download {videoUrl}");
 
         // run and wait
-        var themeExists = _themerrManagerWithMockYoutube.SaveMp3(destinationFile, videoUrl);
+        var themeExists = await _themerrManagerWithMockYoutube.SaveMp3(destinationFile, videoUrl);
         Assert.True(themeExists, $"SaveMp3 did not return True for {videoUrl}");
 
         // check if file exists
@@ -196,7 +196,7 @@ public class TestThemerrManager
 
     [Fact]
     [Trait("Category", "Unit")]
-    private void TestSaveMp3InvalidUrl()
+    private async Task TestSaveMp3InvalidUrl()
     {
         // set destination with themerr_jellyfin_tests as the folder name
         var destinationFile = Path.Combine(
@@ -206,7 +206,7 @@ public class TestThemerrManager
         var invalidUrl = "https://www.youtube.com/watch?v=invalid";
 
         // run and wait
-        var themeExists = _themerrManager.SaveMp3(destinationFile, invalidUrl);
+        var themeExists = await _themerrManager.SaveMp3(destinationFile, invalidUrl);
         Assert.False(themeExists, $"SaveMp3 did not return False for {invalidUrl}");
 
         // check if file exists
@@ -228,10 +228,10 @@ public class TestThemerrManager
     [Theory]
     [Trait("Category", "Unit")]
     [MemberData(nameof(FixtureJellyfinServer.MockItemsData), MemberType = typeof(FixtureJellyfinServer))]
-    private void TestProcessItemTheme(BaseItem item)
+    private async Task TestProcessItemTheme(BaseItem item)
     {
         // get the item theme
-        _themerrManagerWithMockYoutube.ProcessItemTheme(item);
+        await _themerrManagerWithMockYoutube.ProcessItemTheme(item);
 
         Assert.True(File.Exists(_themerrManagerWithMockYoutube.GetThemePath(item)), $"File {_themerrManagerWithMockYoutube.GetThemePath(item)} does not exist");
 
@@ -242,10 +242,10 @@ public class TestThemerrManager
     [Theory]
     [Trait("Category", "Unit")]
     [MemberData(nameof(FixtureJellyfinServer.UnsupportedMockItemsData), MemberType = typeof(FixtureJellyfinServer))]
-    private void TestProcessItemThemeUnsupportedType(BaseItem item)
+    private async Task TestProcessItemThemeUnsupportedType(BaseItem item)
     {
         // get the item theme
-        _themerrManager.ProcessItemTheme(item);
+        await _themerrManager.ProcessItemTheme(item);
 
         Assert.False(File.Exists(_themerrManager.GetThemePath(item)), $"File {_themerrManager.GetThemePath(item)} exists");
     }

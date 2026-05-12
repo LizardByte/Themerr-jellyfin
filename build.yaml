@@ -10,7 +10,9 @@ description: >-
 category: "Metadata"
 owner: "LizardByte"
 artifacts:
+  - "AngleSharp.dll"
   - "Jellyfin.Plugin.Themerr.dll"
+  - "JsonExtensions.dll"
   - "YoutubeExplode.dll"
 version: "0.0.0.0"
 changelog: "see LizardByte/Themerr-jellyfin on GitHub"

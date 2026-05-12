@@ -1,4 +1,5 @@
-﻿using System.Linq;
+﻿using System;
+using System.Linq;
 using System.Threading.Tasks;
 using YoutubeExplode;
 using YoutubeExplode.Videos.Streams;
@@ -19,7 +20,15 @@ namespace Jellyfin.Plugin.Themerr
             var streamInfo = streamManifest
                 .GetAudioOnlyStreams()
                 .Where(s => s.Container == Container.Mp4)
-                .GetWithHighestBitrate();
+                .GetWithHighestBitrate()
+                ?? streamManifest
+                    .GetAudioOnlyStreams()
+                    .GetWithHighestBitrate();
+
+            if (streamInfo == null)
+            {
+                throw new InvalidOperationException($"No audio streams available for {videoUrl}");
+            }
 
             await youtube.Videos.Streams.DownloadAsync(streamInfo, destination);
         }
