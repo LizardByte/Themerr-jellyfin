@@ -176,7 +176,7 @@ namespace Jellyfin.Plugin.Themerr
             var snapshotItems = orderedItems.Select(item =>
             {
                 var themeProvider = GetThemeProvider(item);
-                bool? inThemerrDb = themeProvider == "themerr" ? true : IsInThemerrDb(item);
+                bool? inThemerrDb = themeProvider == "themerr" || IsInThemerrDb(item);
                 return new
                 {
                     name = item.Name,

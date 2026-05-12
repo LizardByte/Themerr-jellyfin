@@ -1,17 +1,16 @@
-﻿using System.Collections;
+using System;
 using System.Collections.Generic;
+using System.IO;
 using Jellyfin.Plugin.Themerr.Api;
 using MediaBrowser.Common.Configuration;
 using MediaBrowser.Controller.Configuration;
-using MediaBrowser.Controller.Entities;
-using MediaBrowser.Controller.Entities.Movies;
-using MediaBrowser.Controller.Entities.TV;
 using MediaBrowser.Controller.Library;
 using MediaBrowser.Model.Serialization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
 using Moq;
-using MetadataProvider = MediaBrowser.Model.Entities.MetadataProvider;
+using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
 
 namespace Jellyfin.Plugin.Themerr.Tests;
 
@@ -22,6 +21,7 @@ namespace Jellyfin.Plugin.Themerr.Tests;
 public class TestThemerrController
 {
     private readonly ThemerrController _controller;
+    private readonly string _snapshotPath;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="TestThemerrController"/> class.
@@ -38,10 +38,7 @@ public class TestThemerrController
         Mock<ILoggerFactory> mockLoggerFactory = new();
         Mock<IXmlSerializer> mockXmlSerializer = new();
 
-        // Create a TestableServerConfiguration with UICulture set to "en-US"
         var testableServerConfiguration = new TestableServerConfiguration("en-US");
-
-        // Set up the Configuration property of the IServerConfigurationManager mock to return the TestableServerConfiguration
         mockServerConfigurationManager.Setup(x => x.Configuration).Returns(testableServerConfiguration);
 
         _controller = new ThemerrController(
@@ -51,119 +48,69 @@ public class TestThemerrController
             mockServerConfigurationManager.Object,
             mockLoggerFactory.Object,
             mockXmlSerializer.Object);
+
+        _snapshotPath = Path.Join("testing", "themerr-progress.json");
     }
 
     /// <summary>
-    /// Test GetProgress from API.
+    /// Test GetProgress returns an empty snapshot response when no snapshot file exists.
     /// </summary>
     [Fact]
     [Trait("Category", "Unit")]
     public void TestGetProgress()
     {
+        if (File.Exists(_snapshotPath))
+        {
+            File.Delete(_snapshotPath);
+        }
+
         var result = _controller.GetProgress();
-        Assert.IsType<JsonResult>(result);
+        Assert.IsType<ContentResult>(result);
 
-        // ensure the following properties are int
-        Assert.IsType<int>(((JsonResult)result).Value?.GetType().GetProperty("media_count")?.GetValue(((JsonResult)result).Value, null));
-        Assert.IsType<int>(((JsonResult)result).Value?.GetType().GetProperty("media_with_themes")?.GetValue(((JsonResult)result).Value, null));
-        Assert.IsType<int>(((JsonResult)result).Value?.GetType().GetProperty("total_pages")?.GetValue(((JsonResult)result).Value, null));
+        var json = JObject.Parse(((ContentResult)result).Content!);
 
-        // ensure result["items"] is an array list
-        Assert.IsType<ArrayList>(((JsonResult)result).Value?.GetType().GetProperty("items")?.GetValue(((JsonResult)result).Value, null));
-
-        // ensure int values are 0
-        Assert.Equal(0, ((JsonResult)result).Value?.GetType().GetProperty("media_count")?.GetValue(((JsonResult)result).Value, null));
-        Assert.Equal(0, ((JsonResult)result).Value?.GetType().GetProperty("media_with_themes")?.GetValue(((JsonResult)result).Value, null));
-        Assert.Equal(0, ((JsonResult)result).Value?.GetType().GetProperty("total_pages")?.GetValue(((JsonResult)result).Value, null));
-
-        // ensure array list has no items
-        Assert.Equal(0, (((JsonResult)result).Value?.GetType().GetProperty("items")?.GetValue(((JsonResult)result).Value, null) as ArrayList)?.Count);
-
-        // todo: add tests for when there are items
+        Assert.Equal(0, (int)json["total_media_count"]!);
+        Assert.Equal(0, (int)json["total_media_with_themes"]!);
+        Assert.Null((string?)json["generated_at"]);
+        Assert.Empty(json["items"]!);
     }
 
     /// <summary>
-    /// Test GetProgress from API with items in the library.
+    /// Test GetProgress returns snapshot data when a snapshot file exists.
     /// </summary>
     [Fact]
     [Trait("Category", "Unit")]
     public void TestGetProgressWithItems()
     {
-        var mockApplicationPaths = TestHelper.GetMockApplicationPaths();
-        var mockLibraryManager = new Mock<ILibraryManager>();
-        var mockLogger = new Mock<ILogger<ThemerrController>>();
-        var mockServerConfigurationManager = new Mock<IServerConfigurationManager>();
-        var mockLoggerFactory = new Mock<ILoggerFactory>();
-        var mockXmlSerializer = new Mock<IXmlSerializer>();
+        Directory.CreateDirectory("testing");
 
-        mockServerConfigurationManager
-            .Setup(x => x.Configuration)
-            .Returns(new TestableServerConfiguration("en-US"));
-
-        mockLoggerFactory
-            .Setup(x => x.CreateLogger(It.IsAny<string>()))
-            .Returns(new Mock<ILogger>().Object);
-
-        var libraryItems = new List<BaseItem>
+        var snapshot = new
         {
-            new Movie
+            generated_at = DateTime.UtcNow.ToString("o"),
+            total_media_count = 2,
+            total_media_with_themes = 1,
+            items = new[]
             {
-                Name = "Test Movie",
-                ProductionYear = 1970,
-                ProviderIds = new Dictionary<string, string>
-                {
-                    { MetadataProvider.Tmdb.ToString(), "0" },
-                },
-            },
-            new Series
-            {
-                Name = "Test Series",
-                ProductionYear = 1970,
-                ProviderIds = new Dictionary<string, string>
-                {
-                    { MetadataProvider.Tmdb.ToString(), "0" },
-                },
+                new { name = "Test Movie", type = "Movie" },
+                new { name = "Test Series", type = "Series" },
             },
         };
+        File.WriteAllText(_snapshotPath, JsonConvert.SerializeObject(snapshot));
 
-        mockLibraryManager
-            .Setup(x => x.GetItemList(It.IsAny<InternalItemsQuery>()))
-            .Returns(libraryItems);
-
-        var controller = new ThemerrController(
-            mockApplicationPaths.Object,
-            mockLibraryManager.Object,
-            mockLogger.Object,
-            mockServerConfigurationManager.Object,
-            mockLoggerFactory.Object,
-            mockXmlSerializer.Object);
-
-        // BaseItem.GetThemeSongs() uses BaseItem.LibraryManager (static) which is null without a full Jellyfin server
-        var mockBaseItemLibraryManager = new Mock<ILibraryManager>();
-        mockBaseItemLibraryManager
-            .Setup(x => x.GetItemList(It.IsAny<InternalItemsQuery>()))
-            .Returns(new List<BaseItem>());
-        BaseItem.LibraryManager = mockBaseItemLibraryManager.Object;
-
-        ActionResult result;
         try
         {
-            result = controller.GetProgress();
+            var result = _controller.GetProgress();
+            Assert.IsType<ContentResult>(result);
+
+            var json = JObject.Parse(((ContentResult)result).Content!);
+
+            Assert.Equal(2, (int)json["total_media_count"]!);
+            Assert.Equal(2, json["items"]!.Count());
         }
         finally
         {
-            BaseItem.LibraryManager = null;
+            File.Delete(_snapshotPath);
         }
-
-        Assert.IsType<JsonResult>(result);
-
-        var value = ((JsonResult)result).Value;
-        var mediaCount = (int?)value?.GetType().GetProperty("media_count")?.GetValue(value, null);
-        var items = value?.GetType().GetProperty("items")?.GetValue(value, null) as ArrayList;
-
-        Assert.Equal(2, mediaCount);
-        Assert.NotNull(items);
-        Assert.Equal(2, items.Count);
     }
 
     /// <summary>
@@ -176,15 +123,10 @@ public class TestThemerrController
         var actionResult = _controller.GetTranslations();
         Assert.IsType<OkObjectResult>(actionResult);
 
-        // Cast the result to OkObjectResult to access the data
         var okResult = actionResult as OkObjectResult;
-
-        // Access the data returned by the API
         var data = okResult?.Value as Dictionary<string, object>;
 
         Assert.NotNull(data);
-
-        // Assert the data contains the expected keys
         Assert.True(data.ContainsKey("locale"));
         Assert.True(data.ContainsKey("fallback"));
     }
