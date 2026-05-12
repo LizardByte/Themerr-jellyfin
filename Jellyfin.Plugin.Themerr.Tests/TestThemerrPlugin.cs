@@ -54,7 +54,7 @@ public class TestThemerrPlugin
     [Trait("Category", "Unit")]
     public void TestPluginId()
     {
-        Assert.Equal(new Guid("84b59a39-bde4-42f4-adbd-c39882cbb772"), _plugin.Id);
+        Assert.Equal(new Guid("e41ef0c4-c413-41ba-b4fa-8c565dc3c969"), _plugin.Id);
     }
 
     /// <summary>

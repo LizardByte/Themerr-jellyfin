@@ -13,7 +13,7 @@ namespace Jellyfin.Plugin.Themerr
     /// </summary>
     public class ThemerrPlugin : BasePlugin<PluginConfiguration>, IHasWebPages
     {
-        private readonly Guid _id = new Guid("84b59a39-bde4-42f4-adbd-c39882cbb772");
+        private readonly Guid _id = new Guid("e41ef0c4-c413-41ba-b4fa-8c565dc3c969");
 
         /// <summary>
         /// Initializes a new instance of the <see cref="ThemerrPlugin"/> class.
