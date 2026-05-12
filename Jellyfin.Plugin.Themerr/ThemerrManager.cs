@@ -7,6 +7,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using Jellyfin.Data.Enums;
 using Jellyfin.Plugin.Themerr.Configuration;
+using Jellyfin.Plugin.Themerr.Storage;
 using MediaBrowser.Common.Configuration;
 using MediaBrowser.Common.Plugins;
 using MediaBrowser.Controller.Entities;
@@ -29,6 +30,7 @@ namespace Jellyfin.Plugin.Themerr
         private readonly Timer _timer;
         private readonly ILogger<ThemerrManager> _logger;
         private readonly IYoutubeClientWrapper _youtubeClientWrapper;
+        private readonly ThemerrRepository _themerrRepository;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="ThemerrManager"/> class.
@@ -38,18 +40,22 @@ namespace Jellyfin.Plugin.Themerr
         /// <param name="logger">The logger.</param>
         /// <param name="xmlSerializer">The XML serializer.</param>
         /// <param name="youtubeClientWrapper">The YouTube client wrapper. Uses the default implementation when null.</param>
+        /// <param name="themerrRepository">The Themerr sqlite repository. Uses the default implementation when null.</param>
         public ThemerrManager(
             IApplicationPaths applicationPaths,
             ILibraryManager libraryManager,
             ILogger<ThemerrManager> logger,
             IXmlSerializer xmlSerializer,
-            IYoutubeClientWrapper youtubeClientWrapper = null)
+            IYoutubeClientWrapper youtubeClientWrapper = null,
+            ThemerrRepository themerrRepository = null)
             : base(applicationPaths, xmlSerializer)
         {
             _libraryManager = libraryManager;
             _logger = logger;
             _timer = new Timer(_ => OnTimerElapsed(), null, Timeout.Infinite, Timeout.Infinite);
             _youtubeClientWrapper = youtubeClientWrapper ?? new YoutubeClientWrapper();
+            _themerrRepository = themerrRepository ??
+                new ThemerrRepository(ThemerrDatabasePath.GetDatabasePath(applicationPaths), logger);
         }
 
         /// <summary>
@@ -174,13 +180,15 @@ namespace Jellyfin.Plugin.Themerr
 
             var themePath = GetThemePath(item);
             var themerrDataPath = GetThemerrDataPath(item);
+            _themerrRepository.MigrateLegacyData(item, themePath, themerrDataPath);
 
-            if (!ContinueDownload(themePath, themerrDataPath))
+            if (!ContinueDownload(item, themePath))
             {
                 return;
             }
 
-            var existingYoutubeThemeUrl = GetExistingThemerrDataValue("youtube_theme_url", themerrDataPath);
+            var existingThemerrData = _themerrRepository.Get(item, themePath);
+            var existingYoutubeThemeUrl = existingThemerrData?.YoutubeThemeUrl;
 
             // get tmdb id
             var tmdbId = GetTmdbId(item);
@@ -194,7 +202,7 @@ namespace Jellyfin.Plugin.Themerr
             // if the YouTube themes match AND the theme_md5 is unknown
             if (string.IsNullOrEmpty(youtubeThemeUrl) ||
                 (youtubeThemeUrl == existingYoutubeThemeUrl &&
-                 !string.IsNullOrEmpty(GetExistingThemerrDataValue("theme_md5", themerrDataPath))))
+                 !string.IsNullOrEmpty(existingThemerrData?.ThemeMd5)))
             {
                 return;
             }
@@ -205,7 +213,7 @@ namespace Jellyfin.Plugin.Themerr
                 return;
             }
 
-            var successThemerrData = SaveThemerrData(themePath, themerrDataPath, youtubeThemeUrl);
+            var successThemerrData = SaveThemerrData(item, themePath, youtubeThemeUrl);
             if (!successThemerrData)
             {
                 return;
@@ -240,7 +248,9 @@ namespace Jellyfin.Plugin.Themerr
             }
 
             var themerrDataPath = GetThemerrDataPath(item);
-            var themerrHash = GetExistingThemerrDataValue("theme_md5", themerrDataPath);
+            _themerrRepository.MigrateLegacyData(item, GetThemePath(item), themerrDataPath);
+            var themerrData = _themerrRepository.Get(item, GetThemePath(item));
+            var themerrHash = themerrData?.ThemeMd5;
             var themeHash = GetMd5Hash(themeSongs[0].Path);
 
             // if hashes match, theme is supplied by themerr, otherwise it is user supplied
@@ -277,30 +287,32 @@ namespace Jellyfin.Plugin.Themerr
         /// Various checks are performed to determine if the theme song should be downloaded.
         /// </summary>
         /// <param name="themePath">The path to the theme song.</param>
-        /// <param name="themerrDataPath">The path to the themerr data file.</param>
+        /// <param name="item">The Jellyfin media object.</param>
         /// <returns>True to continue with downloaded, false otherwise.</returns>
-        public bool ContinueDownload(string themePath, string themerrDataPath)
+        public bool ContinueDownload(BaseItem item, string themePath)
         {
-            if (!System.IO.File.Exists(themePath) && !System.IO.File.Exists(themerrDataPath))
+            var themerrData = _themerrRepository.Get(item, themePath);
+
+            if (!System.IO.File.Exists(themePath) && themerrData == null)
             {
-                // neither file exists, so don't skip
+                // Neither the theme nor Themerr metadata exists, so don't skip.
                 return true;
             }
 
-            if (!System.IO.File.Exists(themePath) && System.IO.File.Exists(themerrDataPath))
+            if (!System.IO.File.Exists(themePath) && themerrData != null)
             {
-                // the theme is missing, so delete the themerr data file
-                System.IO.File.Delete(themerrDataPath);
+                // The theme is missing, so remove stale Themerr metadata.
+                _themerrRepository.Delete(item, themePath);
                 return true;
             }
 
-            if (System.IO.File.Exists(themePath) && !System.IO.File.Exists(themerrDataPath))
+            if (System.IO.File.Exists(themePath) && themerrData == null)
             {
-                // the theme is user supplied, so don't overwrite it
+                // The theme is user supplied, so don't overwrite it.
                 return false;
             }
 
-            var existingThemeMd5 = GetExistingThemerrDataValue("theme_md5", themerrDataPath);
+            var existingThemeMd5 = themerrData?.ThemeMd5;
 
             // if existing theme md5 is empty, don't skip
             if (string.IsNullOrEmpty(existingThemeMd5))
@@ -433,32 +445,24 @@ namespace Jellyfin.Plugin.Themerr
         }
 
         /// <summary>
-        /// Save the themerr data file.
+        /// Save the themerr data for an item.
         /// </summary>
+        /// <param name="item">The Jellyfin media object.</param>
         /// <param name="themePath">The path to the theme song.</param>
-        /// <param name="themerrDataPath">The path to the themerr data file.</param>
         /// <param name="youtubeThemeUrl">The YouTube theme url.</param>
-        /// <returns>True if the file was saved successfully, false otherwise.</returns>
-        public bool SaveThemerrData(string themePath, string themerrDataPath, string youtubeThemeUrl)
+        /// <returns>True if the data was saved successfully, false otherwise.</returns>
+        public bool SaveThemerrData(BaseItem item, string themePath, string youtubeThemeUrl)
         {
-            var success = false;
-            var themerrData = new
-            {
-                downloaded_timestamp = DateTime.UtcNow,
-                theme_md5 = GetMd5Hash(themePath),
-                youtube_theme_url = youtubeThemeUrl,
-            };
             try
             {
-                System.IO.File.WriteAllText(themerrDataPath, JsonConvert.SerializeObject(themerrData));
-                success = true;
+                _themerrRepository.Save(item, themePath, GetMd5Hash(themePath), youtubeThemeUrl);
+                return _themerrRepository.Get(item, themePath) != null;
             }
             catch (Exception e)
             {
-                _logger.LogError(e, "Unable to save themerr data to {ThemerrDataPath}", themerrDataPath);
+                _logger.LogError(e, "Unable to save themerr data to sqlite database");
+                return false;
             }
-
-            return success && WaitForFile(themerrDataPath, 10000);
         }
 
         /// <summary>

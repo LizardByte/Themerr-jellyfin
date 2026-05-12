@@ -12,16 +12,18 @@ public static class TestHelper
     /// Gets a mock IApplicationPaths instance.
     /// </summary>
     /// <returns>A mock IApplicationPaths instance.</returns>
-    public static Mock<IApplicationPaths> GetMockApplicationPaths()
+    public static Mock<IApplicationPaths> GetMockApplicationPaths(string? basePath = null)
     {
         Mock<IApplicationPaths> mockApplicationPaths = new();
+        var path = basePath ?? Path.Combine(Path.GetTempPath(), "ThemerrJellyfinTests", Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(path);
 
         // Set up the mock IApplicationPaths instance to return valid paths
-        mockApplicationPaths.Setup(a => a.PluginConfigurationsPath).Returns("testing");
-        mockApplicationPaths.Setup(a => a.PluginsPath).Returns("testing");
-        mockApplicationPaths.Setup(a => a.DataPath).Returns("testing");
-        mockApplicationPaths.Setup(a => a.LogDirectoryPath).Returns("testing");
-        mockApplicationPaths.Setup(a => a.CachePath).Returns("testing");
+        mockApplicationPaths.Setup(a => a.PluginConfigurationsPath).Returns(path);
+        mockApplicationPaths.Setup(a => a.PluginsPath).Returns(path);
+        mockApplicationPaths.Setup(a => a.DataPath).Returns(path);
+        mockApplicationPaths.Setup(a => a.LogDirectoryPath).Returns(path);
+        mockApplicationPaths.Setup(a => a.CachePath).Returns(path);
 
         return mockApplicationPaths;
     }
