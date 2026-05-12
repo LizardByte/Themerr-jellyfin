@@ -189,6 +189,7 @@ namespace Jellyfin.Plugin.Themerr
 
             var existingThemerrData = _themerrRepository.Get(item, themePath);
             var existingYoutubeThemeUrl = existingThemerrData?.YoutubeThemeUrl;
+            var existingThemeMd5 = existingThemerrData?.ThemeMd5;
 
             // get tmdb id
             var tmdbId = GetTmdbId(item);
@@ -199,10 +200,10 @@ namespace Jellyfin.Plugin.Themerr
             var youtubeThemeUrl = GetYoutubeThemeUrl(themerrDbUrl, item);
 
             // skip if no YouTube theme url in ThemerrDB or
-            // if the YouTube themes match AND the theme_md5 is unknown
+            // if the YouTube themes match AND the theme_md5 is known
             if (string.IsNullOrEmpty(youtubeThemeUrl) ||
                 (youtubeThemeUrl == existingYoutubeThemeUrl &&
-                 !string.IsNullOrEmpty(existingThemerrData?.ThemeMd5)))
+                 !string.IsNullOrEmpty(existingThemeMd5)))
             {
                 return;
             }
