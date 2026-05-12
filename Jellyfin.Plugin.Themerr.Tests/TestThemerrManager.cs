@@ -1,9 +1,7 @@
-using MediaBrowser.Common.Configuration;
 using MediaBrowser.Controller.Entities;
 using MediaBrowser.Controller.Entities.Movies;
 using MediaBrowser.Controller.Entities.TV;
 using MediaBrowser.Controller.Library;
-using MediaBrowser.Model.Serialization;
 using Microsoft.Extensions.Logging;
 using Moq;
 using Newtonsoft.Json;
@@ -29,10 +27,8 @@ public class TestThemerrManager
     {
         TestLogger.Initialize(output);
 
-        Mock<IApplicationPaths> mockApplicationPaths = TestHelper.GetMockApplicationPaths();
         Mock<ILibraryManager> mockLibraryManager = new();
         Mock<ILogger<ThemerrManager>> mockLogger = new();
-        Mock<IXmlSerializer> mockXmlSerializer = new();
 
         var audioStubPath = Path.Combine(Directory.GetCurrentDirectory(), "data", "audio_stub.mp3");
 
@@ -46,16 +42,12 @@ public class TestThemerrManager
             });
 
         _themerrManager = new ThemerrManager(
-            mockApplicationPaths.Object,
             mockLibraryManager.Object,
-            mockLogger.Object,
-            mockXmlSerializer.Object);
+            mockLogger.Object);
 
         _themerrManagerWithMockYoutube = new ThemerrManager(
-            mockApplicationPaths.Object,
             mockLibraryManager.Object,
             mockLogger.Object,
-            mockXmlSerializer.Object,
             mockYoutubeClient.Object);
     }
 
