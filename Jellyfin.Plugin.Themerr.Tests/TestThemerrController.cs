@@ -100,6 +100,10 @@ public class TestThemerrController
             .Setup(x => x.Configuration)
             .Returns(new TestableServerConfiguration("en-US"));
 
+        mockLoggerFactory
+            .Setup(x => x.CreateLogger(It.IsAny<string>()))
+            .Returns(new Mock<ILogger>().Object);
+
         var libraryItems = new List<BaseItem>
         {
             new Movie
@@ -134,7 +138,23 @@ public class TestThemerrController
             mockLoggerFactory.Object,
             mockXmlSerializer.Object);
 
-        var result = controller.GetProgress();
+        // BaseItem.GetThemeSongs() uses BaseItem.LibraryManager (static) which is null without a full Jellyfin server
+        var mockBaseItemLibraryManager = new Mock<ILibraryManager>();
+        mockBaseItemLibraryManager
+            .Setup(x => x.GetItemList(It.IsAny<InternalItemsQuery>()))
+            .Returns(new List<BaseItem>());
+        BaseItem.LibraryManager = mockBaseItemLibraryManager.Object;
+
+        ActionResult result;
+        try
+        {
+            result = controller.GetProgress();
+        }
+        finally
+        {
+            BaseItem.LibraryManager = null;
+        }
+
         Assert.IsType<JsonResult>(result);
 
         var value = ((JsonResult)result).Value;
