@@ -1,12 +1,17 @@
 ﻿using System.Collections;
+using System.Collections.Generic;
 using Jellyfin.Plugin.Themerr.Api;
 using MediaBrowser.Common.Configuration;
 using MediaBrowser.Controller.Configuration;
+using MediaBrowser.Controller.Entities;
+using MediaBrowser.Controller.Entities.Movies;
+using MediaBrowser.Controller.Entities.TV;
 using MediaBrowser.Controller.Library;
 using MediaBrowser.Model.Serialization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
 using Moq;
+using MetadataProvider = MediaBrowser.Model.Entities.MetadataProvider;
 
 namespace Jellyfin.Plugin.Themerr.Tests;
 
@@ -75,6 +80,90 @@ public class TestThemerrController
         Assert.Equal(0, (((JsonResult)result).Value?.GetType().GetProperty("items")?.GetValue(((JsonResult)result).Value, null) as ArrayList)?.Count);
 
         // todo: add tests for when there are items
+    }
+
+    /// <summary>
+    /// Test GetProgress from API with items in the library.
+    /// </summary>
+    [Fact]
+    [Trait("Category", "Unit")]
+    public void TestGetProgressWithItems()
+    {
+        var mockApplicationPaths = TestHelper.GetMockApplicationPaths();
+        var mockLibraryManager = new Mock<ILibraryManager>();
+        var mockLogger = new Mock<ILogger<ThemerrController>>();
+        var mockServerConfigurationManager = new Mock<IServerConfigurationManager>();
+        var mockLoggerFactory = new Mock<ILoggerFactory>();
+        var mockXmlSerializer = new Mock<IXmlSerializer>();
+
+        mockServerConfigurationManager
+            .Setup(x => x.Configuration)
+            .Returns(new TestableServerConfiguration("en-US"));
+
+        mockLoggerFactory
+            .Setup(x => x.CreateLogger(It.IsAny<string>()))
+            .Returns(new Mock<ILogger>().Object);
+
+        var libraryItems = new List<BaseItem>
+        {
+            new Movie
+            {
+                Name = "Test Movie",
+                ProductionYear = 1970,
+                ProviderIds = new Dictionary<string, string>
+                {
+                    { MetadataProvider.Tmdb.ToString(), "0" },
+                },
+            },
+            new Series
+            {
+                Name = "Test Series",
+                ProductionYear = 1970,
+                ProviderIds = new Dictionary<string, string>
+                {
+                    { MetadataProvider.Tmdb.ToString(), "0" },
+                },
+            },
+        };
+
+        mockLibraryManager
+            .Setup(x => x.GetItemList(It.IsAny<InternalItemsQuery>()))
+            .Returns(libraryItems);
+
+        var controller = new ThemerrController(
+            mockApplicationPaths.Object,
+            mockLibraryManager.Object,
+            mockLogger.Object,
+            mockServerConfigurationManager.Object,
+            mockLoggerFactory.Object,
+            mockXmlSerializer.Object);
+
+        // BaseItem.GetThemeSongs() uses BaseItem.LibraryManager (static) which is null without a full Jellyfin server
+        var mockBaseItemLibraryManager = new Mock<ILibraryManager>();
+        mockBaseItemLibraryManager
+            .Setup(x => x.GetItemList(It.IsAny<InternalItemsQuery>()))
+            .Returns(new List<BaseItem>());
+        BaseItem.LibraryManager = mockBaseItemLibraryManager.Object;
+
+        ActionResult result;
+        try
+        {
+            result = controller.GetProgress();
+        }
+        finally
+        {
+            BaseItem.LibraryManager = null;
+        }
+
+        Assert.IsType<JsonResult>(result);
+
+        var value = ((JsonResult)result).Value;
+        var mediaCount = (int?)value?.GetType().GetProperty("media_count")?.GetValue(value, null);
+        var items = value?.GetType().GetProperty("items")?.GetValue(value, null) as ArrayList;
+
+        Assert.Equal(2, mediaCount);
+        Assert.NotNull(items);
+        Assert.Equal(2, items.Count);
     }
 
     /// <summary>
