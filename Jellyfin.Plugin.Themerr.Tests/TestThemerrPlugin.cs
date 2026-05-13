@@ -58,6 +58,29 @@ public class TestThemerrPlugin
     }
 
     /// <summary>
+    /// Test that the configuration page loads the current plugin id.
+    /// </summary>
+    [Fact]
+    [Trait("Category", "Unit")]
+    public void TestPluginConfigurationPageId()
+    {
+        var assembly = typeof(ThemerrPlugin).Assembly;
+        using var stream = assembly.GetManifestResourceStream("Jellyfin.Plugin.Themerr.Configuration.configPage.html");
+        Assert.NotNull(stream);
+
+        using var reader = new StreamReader(stream);
+        var configPage = reader.ReadToEnd();
+
+        var matches = System.Text.RegularExpressions.Regex.Matches(
+            configPage,
+            "pluginUniqueId:\\s*'(?<pluginId>[0-9a-fA-F-]{36})'",
+            System.Text.RegularExpressions.RegexOptions.CultureInvariant);
+
+        var match = Assert.Single(matches);
+        Assert.Equal(_plugin.Id, Guid.Parse(match.Groups["pluginId"].Value));
+    }
+
+    /// <summary>
     /// Test getting the plugin configuration page.
     /// </summary>
     [Fact]
