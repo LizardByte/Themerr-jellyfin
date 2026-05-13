@@ -12,24 +12,8 @@
                 <form class="tbsConfigurationPage">
                     <div class="sectionTitleContainer flex align-items-center">
                         <h2 class="sectionTitle">Themerr</h2>
-                        <button is="emby-linkbutton"
-                                type="button"
-                                class="raised button-alt headerHelpButton emby-button"
-                                id="toggle-discord-widget"
-                                onclick=toggleDiscordWidget()>
-                            <span>Discord</span>
-                        </button>
                         <a is="emby-linkbutton" class="raised button-alt headerHelpButton emby-button" target="_blank"
                            href="https://app.lizardbyte.dev/support" data-localize="support_center">Support Center</a>
-                    </div>
-                    <div id="DiscordWidget" style="display: none;">
-                        <widgetbot
-                                server="804382334370578482"
-                                channel="804383092822900797"
-                                width="800"
-                                height="600"
-                        ></widgetbot>
-                        <br>
                     </div>
                     <div class="verticalSection">
                         <p data-localize="plugin_relies">This plugin relies on the TMDB provider.
@@ -81,9 +65,6 @@
                 </form>
             </div>
         </div>
-
-        <!-- Discord Widget -->
-        <script src="https://cdn.jsdelivr.net/npm/@widgetbot/html-embed"></script>
 
         <!-- Remove IDE complaints -->
         <!-- ApiClient -->
@@ -191,15 +172,6 @@
                     })
                     console.log(LogPrefix + message)
                 })
-            }
-
-            function toggleDiscordWidget() {
-                let discordWidget = document.querySelector('#DiscordWidget')
-                if (discordWidget.style.display === 'none') {
-                    discordWidget.style.display = 'block'
-                } else {
-                    discordWidget.style.display = 'none'
-                }
             }
 
             async function updateProgress() {
