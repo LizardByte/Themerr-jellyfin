@@ -141,34 +141,39 @@ namespace Jellyfin.Plugin.Themerr
         /// Enumerate through all supported items in the library and downloads their theme songs as required.
         /// </summary>
         /// <returns>A <see cref="Task"/> representing the asynchronous operation.</returns>
-        public Task UpdateAll()
+        public async Task UpdateAll()
         {
+            _logger.LogInformation("Updating all items");
+
             var items = GetTmdbItemsFromLibrary();
             foreach (var item in items)
             {
-                ProcessItemTheme(item);
+                await ProcessItemThemeAsync(item);
             }
 
-            return Task.CompletedTask;
+            _logger.LogInformation("Done updating all items");
         }
 
         /// <summary>
         /// Download the theme song for a media item if it doesn't already exist.
         /// </summary>
         /// <param name="item">The Jellyfin media object.</param>
-        public void ProcessItemTheme(BaseItem item)
+        /// <returns>A <see cref="Task"/> representing the asynchronous operation.</returns>
+        public async Task ProcessItemThemeAsync(BaseItem item)
         {
             // get themerrDB database type, used to create the themerrdb url
             var dbType = item switch
             {
-                Movie _ => "movies",
-                Series _ => "tv_shows",
+                Movie => "movies",
+                Series => "tv_shows",
                 _ => null,
             };
 
             // return if dbType is null
             if (string.IsNullOrEmpty(dbType))
             {
+                _logger.LogTrace("Skipping item '{ItemName}': unknown DB type", item.Name);
+
                 return;
             }
 
@@ -177,6 +182,8 @@ namespace Jellyfin.Plugin.Themerr
 
             if (!ContinueDownload(themePath, themerrDataPath))
             {
+                _logger.LogTrace("Skipping item '{ItemName}': found user supplied theme", item.Name);
+
                 return;
             }
 
@@ -190,28 +197,40 @@ namespace Jellyfin.Plugin.Themerr
 
             var youtubeThemeUrl = GetYoutubeThemeUrl(themerrDbUrl, item);
 
-            // skip if no YouTube theme url in ThemerrDB or
-            // if the YouTube themes match AND the theme_md5 is unknown
-            if (string.IsNullOrEmpty(youtubeThemeUrl) ||
-                (youtubeThemeUrl == existingYoutubeThemeUrl &&
-                 !string.IsNullOrEmpty(GetExistingThemerrDataValue("theme_md5", themerrDataPath))))
+            // skip if no YouTube theme url in ThemerrDB
+            if (string.IsNullOrEmpty(youtubeThemeUrl))
             {
+                _logger.LogTrace("Skipping item '{ItemName}': no YouTube theme found in ThemerrDB", item.Name);
+
+                return;
+            }
+
+            // skip if the YouTube themes match AND the theme_md5 is unknown
+            if (youtubeThemeUrl == existingYoutubeThemeUrl &&
+                !string.IsNullOrEmpty(GetExistingThemerrDataValue("theme_md5", themerrDataPath)))
+            {
+                _logger.LogTrace("Skipping item '{ItemName}': resolved YouTube theme already matches", item.Name);
+
                 return;
             }
 
             var successMp3 = SaveMp3(themePath, youtubeThemeUrl);
             if (!successMp3)
             {
+                _logger.LogWarning("Skipping item '{ItemName}': failed to save mp3 (theme url: {YouTubeThemeUrl})", item.Name, youtubeThemeUrl);
+
                 return;
             }
 
             var successThemerrData = SaveThemerrData(themePath, themerrDataPath, youtubeThemeUrl);
             if (!successThemerrData)
             {
+                _logger.LogWarning("Skipping item '{ItemName}': failed to save themerr metadata", item.Name);
+
                 return;
             }
 
-            item.RefreshMetadata(CancellationToken.None);
+            await item.RefreshMetadata(CancellationToken.None);
         }
 
         /// <summary>

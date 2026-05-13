@@ -228,10 +228,10 @@ public class TestThemerrManager
     [Theory]
     [Trait("Category", "Unit")]
     [MemberData(nameof(FixtureJellyfinServer.MockItemsData), MemberType = typeof(FixtureJellyfinServer))]
-    private void TestProcessItemTheme(BaseItem item)
+    private async Task TestProcessItemTheme(BaseItem item)
     {
         // get the item theme
-        _themerrManagerWithMockYoutube.ProcessItemTheme(item);
+        await _themerrManagerWithMockYoutube.ProcessItemThemeAsync(item);
 
         Assert.True(File.Exists(_themerrManagerWithMockYoutube.GetThemePath(item)), $"File {_themerrManagerWithMockYoutube.GetThemePath(item)} does not exist");
 
@@ -242,10 +242,10 @@ public class TestThemerrManager
     [Theory]
     [Trait("Category", "Unit")]
     [MemberData(nameof(FixtureJellyfinServer.UnsupportedMockItemsData), MemberType = typeof(FixtureJellyfinServer))]
-    private void TestProcessItemThemeUnsupportedType(BaseItem item)
+    private async Task TestProcessItemThemeUnsupportedType(BaseItem item)
     {
         // get the item theme
-        _themerrManager.ProcessItemTheme(item);
+        await _themerrManager.ProcessItemThemeAsync(item);
 
         Assert.False(File.Exists(_themerrManager.GetThemePath(item)), $"File {_themerrManager.GetThemePath(item)} exists");
     }
