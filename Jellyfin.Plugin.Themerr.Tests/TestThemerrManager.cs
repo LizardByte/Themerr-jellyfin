@@ -110,6 +110,13 @@ public class TestThemerrManager
         };
     }
 
+    private static string CreateTempDirectory()
+    {
+        var path = Path.Combine(Path.GetTempPath(), "ThemerrJellyfinTests", Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(path);
+        return path;
+    }
+
     [Fact]
     [Trait("Category", "Unit")]
     private void TestGetExistingThemerrDataValue()
@@ -328,8 +335,7 @@ public class TestThemerrManager
     {
         var repository = CreateThemerrRepository();
         var manager = CreateThemerrManager(repository);
-        var tempPath = Path.Combine(Path.GetTempPath(), "ThemerrJellyfinTests", Guid.NewGuid().ToString("N"));
-        Directory.CreateDirectory(tempPath);
+        var tempPath = CreateTempDirectory();
 
         // test when neither theme nor data row exists
         var item = CreateMovie("continue-1");
@@ -369,6 +375,37 @@ public class TestThemerrManager
         item = CreateMovie("continue-6");
         repository.Save(item, themePath, "different-md5", "https://www.youtube.com/watch?v=dQw4w9WgXcQ");
         Assert.False(manager.ContinueDownload(item, themePath), "ContinueDownload returned True");
+    }
+
+    [Fact]
+    [Trait("Category", "Unit")]
+    private void TestMigrateLegacyThemerrDataDeletesLegacyFile()
+    {
+        var repository = CreateThemerrRepository();
+        var manager = CreateThemerrManager(repository);
+        var tempPath = CreateTempDirectory();
+        var item = CreateMovie("legacy-1");
+        item.Path = Path.Combine(tempPath, "Test Movie (1970).mp4");
+
+        var legacyDataPath = manager.GetThemerrDataPath(item);
+        var themePath = manager.GetThemePath(item);
+
+        File.WriteAllText(
+            legacyDataPath,
+            JsonConvert.SerializeObject(new
+            {
+                downloaded_timestamp = DateTime.UtcNow,
+                theme_md5 = "legacy-md5",
+                youtube_theme_url = "https://www.youtube.com/watch?v=legacy",
+            }));
+
+        Assert.True(manager.MigrateLegacyThemerrData(item));
+        Assert.False(File.Exists(legacyDataPath));
+
+        var themerrData = repository.Get(item, themePath);
+        Assert.NotNull(themerrData);
+        Assert.Equal("legacy-md5", themerrData.ThemeMd5);
+        Assert.Equal("https://www.youtube.com/watch?v=legacy", themerrData.YoutubeThemeUrl);
     }
 
     [Theory]

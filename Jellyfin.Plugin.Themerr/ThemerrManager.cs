@@ -179,8 +179,7 @@ namespace Jellyfin.Plugin.Themerr
             }
 
             var themePath = GetThemePath(item);
-            var themerrDataPath = GetThemerrDataPath(item);
-            _themerrRepository.MigrateLegacyData(item, themePath, themerrDataPath);
+            MigrateLegacyThemerrData(item, themePath);
 
             if (!ContinueDownload(item, themePath))
             {
@@ -241,6 +240,9 @@ namespace Jellyfin.Plugin.Themerr
         /// <returns>The theme provider.</returns>
         public string GetThemeProvider(BaseItem item)
         {
+            var themePath = GetThemePath(item);
+            MigrateLegacyThemerrData(item, themePath);
+
             // check if item has a theme song
             var themeSongs = item.GetThemeSongs();
             if (themeSongs == null || themeSongs.Count == 0)
@@ -248,9 +250,7 @@ namespace Jellyfin.Plugin.Themerr
                 return null;
             }
 
-            var themerrDataPath = GetThemerrDataPath(item);
-            _themerrRepository.MigrateLegacyData(item, GetThemePath(item), themerrDataPath);
-            var themerrData = _themerrRepository.Get(item, GetThemePath(item));
+            var themerrData = _themerrRepository.Get(item, themePath);
             var themerrHash = themerrData?.ThemeMd5;
             var themeHash = GetMd5Hash(themeSongs[0].Path);
 
@@ -356,6 +356,16 @@ namespace Jellyfin.Plugin.Themerr
                 Series series => System.IO.Path.Join(series.Path, "themerr.json"),
                 _ => null,
             };
+        }
+
+        /// <summary>
+        /// Migrate a legacy themerr.json file to sqlite.
+        /// </summary>
+        /// <param name="item">The Jellyfin media object.</param>
+        /// <returns>True if a legacy file was migrated; otherwise, false.</returns>
+        public bool MigrateLegacyThemerrData(BaseItem item)
+        {
+            return MigrateLegacyThemerrData(item, GetThemePath(item));
         }
 
         /// <summary>
@@ -591,6 +601,29 @@ namespace Jellyfin.Plugin.Themerr
         {
             // Stop the timer until next update
             _timer.Change(Timeout.Infinite, Timeout.Infinite);
+        }
+
+        private bool MigrateLegacyThemerrData(BaseItem item, string themePath)
+        {
+            var themerrDataPath = GetThemerrDataPath(item);
+            if (_themerrRepository.MigrateLegacyData(item, themePath, themerrDataPath))
+            {
+                return true;
+            }
+
+            var themeDirectory = System.IO.Path.GetDirectoryName(themePath);
+            if (string.IsNullOrEmpty(themeDirectory))
+            {
+                return false;
+            }
+
+            var fallbackThemerrDataPath = System.IO.Path.Combine(themeDirectory, "themerr.json");
+            if (string.Equals(themerrDataPath, fallbackThemerrDataPath, StringComparison.OrdinalIgnoreCase))
+            {
+                return false;
+            }
+
+            return _themerrRepository.MigrateLegacyData(item, themePath, fallbackThemerrDataPath);
         }
     }
 }
