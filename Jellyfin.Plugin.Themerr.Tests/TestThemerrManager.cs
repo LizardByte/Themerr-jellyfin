@@ -1,5 +1,7 @@
+using Jellyfin.Plugin.Themerr.Storage;
 using MediaBrowser.Common.Configuration;
 using MediaBrowser.Controller.Entities;
+using MediaBrowser.Controller.Entities.Audio;
 using MediaBrowser.Controller.Entities.Movies;
 using MediaBrowser.Controller.Entities.TV;
 using MediaBrowser.Controller.Library;
@@ -69,6 +71,61 @@ public class TestThemerrManager
         new object[] { "https://www.youtube.com/watch?v=Ghmd4QzT9YY" },
         new object[] { "https://www.youtube.com/watch?v=LVEWkghDh9A" },
     };
+
+    private static ThemerrManager CreateThemerrManager(
+        ThemerrRepository? themerrRepository = null,
+        IReadOnlyList<BaseItem>? libraryItems = null)
+    {
+        Mock<IApplicationPaths> mockApplicationPaths = TestHelper.GetMockApplicationPaths();
+        Mock<ILibraryManager> mockLibraryManager = new();
+        Mock<ILogger<ThemerrManager>> mockLogger = new();
+        Mock<IXmlSerializer> mockXmlSerializer = new();
+
+        if (libraryItems != null)
+        {
+            mockLibraryManager
+                .Setup(x => x.GetItemList(It.IsAny<InternalItemsQuery>()))
+                .Returns(libraryItems);
+        }
+
+        return new ThemerrManager(
+            mockApplicationPaths.Object,
+            mockLibraryManager.Object,
+            mockLogger.Object,
+            mockXmlSerializer.Object,
+            themerrRepository: themerrRepository);
+    }
+
+    private static ThemerrRepository CreateThemerrRepository()
+    {
+        var databasePath = Path.Combine(
+            Path.GetTempPath(),
+            "ThemerrJellyfinTests",
+            Guid.NewGuid().ToString("N"),
+            "themerr.db");
+
+        return new ThemerrRepository(databasePath, new Mock<ILogger>().Object);
+    }
+
+    private static Movie CreateMovie(string tmdbId)
+    {
+        return new Movie
+        {
+            Name = $"Test Movie {tmdbId}",
+            ProductionYear = 1970,
+            ProviderIds = new Dictionary<string, string>
+            {
+                { MetadataProvider.Tmdb.ToString(), tmdbId },
+            },
+        };
+    }
+
+    private static string CreateTempDirectory()
+    {
+        var path = Path.Combine(Path.GetTempPath(), "ThemerrJellyfinTests", Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(path);
+        return path;
+    }
 
     [Fact]
     [Trait("Category", "Unit")]
@@ -286,78 +343,385 @@ public class TestThemerrManager
     [Trait("Category", "Unit")]
     private void TestContinueDownload()
     {
-        string themePath;
-        string themerrDataPath;
+        var repository = CreateThemerrRepository();
+        var manager = CreateThemerrManager(repository);
+        var tempPath = CreateTempDirectory();
 
-        // test when neither theme nor data file exists
-        themePath = Path.Combine(
-            "no_file.mp3");
-        themerrDataPath = Path.Combine(
-            "no_file.json");
-        Assert.True(_themerrManager.ContinueDownload(themePath, themerrDataPath), "ContinueDownload returned False");
+        // test when neither theme nor data row exists
+        var item = CreateMovie("continue-1");
+        var themePath = Path.Combine(tempPath, "missing_theme_1.mp3");
+        Assert.True(manager.ContinueDownload(item, themePath), "ContinueDownload returned False");
 
-        // test when theme does not exist and data file does
-        themePath = Path.Combine(
-            "no_file.mp3");
+        // test when theme does not exist and data row does
+        item = CreateMovie("continue-2");
+        themePath = Path.Combine(tempPath, "missing_theme_2.mp3");
+        repository.Save(
+            item,
+            new ThemerrMediaItemSaveOptions
+            {
+                ThemePath = themePath,
+                ThemeMd5 = "missing-md5",
+                YoutubeThemeUrl = "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
+                ThemeProvider = ThemerrThemeProvider.Themerr,
+            });
+        Assert.True(manager.ContinueDownload(item, themePath), "ContinueDownload returned False");
+        Assert.NotNull(repository.Get(item, themePath));
 
-        // copy the dummy.json to a secondary location
-        var ogFile = Path.Combine(
-            Directory.GetCurrentDirectory(),
-            "data",
-            "dummy.json");
-        themerrDataPath = Path.Combine(
-            Directory.GetCurrentDirectory(),
-            "data",
-            "dummy2.json");
-
-        // copy the dummy.json
-        File.Copy(ogFile, themerrDataPath);
-        Assert.True(_themerrManager.ContinueDownload(themePath, themerrDataPath), "ContinueDownload returned False");
-        Assert.False(File.Exists(themerrDataPath), $"File {themerrDataPath} was not removed");
-
-        // test when theme file exists but data file does not
+        // test when theme file exists but data row does not
+        item = CreateMovie("continue-3");
         themePath = Path.Combine(
             Directory.GetCurrentDirectory(),
             "data",
             "audio_stub.mp3");
-        themerrDataPath = Path.Combine(
-            Directory.GetCurrentDirectory(),
-            "data",
-            "no_file.json");
-        Assert.False(_themerrManager.ContinueDownload(themePath, themerrDataPath), "ContinueDownload returned True");
+        Assert.False(manager.ContinueDownload(item, themePath), "ContinueDownload returned True");
 
-        // test when both theme and data file exist, but hash is empty in data file
-        themePath = Path.Combine(
-            Directory.GetCurrentDirectory(),
-            "data",
-            "audio_stub.mp3");
-        themerrDataPath = Path.Combine(
-            Directory.GetCurrentDirectory(),
-            "data",
-            "dummy.json");
-        Assert.True(_themerrManager.ContinueDownload(themePath, themerrDataPath), "ContinueDownload returned False");
+        // test when both theme and data row exist, but hash is empty in data row
+        item = CreateMovie("continue-4");
+        repository.Save(
+            item,
+            new ThemerrMediaItemSaveOptions
+            {
+                ThemePath = themePath,
+                ThemeMd5 = string.Empty,
+                YoutubeThemeUrl = "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
+                ThemeProvider = ThemerrThemeProvider.Themerr,
+            });
+        Assert.True(manager.ContinueDownload(item, themePath), "ContinueDownload returned False");
 
-        // test when both theme and data file exist, and md5 hashes match
-        themePath = Path.Combine(
-            Directory.GetCurrentDirectory(),
-            "data",
-            "audio_stub.mp3");
-        themerrDataPath = Path.Combine(
-            Directory.GetCurrentDirectory(),
-            "data",
-            "audio_themerr_data.json");
-        Assert.True(_themerrManager.ContinueDownload(themePath, themerrDataPath), "ContinueDownload returned False");
+        // test when both theme and data row exist, and md5 hashes match
+        item = CreateMovie("continue-5");
+        repository.Save(
+            item,
+            new ThemerrMediaItemSaveOptions
+            {
+                ThemePath = themePath,
+                ThemeMd5 = manager.GetMd5Hash(themePath),
+                YoutubeThemeUrl = "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
+                ThemeProvider = ThemerrThemeProvider.Themerr,
+            });
+        Assert.True(manager.ContinueDownload(item, themePath), "ContinueDownload returned False");
 
-        // test when both theme and data file exist, and md5 hashes do not match
-        themePath = Path.Combine(
-            Directory.GetCurrentDirectory(),
-            "data",
-            "audio_stub.mp3");
-        themerrDataPath = Path.Combine(
-            Directory.GetCurrentDirectory(),
-            "data",
-            "audio_themerr_data_user_overwritten.json");
-        Assert.False(_themerrManager.ContinueDownload(themePath, themerrDataPath), "ContinueDownload returned True");
+        // test when both theme and data row exist, and md5 hashes do not match
+        item = CreateMovie("continue-6");
+        repository.Save(
+            item,
+            new ThemerrMediaItemSaveOptions
+            {
+                ThemePath = themePath,
+                ThemeMd5 = "different-md5",
+                YoutubeThemeUrl = "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
+                ThemeProvider = ThemerrThemeProvider.Themerr,
+            });
+        Assert.False(manager.ContinueDownload(item, themePath), "ContinueDownload returned True");
+
+        // test when a tracked item has a theme file but no Themerr provider metadata
+        item = CreateMovie("continue-7");
+        repository.Save(
+            item,
+            new ThemerrMediaItemSaveOptions
+            {
+                ThemePath = themePath,
+                InThemerrDb = false,
+                InThemerrDbCheckedUtc = DateTime.UtcNow,
+            });
+        Assert.False(manager.ContinueDownload(item, themePath), "ContinueDownload returned True");
+    }
+
+    [Fact]
+    [Trait("Category", "Unit")]
+    private void TestMigrateLegacyThemerrDataDeletesLegacyFile()
+    {
+        var repository = CreateThemerrRepository();
+        var manager = CreateThemerrManager(repository);
+        var tempPath = CreateTempDirectory();
+        var item = CreateMovie("legacy-1");
+        item.Path = Path.Combine(tempPath, "Test Movie (1970).mp4");
+
+        var legacyDataPath = manager.GetThemerrDataPath(item);
+        var themePath = manager.GetThemePath(item);
+
+        Assert.Equal(Path.Combine(tempPath, "themerr.json"), legacyDataPath);
+        Assert.Equal(Path.Combine(tempPath, "theme.mp3"), themePath);
+
+        File.WriteAllText(
+            legacyDataPath,
+            JsonConvert.SerializeObject(new
+            {
+                downloaded_timestamp = DateTime.UtcNow,
+                theme_md5 = "legacy-md5",
+                youtube_theme_url = "https://www.youtube.com/watch?v=legacy",
+            }));
+
+        Assert.True(manager.MigrateLegacyThemerrData(item));
+        Assert.False(File.Exists(legacyDataPath));
+
+        var themerrData = repository.Get(item, themePath);
+        Assert.NotNull(themerrData);
+        Assert.Equal("legacy-md5", themerrData.ThemeMd5);
+        Assert.Equal(ThemerrThemeProvider.Themerr, themerrData.ThemeProvider);
+        Assert.Equal("https://www.youtube.com/watch?v=legacy", themerrData.YoutubeThemeUrl);
+    }
+
+    [Fact]
+    [Trait("Category", "Unit")]
+    private void TestInitialMigrationUpdateMigratesLegacyThemerrDataBeforeDashboardSync()
+    {
+        var repository = CreateThemerrRepository();
+        var tempPath = CreateTempDirectory();
+        var item = CreateMovie("legacy-startup");
+        item.Path = Path.Combine(tempPath, "Test Movie (1970).mp4");
+
+        var manager = CreateThemerrManager(repository, new List<BaseItem> { item });
+        var themePath = manager.GetThemePath(item);
+        var legacyDataPath = manager.GetThemerrDataPath(item);
+        var youtubeThemeUrl = "https://www.youtube.com/watch?v=legacy-startup";
+
+        File.Copy(
+            Path.Combine(Directory.GetCurrentDirectory(), "data", "audio_stub.mp3"),
+            themePath,
+            true);
+
+        var themeMd5 = manager.GetMd5Hash(themePath);
+        File.WriteAllText(
+            legacyDataPath,
+            JsonConvert.SerializeObject(new
+            {
+                downloaded_timestamp = DateTime.UtcNow,
+                theme_md5 = themeMd5,
+                youtube_theme_url = youtubeThemeUrl,
+            }));
+
+        var syncedItems = manager.SyncLibraryItems();
+
+        Assert.False(File.Exists(legacyDataPath));
+        var syncedItem = Assert.Single(syncedItems);
+        Assert.Equal(ThemerrThemeProvider.Themerr, syncedItem.ThemeProvider);
+        Assert.Equal(themeMd5, syncedItem.ThemeMd5);
+        Assert.Equal(youtubeThemeUrl, syncedItem.YoutubeThemeUrl);
+    }
+
+    [Fact]
+    [Trait("Category", "Unit")]
+    private void TestSyncLibraryItemMigratesLegacyDataFromExistingThemeSongDirectory()
+    {
+        var repository = CreateThemerrRepository();
+        var manager = CreateThemerrManager(repository);
+        var tempPath = CreateTempDirectory();
+        var actualMediaPath = Path.Combine(tempPath, "Top Gun- Maverick (2022)");
+        Directory.CreateDirectory(actualMediaPath);
+
+        var item = new Movie
+        {
+            Name = "Top Gun: Maverick",
+            ProductionYear = 2022,
+            Path = tempPath,
+            ProviderIds = new Dictionary<string, string>
+            {
+                { MetadataProvider.Tmdb.ToString(), "361743" },
+            },
+        };
+
+        var computedThemePath = manager.GetThemePath(item);
+        var actualThemePath = Path.Combine(actualMediaPath, "theme.mp3");
+        var legacyDataPath = Path.Combine(actualMediaPath, "themerr.json");
+        var youtubeThemeUrl = "https://www.youtube.com/watch?v=legacy-existing-theme";
+
+        File.Copy(
+            Path.Combine(Directory.GetCurrentDirectory(), "data", "audio_stub.mp3"),
+            actualThemePath,
+            true);
+
+        var themeMd5 = manager.GetMd5Hash(actualThemePath);
+        File.WriteAllText(
+            legacyDataPath,
+            JsonConvert.SerializeObject(new
+            {
+                downloaded_timestamp = DateTime.UtcNow,
+                theme_md5 = themeMd5,
+                youtube_theme_url = youtubeThemeUrl,
+            }));
+
+        repository.Save(
+            item,
+            new ThemerrMediaItemSaveOptions
+            {
+                ThemePath = computedThemePath,
+                ThemeProvider = ThemerrThemeProvider.User,
+                InThemerrDb = false,
+                InThemerrDbCheckedUtc = DateTime.UtcNow,
+            });
+
+        var mockBaseItemLibraryManager = new Mock<ILibraryManager>();
+        mockBaseItemLibraryManager
+            .Setup(x => x.GetItemList(It.IsAny<InternalItemsQuery>()))
+            .Returns(new List<BaseItem>
+            {
+                new Audio
+                {
+                    Path = actualThemePath,
+                },
+            });
+
+        BaseItem.LibraryManager = mockBaseItemLibraryManager.Object;
+        ThemerrMediaItem syncedItem;
+        try
+        {
+            syncedItem = manager.SyncLibraryItem(item);
+        }
+        finally
+        {
+            BaseItem.LibraryManager = null;
+        }
+
+        Assert.False(File.Exists(legacyDataPath));
+        Assert.NotNull(syncedItem);
+        Assert.Equal(ThemerrThemeProvider.Themerr, syncedItem.ThemeProvider);
+        Assert.Equal(themeMd5, syncedItem.ThemeMd5);
+        Assert.Equal(youtubeThemeUrl, syncedItem.YoutubeThemeUrl);
+    }
+
+    [Fact]
+    [Trait("Category", "Unit")]
+    private void TestSyncLibraryItemMigratesLegacyDataFromExistingDatabasePath()
+    {
+        var repository = CreateThemerrRepository();
+        var manager = CreateThemerrManager(repository);
+        var tempPath = CreateTempDirectory();
+        var currentMediaPath = Path.Combine(tempPath, ".jellyfin", "media", "movies", "Top Gun- Maverick (2022)");
+        var legacyMediaPath = Path.Combine(tempPath, "Videos", "Movies", "Top Gun- Maverick (2022)");
+        Directory.CreateDirectory(currentMediaPath);
+        Directory.CreateDirectory(legacyMediaPath);
+
+        var item = new Movie
+        {
+            Name = "Top Gun: Maverick",
+            ProductionYear = 2022,
+            Path = Path.Combine(currentMediaPath, "Top Gun- Maverick (2022) - 1080p.mp4"),
+            ProviderIds = new Dictionary<string, string>
+            {
+                { MetadataProvider.Tmdb.ToString(), "361743" },
+            },
+        };
+
+        var currentThemePath = manager.GetThemePath(item);
+        var legacyThemePath = Path.Combine(legacyMediaPath, "theme.mp3");
+        var legacyDataPath = Path.Combine(legacyMediaPath, "themerr.json");
+        var youtubeThemeUrl = "https://www.youtube.com/watch?v=legacy-existing-db-path";
+
+        File.Copy(
+            Path.Combine(Directory.GetCurrentDirectory(), "data", "audio_stub.mp3"),
+            currentThemePath,
+            true);
+        File.Copy(currentThemePath, legacyThemePath, true);
+
+        var themeMd5 = manager.GetMd5Hash(currentThemePath);
+        File.WriteAllText(
+            legacyDataPath,
+            JsonConvert.SerializeObject(new
+            {
+                downloaded_timestamp = DateTime.UtcNow,
+                theme_md5 = themeMd5,
+                youtube_theme_url = youtubeThemeUrl,
+            }));
+
+        repository.Save(
+            item,
+            new ThemerrMediaItemSaveOptions
+            {
+                ThemePath = currentThemePath,
+                ThemeProvider = ThemerrThemeProvider.User,
+                InThemerrDb = true,
+                InThemerrDbCheckedUtc = DateTime.UtcNow,
+                YoutubeThemeUrl = youtubeThemeUrl,
+            });
+
+        using (var context = new ThemerrDbContext(repository.DatabasePath))
+        {
+            var mediaItem = Assert.Single(context.MediaItems);
+            mediaItem.ItemPath = legacyMediaPath;
+            mediaItem.ThemePath = legacyThemePath;
+            context.SaveChanges();
+        }
+
+        var syncedItem = manager.SyncLibraryItem(item);
+
+        Assert.False(File.Exists(legacyDataPath));
+        Assert.NotNull(syncedItem);
+        Assert.Equal(currentMediaPath, syncedItem.ItemPath);
+        Assert.Equal(currentThemePath, syncedItem.ThemePath);
+        Assert.Equal(ThemerrThemeProvider.Themerr, syncedItem.ThemeProvider);
+        Assert.Equal(themeMd5, syncedItem.ThemeMd5);
+        Assert.Equal(youtubeThemeUrl, syncedItem.YoutubeThemeUrl);
+    }
+
+    [Fact]
+    [Trait("Category", "Unit")]
+    private void TestSyncLibraryItemTracksItemWithoutTheme()
+    {
+        var repository = CreateThemerrRepository();
+        var manager = CreateThemerrManager(repository);
+        var item = CreateMovie("sync-no-theme");
+        var themePath = manager.GetThemePath(item);
+        var checkedUtc = DateTime.UtcNow;
+
+        repository.Save(
+            item,
+            new ThemerrMediaItemSaveOptions
+            {
+                ThemePath = themePath,
+                InThemerrDb = false,
+                InThemerrDbCheckedUtc = checkedUtc,
+                IssueUrl = manager.GetIssueUrl(item),
+            });
+
+        var syncedItem = manager.SyncLibraryItem(item);
+
+        Assert.NotNull(syncedItem);
+        Assert.Equal("Test Movie sync-no-theme", syncedItem.ItemName);
+        Assert.Equal(1970, syncedItem.ProductionYear);
+        Assert.Null(syncedItem.ThemeProvider);
+        Assert.False(syncedItem.InThemerrDb);
+        Assert.Equal(checkedUtc, syncedItem.InThemerrDbCheckedUtc);
+        Assert.NotNull(syncedItem.IssueUrl);
+    }
+
+    [Fact]
+    [Trait("Category", "Unit")]
+    private void TestSyncLibraryItemTracksUserThemeAndCachedThemerrDbUrl()
+    {
+        var repository = CreateThemerrRepository();
+        var manager = CreateThemerrManager(repository);
+        var tempPath = CreateTempDirectory();
+        var item = CreateMovie("sync-user-theme");
+        item.Path = Path.Combine(tempPath, "Test Movie (1970).mp4");
+
+        var themePath = manager.GetThemePath(item);
+        var checkedUtc = DateTime.UtcNow;
+        var youtubeThemeUrl = "https://www.youtube.com/watch?v=cached";
+        File.Copy(
+            Path.Combine(Directory.GetCurrentDirectory(), "data", "audio_stub.mp3"),
+            themePath,
+            true);
+
+        repository.Save(
+            item,
+            new ThemerrMediaItemSaveOptions
+            {
+                ThemePath = themePath,
+                InThemerrDb = true,
+                InThemerrDbCheckedUtc = checkedUtc,
+                IssueUrl = manager.GetIssueUrl(item),
+                YoutubeThemeUrl = youtubeThemeUrl,
+            });
+
+        var syncedItem = manager.SyncLibraryItem(item);
+
+        Assert.NotNull(syncedItem);
+        Assert.Equal(ThemerrThemeProvider.User, syncedItem.ThemeProvider);
+        Assert.True(syncedItem.InThemerrDb);
+        Assert.Equal(checkedUtc, syncedItem.InThemerrDbCheckedUtc);
+        Assert.Equal(youtubeThemeUrl, syncedItem.YoutubeThemeUrl);
+        Assert.Null(syncedItem.ThemeMd5);
     }
 
     [Theory]
@@ -583,8 +947,9 @@ public class TestThemerrManager
     [MemberData(nameof(YoutubeUrls))]
     private void TestSaveThemerrData(string youtubeThemeUrl)
     {
-        // set mock themerrDataPath using a random number
-        var mockThemerrDataPath = $"themerr_{new Random().Next()}.json";
+        var repository = CreateThemerrRepository();
+        var manager = CreateThemerrManager(repository);
+        var item = CreateMovie(Guid.NewGuid().ToString("N"));
 
         var stubVideoPath = Path.Combine(
             Directory.GetCurrentDirectory(),
@@ -592,20 +957,15 @@ public class TestThemerrManager
             "video_stub.mp4");
 
         // save themerr data
-        var fileExists = _themerrManager.SaveThemerrData(stubVideoPath, mockThemerrDataPath, youtubeThemeUrl);
-        Assert.True(fileExists, $"SaveThemerrData did not return True for {youtubeThemeUrl}");
+        var dataExists = manager.SaveThemerrData(item, stubVideoPath, youtubeThemeUrl);
+        Assert.True(dataExists, $"SaveThemerrData did not return True for {youtubeThemeUrl}");
 
-        // check if file exists
-        Assert.True(File.Exists(mockThemerrDataPath), $"File {mockThemerrDataPath} does not exist");
+        var savedThemerrData = repository.Get(item, stubVideoPath);
+        Assert.NotNull(savedThemerrData);
 
-        // make sure the saved json file contains a key named "youtube_theme_url", and value is correct
-        var jsonString = File.ReadAllText(mockThemerrDataPath);
-        File.Delete(mockThemerrDataPath);  // delete the file
-        dynamic jsonData = JsonConvert.DeserializeObject(jsonString) ?? throw new InvalidOperationException();
-        var savedYoutubeThemeUrl = jsonData.youtube_theme_url.ToString();
         Assert.True(
-            youtubeThemeUrl == savedYoutubeThemeUrl,
-            $"youtubeThemeUrl {youtubeThemeUrl} does not match savedYoutubeThemeUrl {savedYoutubeThemeUrl}");
+            youtubeThemeUrl == savedThemerrData.YoutubeThemeUrl,
+            $"youtubeThemeUrl {youtubeThemeUrl} does not match savedYoutubeThemeUrl {savedThemerrData.YoutubeThemeUrl}");
     }
 
     [Fact]

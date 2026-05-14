@@ -24,15 +24,22 @@ def get_dotnet_version(file_path: str):
     return None
 
 
-def get_jellyfin_version(file_path: str):
+def get_package_version(file_path: str, package_name: str):
     tree = ET.parse(file_path)
     root = tree.getroot()
 
     for item in root.iter('PackageReference'):
-        if item.attrib['Include'] == "Jellyfin.Controller":
+        if item.attrib['Include'] == package_name:
             return item.attrib['Version']
 
     return None
+
+
+def get_major_minor_version(version: str | None):
+    if version is None:
+        return None
+
+    return '.'.join(version.split('.')[:2])
 
 
 # -- Path setup --------------------------------------------------------------
@@ -53,7 +60,15 @@ author = 'ReenigneArcher'
 csproj_file = os.path.join(root_dir, 'Jellyfin.Plugin.Themerr', 'Jellyfin.Plugin.Themerr.csproj')
 
 dotnet_version = get_dotnet_version(file_path=csproj_file)
-jellyfin_version = get_jellyfin_version(file_path=csproj_file)
+jellyfin_version = get_package_version(
+    file_path=csproj_file,
+    package_name="Jellyfin.Controller",
+)
+efcore_version = get_package_version(
+    file_path=csproj_file,
+    package_name='Microsoft.EntityFrameworkCore.Sqlite',
+)
+efcore_doc_version = get_major_minor_version(efcore_version) or dotnet_version
 
 # The full version, including alpha/beta/rc tags
 # https://docs.readthedocs.io/en/stable/reference/environment-variables.html#envvar-READTHEDOCS_VERSION
@@ -135,14 +150,35 @@ sphinx_csharp_ext_search_pages = {
     'System': (
         f'https://learn.microsoft.com/en-us/dotnet/api/system.%s?view=net-{dotnet_version}',
     ),
+    'System.Collections.Generic': (
+        f'https://learn.microsoft.com/en-us/dotnet/api/system.collections.generic.%s?view=net-{dotnet_version}',
+    ),
     'Microsoft': (
         f'https://learn.microsoft.com/en-us/dotnet/api/microsoft.%s?view=dotnet-plat-ext-{dotnet_version}',
+    ),
+    'Microsoft.EntityFrameworkCore': (
+        f'https://learn.microsoft.com/en-us/dotnet/api/microsoft.entityframeworkcore.%s'
+        f'?view=efcore-{efcore_doc_version}',
+        'https://learn.microsoft.com/en-us/search/?terms=microsoft.entityframeworkcore.%s',
+    ),
+    'Microsoft.EntityFrameworkCore.Infrastructure': (
+        f'https://learn.microsoft.com/en-us/dotnet/api/microsoft.entityframeworkcore.infrastructure.%s'
+        f'?view=efcore-{efcore_doc_version}',
+        'https://learn.microsoft.com/en-us/search/?terms=microsoft.entityframeworkcore.infrastructure.%s',
+    ),
+    'Microsoft.EntityFrameworkCore.Migrations': (
+        f'https://learn.microsoft.com/en-us/dotnet/api/microsoft.entityframeworkcore.migrations.%s'
+        f'?view=efcore-{efcore_doc_version}',
+        'https://learn.microsoft.com/en-us/search/?terms=microsoft.entityframeworkcore.migrations.%s',
     ),
     'Jellyfin.Controller.MediaBrowser.Common.Configuration': (
         f'https://github.com/jellyfin/jellyfin/blob/v{jellyfin_version}/MediaBrowser.Common/Configuration/%s.cs',
     ),
     'Jellyfin.Controller.MediaBrowser.Common.Plugins': (
         f'https://github.com/jellyfin/jellyfin/blob/v{jellyfin_version}/MediaBrowser.Common/Plugins/%s.cs',
+    ),
+    'Jellyfin.Controller.MediaBrowser.Controller': (
+        f'https://github.com/jellyfin/jellyfin/blob/v{jellyfin_version}/MediaBrowser.Controller/%s.cs',
     ),
     'Jellyfin.Controller.MediaBrowser.Controller.Configuration': (
         f'https://github.com/jellyfin/jellyfin/blob/v{jellyfin_version}/MediaBrowser.Controller/Configuration/%s.cs',
@@ -179,8 +215,10 @@ sphinx_csharp_ext_search_pages = {
 sphinx_csharp_ext_type_map = {
     'System': {
         '': [
+            'DateTime',
             'Guid',
             'IProgress',
+            'TimeSpan',
         ],
         'Threading': [
             'CancellationToken',
@@ -188,6 +226,12 @@ sphinx_csharp_ext_type_map = {
         ],
         'Threading.Tasks': [
             'Task',
+        ],
+    },
+    'System.Collections.Generic': {
+        '': [
+            'HashSet',
+            'IReadOnlyList',
         ],
     },
     'Microsoft': {
@@ -198,6 +242,33 @@ sphinx_csharp_ext_type_map = {
         'Extensions.Logging': [
             'ILogger',
             'ILoggerFactory',
+        ],
+        'Extensions.DependencyInjection': [
+            'IServiceCollection',
+        ],
+        'Extensions.Hosting': [
+            'IHostedService',
+        ],
+    },
+    'Microsoft.EntityFrameworkCore': {
+        '': [
+            'DbContext',
+            'DbContextOptions',
+            'DbContextOptionsBuilder',
+            'DbSet',
+            'ModelBuilder',
+        ],
+    },
+    'Microsoft.EntityFrameworkCore.Infrastructure': {
+        '': [
+            'DbContextAttribute',
+            'ModelSnapshot',
+        ],
+    },
+    'Microsoft.EntityFrameworkCore.Migrations': {
+        '': [
+            'Migration',
+            'MigrationBuilder',
         ],
     },
     'Jellyfin.Controller.MediaBrowser.Common.Configuration': {
@@ -221,6 +292,11 @@ sphinx_csharp_ext_type_map = {
             'IPluginManager',
             'LocalPlugin',
             'PluginManifest',
+        ],
+    },
+    'Jellyfin.Controller.MediaBrowser.Controller': {
+        '': [
+            'IServerApplicationHost',
         ],
     },
     'Jellyfin.Controller.MediaBrowser.Controller.Configuration': {
@@ -251,6 +327,7 @@ sphinx_csharp_ext_type_map = {
     },
     'Jellyfin.Controller.MediaBrowser.Controller.Plugins': {
         '': [
+            'IPluginServiceRegistrator',
             'IRunBeforeStartup',
         ],
     },
@@ -290,8 +367,16 @@ sphinx_csharp_ext_type_map = {
 
 # [Advanced] Rename type before generating external link. Commonly used for generic types
 sphinx_csharp_external_type_rename = {
+    'DbContextOptions': 'DbContextOptions-1',
+    'DbSet': 'DbSet-1',
+    'HashSet': 'HashSet-1',
     'IProgress': 'IProgress-1',
+    'IReadOnlyList': 'IReadOnlyList-1',
 }
+
+sphinx_csharp_ignore_xref = [
+    '>',
+]
 
 # disable epub mimetype warnings
 # https://github.com/readthedocs/readthedocs.org/blob/eadf6ac6dc6abc760a91e1cb147cc3c5f37d1ea8/docs/conf.py#L235-L236
