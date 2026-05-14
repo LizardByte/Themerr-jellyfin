@@ -376,6 +376,7 @@ sphinx_csharp_external_type_rename = {
 
 sphinx_csharp_ignore_xref = [
     '>',
+    'HttpClient',
 ]
 
 # disable epub mimetype warnings
