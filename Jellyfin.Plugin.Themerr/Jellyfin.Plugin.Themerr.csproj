@@ -7,6 +7,7 @@
     <FileVersion>0.0.0.0</FileVersion>
     <Authors />
     <Company />
+    <CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>
   </PropertyGroup>
 
   <ItemGroup>
@@ -14,6 +15,7 @@
     <PackageReference Include="Jellyfin.Controller" Version="10.11.8" />
     <PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite" Version="9.0.11" /> <!-- Must match version from Jellyfin.Controller -->
     <PackageReference Include="Newtonsoft.Json" Version="13.0.4" />
+    <PackageReference Include="JsonExtensions" Version="1.2.0" />
     <PackageReference Include="YoutubeExplode" Version="6.6.0" />
   </ItemGroup>
 

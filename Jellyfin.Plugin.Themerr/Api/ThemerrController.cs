@@ -1,5 +1,4 @@
 using System;
-using System.Collections;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -77,69 +76,52 @@ namespace Jellyfin.Plugin.Themerr.Api
         /// <summary>
         /// Get the data required to populate the progress dashboard.
         ///
-        /// Loop over all Jellyfin libraries and supported items, creating a json object with the following structure:
-        /// {
-        ///   "items": [BaseItems],
-        ///   "media_count": BaseItems.Count,
-        ///   "media_percent_complete": ThemedItems.Count / BaseItems.Count * 100,
-        /// }
+        /// Reads directly from the sqlite database — no live library scan or ThemerrDB calls.
         /// </summary>
-        /// <param name="page">The page number to return.</param>
-        /// <param name="pageSize">The number of items to return per page.</param>
         /// <returns>JSON object containing progress data.</returns>
         [HttpGet("GetProgress")]
         [ProducesResponseType(StatusCodes.Status200OK)]
-        public ActionResult GetProgress(int page = 1, int pageSize = 10)
+        public ActionResult GetProgress()
         {
-            var tmpItems = new ArrayList();
+            var mediaItems = _themerrManager.GetAllTrackedItems();
 
-            var mediaCount = 0;
-            var mediaWithThemes = 0;
-
-            page = Math.Max(page, 1);
-            pageSize = Math.Max(pageSize, 1);
-
-            var mediaItems = _themerrManager.SyncLibraryItems();
-
-            // calculate total media count before applying pagination
-            var totalMediaCount = mediaItems.Count;
-
-            // apply pagination
-            var pagedItems = mediaItems.Skip((page - 1) * pageSize).Take(pageSize);
-
-            foreach (var mediaItem in pagedItems)
+            if (mediaItems.Count == 0)
             {
-                var tmpItem = new
+                return new JsonResult(new
                 {
-                    name = mediaItem.ItemName,
-                    id = mediaItem.ItemId,
-                    issue_url = mediaItem.IssueUrl,
-                    theme_provider = mediaItem.ThemeProvider,
-                    type = mediaItem.ItemType,
-                    year = mediaItem.ProductionYear,
-                    in_themerr_db = mediaItem.InThemerrDb,
-                };
-                tmpItems.Add(tmpItem);
-
-                mediaCount++;
-
-                if (!string.IsNullOrEmpty(mediaItem.ThemeProvider))
-                {
-                    mediaWithThemes++;
-                }
+                    items = Array.Empty<object>(),
+                    total_media_count = 0,
+                    total_media_with_themes = 0,
+                    generated_at = (string)null,
+                });
             }
 
-            var tmpObject = new
+            var items = mediaItems.Select(m => new
             {
-                items = tmpItems,
-                media_count = mediaCount,
-                media_with_themes = mediaWithThemes,
-                total_pages = (int)Math.Ceiling((double)totalMediaCount / pageSize),
+                name = m.ItemName,
+                id = m.ItemId,
+                issue_url = m.IssueUrl,
+                theme_provider = m.ThemeProvider,
+                type = m.ItemType,
+                year = m.ProductionYear,
+                in_themerr_db = m.InThemerrDb,
+            }).ToList();
+
+            var generatedAt = mediaItems.Max(m => m.UpdatedUtc);
+            var result = new
+            {
+                items,
+                total_media_count = mediaItems.Count,
+                total_media_with_themes = mediaItems.Count(m => !string.IsNullOrEmpty(m.ThemeProvider)),
+                generated_at = generatedAt,
             };
 
-            _logger.LogInformation("Progress Items: {Items}", JsonConvert.SerializeObject(tmpObject));
+            _logger.LogInformation(
+                "GetProgress: {TotalMediaCount} items, generated at {GeneratedAt}",
+                result.total_media_count,
+                result.generated_at);
 
-            return new JsonResult(tmpObject);
+            return new JsonResult(result);
         }
 
         /// <summary>

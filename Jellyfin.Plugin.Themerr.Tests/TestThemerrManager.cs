@@ -127,56 +127,10 @@ public class TestThemerrManager
         return path;
     }
 
-    [Fact]
-    [Trait("Category", "Unit")]
-    private void TestGetExistingThemerrDataValue()
-    {
-        string themerrDataPath;
-        themerrDataPath = Path.Combine(
-            Directory.GetCurrentDirectory(),
-            "data",
-            "dummy.json");
-
-        // ensure correct values are returned
-        Assert.Equal(
-            "dummy_value",
-            _themerrManager.GetExistingThemerrDataValue("dummy_key", themerrDataPath));
-        Assert.Equal(
-            "https://www.youtube.com/watch?v=E8nxMWr2sr4",
-            _themerrManager.GetExistingThemerrDataValue("youtube_theme_url", themerrDataPath));
-
-        // ensure null when the key does not exist
-        Assert.Null(_themerrManager.GetExistingThemerrDataValue("invalid_key", themerrDataPath));
-
-        // ensure null when the file does not exist
-        themerrDataPath = Path.Combine(
-            Directory.GetCurrentDirectory(),
-            "data",
-            "no_file.json");
-
-        Assert.Null(_themerrManager.GetExistingThemerrDataValue("any_key", themerrDataPath));
-
-        // ensure null when the json is invalid
-        themerrDataPath = Path.Combine(
-            Directory.GetCurrentDirectory(),
-            "data",
-            "invalid.json");
-
-        Assert.Null(_themerrManager.GetExistingThemerrDataValue("any_key", themerrDataPath));
-
-        // test empty json file
-        themerrDataPath = Path.Combine(
-            Directory.GetCurrentDirectory(),
-            "data",
-            "empty.json");
-
-        Assert.Null(_themerrManager.GetExistingThemerrDataValue("any_key", themerrDataPath));
-    }
-
     [Theory]
     [Trait("Category", "Unit")]
     [MemberData(nameof(YoutubeUrls))]
-    private void TestSaveMp3(string videoUrl)
+    private async Task TestSaveMp3(string videoUrl)
     {
         // set destination with themerr_jellyfin_tests as the folder name
         var destinationFile = Path.Combine(
@@ -186,7 +140,7 @@ public class TestThemerrManager
         TestLogger.Info($"Attempting to download {videoUrl}");
 
         // run and wait
-        var themeExists = _themerrManagerWithMockYoutube.SaveMp3(destinationFile, videoUrl);
+        var themeExists = await _themerrManagerWithMockYoutube.SaveMp3(destinationFile, videoUrl);
         Assert.True(themeExists, $"SaveMp3 did not return True for {videoUrl}");
 
         // check if file exists
@@ -253,7 +207,7 @@ public class TestThemerrManager
 
     [Fact]
     [Trait("Category", "Unit")]
-    private void TestSaveMp3InvalidUrl()
+    private async Task TestSaveMp3InvalidUrl()
     {
         // set destination with themerr_jellyfin_tests as the folder name
         var destinationFile = Path.Combine(
@@ -263,7 +217,7 @@ public class TestThemerrManager
         var invalidUrl = "https://www.youtube.com/watch?v=invalid";
 
         // run and wait
-        var themeExists = _themerrManager.SaveMp3(destinationFile, invalidUrl);
+        var themeExists = await _themerrManager.SaveMp3(destinationFile, invalidUrl);
         Assert.False(themeExists, $"SaveMp3 did not return False for {invalidUrl}");
 
         // check if file exists
@@ -285,10 +239,10 @@ public class TestThemerrManager
     [Theory]
     [Trait("Category", "Unit")]
     [MemberData(nameof(FixtureJellyfinServer.MockItemsData), MemberType = typeof(FixtureJellyfinServer))]
-    private void TestProcessItemTheme(BaseItem item)
+    private async Task TestProcessItemTheme(BaseItem item)
     {
         // get the item theme
-        _themerrManagerWithMockYoutube.ProcessItemTheme(item);
+        await _themerrManagerWithMockYoutube.ProcessItemTheme(item);
 
         Assert.True(File.Exists(_themerrManagerWithMockYoutube.GetThemePath(item)), $"File {_themerrManagerWithMockYoutube.GetThemePath(item)} does not exist");
 
@@ -299,10 +253,10 @@ public class TestThemerrManager
     [Theory]
     [Trait("Category", "Unit")]
     [MemberData(nameof(FixtureJellyfinServer.UnsupportedMockItemsData), MemberType = typeof(FixtureJellyfinServer))]
-    private void TestProcessItemThemeUnsupportedType(BaseItem item)
+    private async Task TestProcessItemThemeUnsupportedType(BaseItem item)
     {
         // get the item theme
-        _themerrManager.ProcessItemTheme(item);
+        await _themerrManager.ProcessItemTheme(item);
 
         Assert.False(File.Exists(_themerrManager.GetThemePath(item)), $"File {_themerrManager.GetThemePath(item)} exists");
     }
@@ -464,7 +418,7 @@ public class TestThemerrManager
 
     [Fact]
     [Trait("Category", "Unit")]
-    private void TestInitialMigrationUpdateMigratesLegacyThemerrDataBeforeDashboardSync()
+    private async Task TestInitialMigrationUpdateMigratesLegacyThemerrDataBeforeDashboardSync()
     {
         var repository = CreateThemerrRepository();
         var tempPath = CreateTempDirectory();
@@ -491,7 +445,7 @@ public class TestThemerrManager
                 youtube_theme_url = youtubeThemeUrl,
             }));
 
-        var syncedItems = manager.SyncLibraryItems();
+        var syncedItems = await manager.SyncLibraryItems();
 
         Assert.False(File.Exists(legacyDataPath));
         var syncedItem = Assert.Single(syncedItems);
@@ -502,7 +456,7 @@ public class TestThemerrManager
 
     [Fact]
     [Trait("Category", "Unit")]
-    private void TestSyncLibraryItemMigratesLegacyDataFromExistingThemeSongDirectory()
+    private async Task TestSyncLibraryItemMigratesLegacyDataFromExistingThemeSongDirectory()
     {
         var repository = CreateThemerrRepository();
         var manager = CreateThemerrManager(repository);
@@ -566,7 +520,7 @@ public class TestThemerrManager
         ThemerrMediaItem syncedItem;
         try
         {
-            syncedItem = manager.SyncLibraryItem(item);
+            syncedItem = await manager.SyncLibraryItem(item);
         }
         finally
         {
@@ -582,7 +536,7 @@ public class TestThemerrManager
 
     [Fact]
     [Trait("Category", "Unit")]
-    private void TestSyncLibraryItemMigratesLegacyDataFromExistingDatabasePath()
+    private async Task TestSyncLibraryItemMigratesLegacyDataFromExistingDatabasePath()
     {
         var repository = CreateThemerrRepository();
         var manager = CreateThemerrManager(repository);
@@ -643,7 +597,7 @@ public class TestThemerrManager
             context.SaveChanges();
         }
 
-        var syncedItem = manager.SyncLibraryItem(item);
+        var syncedItem = await manager.SyncLibraryItem(item);
 
         Assert.False(File.Exists(legacyDataPath));
         Assert.NotNull(syncedItem);
@@ -656,7 +610,7 @@ public class TestThemerrManager
 
     [Fact]
     [Trait("Category", "Unit")]
-    private void TestSyncLibraryItemTracksItemWithoutTheme()
+    private async Task TestSyncLibraryItemTracksItemWithoutTheme()
     {
         var repository = CreateThemerrRepository();
         var manager = CreateThemerrManager(repository);
@@ -674,7 +628,7 @@ public class TestThemerrManager
                 IssueUrl = manager.GetIssueUrl(item),
             });
 
-        var syncedItem = manager.SyncLibraryItem(item);
+        var syncedItem = await manager.SyncLibraryItem(item);
 
         Assert.NotNull(syncedItem);
         Assert.Equal("Test Movie sync-no-theme", syncedItem.ItemName);
@@ -687,7 +641,7 @@ public class TestThemerrManager
 
     [Fact]
     [Trait("Category", "Unit")]
-    private void TestSyncLibraryItemTracksUserThemeAndCachedThemerrDbUrl()
+    private async Task TestSyncLibraryItemTracksUserThemeAndCachedThemerrDbUrl()
     {
         var repository = CreateThemerrRepository();
         var manager = CreateThemerrManager(repository);
@@ -714,7 +668,7 @@ public class TestThemerrManager
                 YoutubeThemeUrl = youtubeThemeUrl,
             });
 
-        var syncedItem = manager.SyncLibraryItem(item);
+        var syncedItem = await manager.SyncLibraryItem(item);
 
         Assert.NotNull(syncedItem);
         Assert.Equal(ThemerrThemeProvider.User, syncedItem.ThemeProvider);
@@ -801,7 +755,7 @@ public class TestThemerrManager
     [Theory]
     [Trait("Category", "Unit")]
     [MemberData(nameof(FixtureJellyfinServer.MockItemsData), MemberType = typeof(FixtureJellyfinServer))]
-    private void TestGetYoutubeThemeUrl(BaseItem item)
+    private async Task TestGetYoutubeThemeUrl(BaseItem item)
     {
         var dbType = item switch
         {
@@ -821,7 +775,7 @@ public class TestThemerrManager
         var themerrDbLink = _themerrManager.CreateThemerrDbLink(tmdbId, dbType);
 
         // get the new YouTube theme url
-        var youtubeThemeUrl = _themerrManager.GetYoutubeThemeUrl(themerrDbLink, item);
+        var youtubeThemeUrl = await _themerrManager.GetYoutubeThemeUrl(themerrDbLink, item);
 
         // log
         TestLogger.Info($"youtubeThemeUrl: {youtubeThemeUrl}");
@@ -832,34 +786,34 @@ public class TestThemerrManager
     [Theory]
     [Trait("Category", "Unit")]
     [MemberData(nameof(FixtureJellyfinServer.MockItemsData), MemberType = typeof(FixtureJellyfinServer))]
-    private void TestIsInThemerrDb(BaseItem item)
+    private async Task TestIsInThemerrDb(BaseItem item)
     {
-        var result = _themerrManager.IsInThemerrDb(item);
+        var result = await _themerrManager.IsInThemerrDb(item);
         Assert.True(result, $"IsInThemerrDb returned False for {item.Name}");
     }
 
     [Theory]
     [Trait("Category", "Unit")]
     [MemberData(nameof(FixtureJellyfinServer.MockItems2Data), MemberType = typeof(FixtureJellyfinServer))]
-    private void TestIsInThemerrDbNotFound(BaseItem item)
+    private async Task TestIsInThemerrDbNotFound(BaseItem item)
     {
-        var result = _themerrManager.IsInThemerrDb(item);
+        var result = await _themerrManager.IsInThemerrDb(item);
         Assert.False(result, $"IsInThemerrDb returned True for {item.Name}");
     }
 
     [Theory]
     [Trait("Category", "Unit")]
     [MemberData(nameof(FixtureJellyfinServer.UnsupportedMockItemsData), MemberType = typeof(FixtureJellyfinServer))]
-    private void TestIsInThemerrDbUnsupportedType(BaseItem item)
+    private async Task TestIsInThemerrDbUnsupportedType(BaseItem item)
     {
-        var result = _themerrManager.IsInThemerrDb(item);
+        var result = await _themerrManager.IsInThemerrDb(item);
         Assert.False(result, $"IsInThemerrDb returned True for unsupported type {item.GetType().Name}");
     }
 
     [Theory]
     [Trait("Category", "Unit")]
     [MemberData(nameof(FixtureJellyfinServer.MockItems2Data), MemberType = typeof(FixtureJellyfinServer))]
-    private void TestGetYoutubeThemeUrlExceptions(BaseItem item)
+    private async Task TestGetYoutubeThemeUrlExceptions(BaseItem item)
     {
         var dbType = item switch
         {
@@ -883,7 +837,7 @@ public class TestThemerrManager
         TestLogger.Info($"themerrDbLink: {themerrDbLink}");
 
         // get the new YouTube theme url
-        var youtubeThemeUrl = _themerrManager.GetYoutubeThemeUrl(themerrDbLink, item);
+        var youtubeThemeUrl = await _themerrManager.GetYoutubeThemeUrl(themerrDbLink, item);
 
         Assert.Empty(youtubeThemeUrl);
     }

@@ -19,7 +19,13 @@ namespace Jellyfin.Plugin.Themerr
             var streamInfo = streamManifest
                 .GetAudioOnlyStreams()
                 .Where(s => s.Container == Container.Mp4)
-                .GetWithHighestBitrate();
+                .GetWithHighestBitrate()
+                ?? streamManifest.GetAudioOnlyStreams().GetWithHighestBitrate();
+
+            if (streamInfo == null)
+            {
+                return;
+            }
 
             await youtube.Videos.Streams.DownloadAsync(streamInfo, destination);
         }
