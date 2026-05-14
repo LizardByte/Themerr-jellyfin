@@ -743,7 +743,7 @@ namespace Jellyfin.Plugin.Themerr
                 });
         }
 
-        private (bool InThemerrDb, string YoutubeThemeUrl, DateTime CheckedUtc) GetThemerrDbAvailability(
+        private ThemerrDbAvailability GetThemerrDbAvailability(
             BaseItem item,
             string dbType,
             ThemerrMediaItem existingData)
@@ -751,25 +751,33 @@ namespace Jellyfin.Plugin.Themerr
             var checkedUtc = existingData?.InThemerrDbCheckedUtc;
             if (checkedUtc.HasValue && DateTime.UtcNow - checkedUtc.Value <= ThemerrDbCacheDuration)
             {
-                return (
-                    existingData.InThemerrDb,
-                    existingData.InThemerrDb ? existingData.YoutubeThemeUrl : null,
-                    checkedUtc.Value);
+                return new ThemerrDbAvailability
+                {
+                    InThemerrDb = existingData.InThemerrDb,
+                    YoutubeThemeUrl = existingData.InThemerrDb ? existingData.YoutubeThemeUrl : null,
+                    CheckedUtc = checkedUtc.Value,
+                };
             }
 
             var refreshedUtc = DateTime.UtcNow;
             var tmdbId = GetTmdbId(item);
             if (string.IsNullOrEmpty(tmdbId))
             {
-                return (false, null, refreshedUtc);
+                return new ThemerrDbAvailability
+                {
+                    InThemerrDb = false,
+                    CheckedUtc = refreshedUtc,
+                };
             }
 
             var themerrDbUrl = CreateThemerrDbLink(tmdbId, dbType);
             var youtubeThemeUrl = GetYoutubeThemeUrl(themerrDbUrl, item);
-            return (
-                !string.IsNullOrEmpty(youtubeThemeUrl),
-                string.IsNullOrEmpty(youtubeThemeUrl) ? null : youtubeThemeUrl,
-                refreshedUtc);
+            return new ThemerrDbAvailability
+            {
+                InThemerrDb = !string.IsNullOrEmpty(youtubeThemeUrl),
+                YoutubeThemeUrl = string.IsNullOrEmpty(youtubeThemeUrl) ? null : youtubeThemeUrl,
+                CheckedUtc = refreshedUtc,
+            };
         }
 
         private string GetCurrentThemeProvider(string existingThemePath, ThemerrMediaItem existingData)
@@ -944,6 +952,27 @@ namespace Jellyfin.Plugin.Themerr
 
             return item.ProductionYear == null ||
                 normalizedDirectoryName.Contains(item.ProductionYear.ToString(), StringComparison.OrdinalIgnoreCase);
+        }
+
+        /// <summary>
+        /// Stores cached ThemerrDB availability for a media item.
+        /// </summary>
+        private sealed class ThemerrDbAvailability
+        {
+            /// <summary>
+            /// Gets or sets a value indicating whether ThemerrDB has a theme for this item.
+            /// </summary>
+            public bool InThemerrDb { get; set; }
+
+            /// <summary>
+            /// Gets or sets the ThemerrDB YouTube theme url.
+            /// </summary>
+            public string YoutubeThemeUrl { get; set; }
+
+            /// <summary>
+            /// Gets or sets when ThemerrDB availability was checked.
+            /// </summary>
+            public DateTime CheckedUtc { get; set; }
         }
     }
 }
