@@ -24,8 +24,10 @@ namespace Jellyfin.Plugin.Themerr.Storage
         /// <summary>
         /// Applies all pending migrations.
         /// </summary>
-        public void MigrateUp()
+        /// <returns>True when the sqlite database file was created during migration; otherwise, false.</returns>
+        public bool MigrateUp()
         {
+            var databaseExists = File.Exists(_databasePath);
             var databaseDirectory = Path.GetDirectoryName(_databasePath);
             if (!string.IsNullOrEmpty(databaseDirectory))
             {
@@ -36,6 +38,8 @@ namespace Jellyfin.Plugin.Themerr.Storage
             {
                 context.Database.Migrate();
             }
+
+            return !databaseExists && File.Exists(_databasePath);
         }
 
         /// <summary>

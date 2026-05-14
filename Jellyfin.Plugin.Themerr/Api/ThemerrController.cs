@@ -96,51 +96,34 @@ namespace Jellyfin.Plugin.Themerr.Api
             var mediaCount = 0;
             var mediaWithThemes = 0;
 
-            var items = _themerrManager.GetTmdbItemsFromLibrary();
+            page = Math.Max(page, 1);
+            pageSize = Math.Max(pageSize, 1);
 
-            // sort items by name, then year
-            var enumerable = items.OrderBy(i => i.Name).ThenBy(i => i.ProductionYear).ToList();
+            var mediaItems = _themerrManager.SyncLibraryItems();
 
             // calculate total media count before applying pagination
-            var totalMediaCount = enumerable.Count;
+            var totalMediaCount = mediaItems.Count;
 
             // apply pagination
-            var pagedItems = enumerable.Skip((page - 1) * pageSize).Take(pageSize);
+            var pagedItems = mediaItems.Skip((page - 1) * pageSize).Take(pageSize);
 
-            foreach (var item in pagedItems)
+            foreach (var mediaItem in pagedItems)
             {
-                var year = item.ProductionYear;
-                var issueUrl = _themerrManager.GetIssueUrl(item);
-                var themeProvider = _themerrManager.GetThemeProvider(item);
-
-                // for "themerr" items we already know they are in ThemerrDB
-                // for all other items (user-supplied or no theme), query ThemerrDB
-                bool? inThemerrDb;
-                if (themeProvider == "themerr")
-                {
-                    inThemerrDb = true;
-                }
-                else
-                {
-                    inThemerrDb = _themerrManager.IsInThemerrDb(item);
-                }
-
                 var tmpItem = new
                 {
-                    name = item.Name,
-                    id = item.Id,
-                    issue_url = issueUrl,
-                    theme_provider = themeProvider,
-                    type = item.GetType().Name,  // Movie, Series, etc.
-                    year = year,
-                    in_themerr_db = inThemerrDb,
+                    name = mediaItem.ItemName,
+                    id = mediaItem.ItemId,
+                    issue_url = mediaItem.IssueUrl,
+                    theme_provider = mediaItem.ThemeProvider,
+                    type = mediaItem.ItemType,
+                    year = mediaItem.ProductionYear,
+                    in_themerr_db = mediaItem.InThemerrDb,
                 };
                 tmpItems.Add(tmpItem);
 
                 mediaCount++;
 
-                var themeSongs = item.GetThemeSongs();
-                if (themeSongs.Count > 0)
+                if (!string.IsNullOrEmpty(mediaItem.ThemeProvider))
                 {
                     mediaWithThemes++;
                 }

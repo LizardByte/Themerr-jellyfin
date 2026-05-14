@@ -52,6 +52,8 @@ namespace Jellyfin.Plugin.Themerr.Storage
 
             mediaItem.Property(item => item.ItemKey).IsRequired();
             mediaItem.Property(item => item.ItemType).IsRequired();
+            mediaItem.Property(item => item.ItemName).IsRequired();
+            mediaItem.Property(item => item.InThemerrDb).IsRequired();
             mediaItem.Property(item => item.CreatedUtc).IsRequired();
             mediaItem.Property(item => item.UpdatedUtc).IsRequired();
         }

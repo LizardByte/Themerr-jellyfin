@@ -56,17 +56,41 @@ public class TestThemerrRepository
         var item = CreateMovie("12345");
         var themePath = Path.Combine(CreateTempDirectory(), "theme.mp3");
         var downloadedTimestampUtc = DateTime.UtcNow.AddMinutes(-5);
+        var inThemerrDbCheckedUtc = DateTime.UtcNow.AddMinutes(-4);
+        var issueUrl = "https://github.com/LizardByte/ThemerrDB/issues/new";
 
-        repository.Save(item, themePath, "original-md5", "https://www.youtube.com/watch?v=original", downloadedTimestampUtc);
+        repository.Save(
+            item,
+            themePath,
+            "original-md5",
+            "https://www.youtube.com/watch?v=original",
+            downloadedTimestampUtc,
+            ThemerrThemeProvider.Themerr,
+            true,
+            inThemerrDbCheckedUtc,
+            issueUrl);
 
         var savedThemerrData = repository.Get(item, themePath);
         Assert.NotNull(savedThemerrData);
         Assert.Equal("Movie:tmdb:12345", savedThemerrData.ItemKey);
+        Assert.Equal("Test Movie 12345", savedThemerrData.ItemName);
+        Assert.Equal(1970, savedThemerrData.ProductionYear);
         Assert.Equal("original-md5", savedThemerrData.ThemeMd5);
+        Assert.Equal(ThemerrThemeProvider.Themerr, savedThemerrData.ThemeProvider);
+        Assert.True(savedThemerrData.InThemerrDb);
+        Assert.Equal(inThemerrDbCheckedUtc, savedThemerrData.InThemerrDbCheckedUtc);
+        Assert.Equal(issueUrl, savedThemerrData.IssueUrl);
         Assert.Equal("https://www.youtube.com/watch?v=original", savedThemerrData.YoutubeThemeUrl);
         Assert.Equal(downloadedTimestampUtc, savedThemerrData.DownloadedTimestampUtc);
 
-        repository.Save(item, themePath, "updated-md5", "https://www.youtube.com/watch?v=updated");
+        repository.Save(
+            item,
+            themePath,
+            "updated-md5",
+            "https://www.youtube.com/watch?v=updated",
+            themeProvider: ThemerrThemeProvider.Themerr,
+            inThemerrDb: true,
+            inThemerrDbCheckedUtc: DateTime.UtcNow);
 
         using (var context = new ThemerrDbContext(repository.DatabasePath))
         {
@@ -77,6 +101,10 @@ public class TestThemerrRepository
         Assert.NotNull(savedThemerrData);
         Assert.Equal("updated-md5", savedThemerrData.ThemeMd5);
         Assert.Equal("https://www.youtube.com/watch?v=updated", savedThemerrData.YoutubeThemeUrl);
+
+        var allItems = repository.GetAll();
+        Assert.Single(allItems);
+        Assert.Equal("Test Movie 12345", allItems[0].ItemName);
     }
 
     [Fact]
@@ -104,6 +132,9 @@ public class TestThemerrRepository
         var savedThemerrData = repository.Get(item, themePath);
         Assert.NotNull(savedThemerrData);
         Assert.Equal("legacy-md5", savedThemerrData.ThemeMd5);
+        Assert.Equal(ThemerrThemeProvider.Themerr, savedThemerrData.ThemeProvider);
+        Assert.True(savedThemerrData.InThemerrDb);
+        Assert.NotNull(savedThemerrData.InThemerrDbCheckedUtc);
         Assert.Equal("https://www.youtube.com/watch?v=legacy", savedThemerrData.YoutubeThemeUrl);
         Assert.Equal(downloadedTimestampUtc, savedThemerrData.DownloadedTimestampUtc);
     }

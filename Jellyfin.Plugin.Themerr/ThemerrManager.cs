@@ -26,6 +26,18 @@ namespace Jellyfin.Plugin.Themerr
     /// </summary>
     public class ThemerrManager : BasePlugin<PluginConfiguration>, IDisposable
     {
+        private static readonly TimeSpan ThemerrDbCacheDuration = TimeSpan.FromHours(24);
+        private static readonly object InitialUpdateLock = new object();
+
+        private static readonly Dictionary<string, Task> InitialUpdateTasks =
+            new Dictionary<string, Task>(StringComparer.OrdinalIgnoreCase);
+
+        private static readonly HashSet<string> InitialUpdateRequiredDatabasePaths =
+            new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+
+        private static readonly HashSet<string> InitialUpdateCompletedDatabasePaths =
+            new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+
         private readonly ILibraryManager _libraryManager;
         private readonly Timer _timer;
         private readonly ILogger<ThemerrManager> _logger;
@@ -147,15 +159,73 @@ namespace Jellyfin.Plugin.Themerr
         /// Enumerate through all supported items in the library and downloads their theme songs as required.
         /// </summary>
         /// <returns>A <see cref="Task"/> representing the asynchronous operation.</returns>
-        public Task UpdateAll()
+        public async Task UpdateAll()
         {
-            var items = GetTmdbItemsFromLibrary();
-            foreach (var item in items)
+            if (TryGetOrStartInitialMigrationUpdateTask(out var initialUpdateTask))
             {
-                ProcessItemTheme(item);
+                await initialUpdateTask.ConfigureAwait(false);
+                return;
             }
 
-            return Task.CompletedTask;
+            await UpdateAllCore().ConfigureAwait(false);
+        }
+
+        /// <summary>
+        /// Starts the first database migration update when the sqlite database was just created.
+        /// </summary>
+        public void StartInitialMigrationUpdate()
+        {
+            TryGetOrStartInitialMigrationUpdateTask(out _);
+        }
+
+        /// <summary>
+        /// Synchronizes supported TMDB-backed library items into sqlite.
+        /// </summary>
+        /// <returns>The synchronized sqlite rows.</returns>
+        public IReadOnlyList<ThemerrMediaItem> SyncLibraryItems()
+        {
+            if (TryGetOrStartInitialMigrationUpdateTask(out var initialUpdateTask))
+            {
+                initialUpdateTask.GetAwaiter().GetResult();
+                return _themerrRepository.GetAll();
+            }
+
+            return GetTmdbItemsFromLibrary()
+                .Select(SyncLibraryItem)
+                .Where(mediaItem => mediaItem != null)
+                .OrderBy(mediaItem => mediaItem.ItemName)
+                .ThenBy(mediaItem => mediaItem.ProductionYear)
+                .ThenBy(mediaItem => mediaItem.ItemType)
+                .ToList();
+        }
+
+        /// <summary>
+        /// Synchronizes one supported TMDB-backed library item into sqlite.
+        /// </summary>
+        /// <param name="item">The Jellyfin media object.</param>
+        /// <returns>The synchronized sqlite row when the item is supported; otherwise, null.</returns>
+        public ThemerrMediaItem SyncLibraryItem(BaseItem item)
+        {
+            var dbType = ThemerrDbType.Get(item);
+            if (string.IsNullOrEmpty(dbType) || string.IsNullOrEmpty(GetTmdbId(item)))
+            {
+                return null;
+            }
+
+            var themePath = GetThemePath(item);
+            var existingData = _themerrRepository.Get(item, themePath);
+            MigrateLegacyThemerrData(item, themePath, existingData);
+
+            existingData = _themerrRepository.Get(item, themePath);
+            var availability = GetThemerrDbAvailability(item, dbType, existingData);
+
+            return SaveTrackedItem(
+                item,
+                themePath,
+                existingData,
+                availability.InThemerrDb,
+                availability.YoutubeThemeUrl,
+                availability.CheckedUtc);
         }
 
         /// <summary>
@@ -164,13 +234,7 @@ namespace Jellyfin.Plugin.Themerr
         /// <param name="item">The Jellyfin media object.</param>
         public void ProcessItemTheme(BaseItem item)
         {
-            // get themerrDB database type, used to create the themerrdb url
-            var dbType = item switch
-            {
-                Movie _ => "movies",
-                Series _ => "tv_shows",
-                _ => null,
-            };
+            var dbType = ThemerrDbType.Get(item);
 
             // return if dbType is null
             if (string.IsNullOrEmpty(dbType))
@@ -179,31 +243,37 @@ namespace Jellyfin.Plugin.Themerr
             }
 
             var themePath = GetThemePath(item);
-            MigrateLegacyThemerrData(item, themePath);
+            var existingThemerrData = _themerrRepository.Get(item, themePath);
+            MigrateLegacyThemerrData(item, themePath, existingThemerrData);
+            existingThemerrData = _themerrRepository.Get(item, themePath);
 
             if (!ContinueDownload(item, themePath))
             {
+                SyncLibraryItem(item);
                 return;
             }
 
-            var existingThemerrData = _themerrRepository.Get(item, themePath);
             var existingYoutubeThemeUrl = existingThemerrData?.YoutubeThemeUrl;
             var existingThemeMd5 = existingThemerrData?.ThemeMd5;
 
-            // get tmdb id
-            var tmdbId = GetTmdbId(item);
-
-            // create themerrdb url
-            var themerrDbUrl = CreateThemerrDbLink(tmdbId, dbType);
-
-            var youtubeThemeUrl = GetYoutubeThemeUrl(themerrDbUrl, item);
+            var availability = GetThemerrDbAvailability(item, dbType, existingThemerrData);
+            var youtubeThemeUrl = availability.YoutubeThemeUrl;
+            var existingThemePath = GetExistingThemePath(item, themePath);
 
             // skip if no YouTube theme url in ThemerrDB or
             // if the YouTube themes match AND the theme_md5 is known
             if (string.IsNullOrEmpty(youtubeThemeUrl) ||
                 (youtubeThemeUrl == existingYoutubeThemeUrl &&
-                 !string.IsNullOrEmpty(existingThemeMd5)))
+                 !string.IsNullOrEmpty(existingThemeMd5) &&
+                 !string.IsNullOrEmpty(existingThemePath)))
             {
+                SaveTrackedItem(
+                    item,
+                    themePath,
+                    existingThemerrData,
+                    availability.InThemerrDb,
+                    availability.YoutubeThemeUrl,
+                    availability.CheckedUtc);
                 return;
             }
 
@@ -240,22 +310,7 @@ namespace Jellyfin.Plugin.Themerr
         /// <returns>The theme provider.</returns>
         public string GetThemeProvider(BaseItem item)
         {
-            var themePath = GetThemePath(item);
-            MigrateLegacyThemerrData(item, themePath);
-
-            // check if item has a theme song
-            var themeSongs = item.GetThemeSongs();
-            if (themeSongs == null || themeSongs.Count == 0)
-            {
-                return null;
-            }
-
-            var themerrData = _themerrRepository.Get(item, themePath);
-            var themerrHash = themerrData?.ThemeMd5;
-            var themeHash = GetMd5Hash(themeSongs[0].Path);
-
-            // if hashes match, theme is supplied by themerr, otherwise it is user supplied
-            return themerrHash == themeHash ? "themerr" : "user";
+            return SyncLibraryItem(item)?.ThemeProvider;
         }
 
         /// <summary>
@@ -265,21 +320,7 @@ namespace Jellyfin.Plugin.Themerr
         /// <returns>True if the item exists in ThemerrDB, false otherwise.</returns>
         public bool IsInThemerrDb(BaseItem item)
         {
-            var dbType = item switch
-            {
-                Movie _ => "movies",
-                Series _ => "tv_shows",
-                _ => null,
-            };
-
-            if (string.IsNullOrEmpty(dbType))
-            {
-                return false;
-            }
-
-            var tmdbId = GetTmdbId(item);
-            var themerrDbUrl = CreateThemerrDbLink(tmdbId, dbType);
-            return !string.IsNullOrEmpty(GetYoutubeThemeUrl(themerrDbUrl, item));
+            return SyncLibraryItem(item)?.InThemerrDb == true;
         }
 
         /// <summary>
@@ -293,21 +334,16 @@ namespace Jellyfin.Plugin.Themerr
         public bool ContinueDownload(BaseItem item, string themePath)
         {
             var themerrData = _themerrRepository.Get(item, themePath);
+            var existingThemePath = GetExistingThemePath(item, themePath);
+            var themeExists = !string.IsNullOrEmpty(existingThemePath);
 
-            if (!System.IO.File.Exists(themePath) && themerrData == null)
+            if (!themeExists)
             {
-                // Neither the theme nor Themerr metadata exists, so don't skip.
+                // There is no current theme file, so Themerr may download one.
                 return true;
             }
 
-            if (!System.IO.File.Exists(themePath) && themerrData != null)
-            {
-                // The theme is missing, so remove stale Themerr metadata.
-                _themerrRepository.Delete(item, themePath);
-                return true;
-            }
-
-            if (System.IO.File.Exists(themePath) && themerrData == null)
+            if (themerrData == null || themerrData.ThemeProvider != ThemerrThemeProvider.Themerr)
             {
                 // The theme is user supplied, so don't overwrite it.
                 return false;
@@ -322,7 +358,7 @@ namespace Jellyfin.Plugin.Themerr
             }
 
             // check if the theme hash matches what is in the themerr data file
-            var themeMd5 = GetMd5Hash(themePath);
+            var themeMd5 = GetMd5Hash(existingThemePath);
 
             // if hashes match, theme is supplied by themerr, otherwise it is user supplied
             return themeMd5 == existingThemeMd5;
@@ -335,12 +371,7 @@ namespace Jellyfin.Plugin.Themerr
         /// <returns>The path to the theme song.</returns>
         public string GetThemePath(BaseItem item)
         {
-            return item switch
-            {
-                Movie movie => System.IO.Path.Join(movie.ContainingFolderPath, "theme.mp3"),
-                Series series => System.IO.Path.Join(series.Path, "theme.mp3"),
-                _ => null,
-            };
+            return ThemerrMediaPath.GetThemePath(item);
         }
 
         /// <summary>
@@ -350,12 +381,7 @@ namespace Jellyfin.Plugin.Themerr
         /// <returns>The path to the themerr data file.</returns>
         public string GetThemerrDataPath(BaseItem item)
         {
-            return item switch
-            {
-                Movie movie => System.IO.Path.Join(movie.ContainingFolderPath, "themerr.json"),
-                Series series => System.IO.Path.Join(series.Path, "themerr.json"),
-                _ => null,
-            };
+            return ThemerrMediaPath.GetThemerrDataPath(item);
         }
 
         /// <summary>
@@ -365,7 +391,9 @@ namespace Jellyfin.Plugin.Themerr
         /// <returns>True if a legacy file was migrated; otherwise, false.</returns>
         public bool MigrateLegacyThemerrData(BaseItem item)
         {
-            return MigrateLegacyThemerrData(item, GetThemePath(item));
+            var themePath = GetThemePath(item);
+            var existingData = _themerrRepository.Get(item, themePath);
+            return MigrateLegacyThemerrData(item, themePath, existingData);
         }
 
         /// <summary>
@@ -466,7 +494,17 @@ namespace Jellyfin.Plugin.Themerr
         {
             try
             {
-                _themerrRepository.Save(item, themePath, GetMd5Hash(themePath), youtubeThemeUrl);
+                var timestampUtc = DateTime.UtcNow;
+                _themerrRepository.Save(
+                    item,
+                    themePath,
+                    GetMd5Hash(themePath),
+                    youtubeThemeUrl,
+                    timestampUtc,
+                    ThemerrThemeProvider.Themerr,
+                    true,
+                    timestampUtc,
+                    GetIssueUrl(item));
                 return _themerrRepository.Get(item, themePath) != null;
             }
             catch (Exception e)
@@ -603,27 +641,303 @@ namespace Jellyfin.Plugin.Themerr
             _timer.Change(Timeout.Infinite, Timeout.Infinite);
         }
 
-        private bool MigrateLegacyThemerrData(BaseItem item, string themePath)
+        private Task UpdateAllCore()
         {
-            var themerrDataPath = GetThemerrDataPath(item);
-            if (_themerrRepository.MigrateLegacyData(item, themePath, themerrDataPath))
+            var items = GetTmdbItemsFromLibrary();
+            foreach (var item in items)
             {
+                ProcessItemTheme(item);
+                SyncLibraryItem(item);
+            }
+
+            return Task.CompletedTask;
+        }
+
+        private bool TryGetOrStartInitialMigrationUpdateTask(out Task initialUpdateTask)
+        {
+            var databasePath = _themerrRepository.DatabasePath;
+            var databaseCreatedDuringMigration = _themerrRepository.DatabaseCreatedDuringMigration;
+            initialUpdateTask = null;
+
+            lock (InitialUpdateLock)
+            {
+                if (databaseCreatedDuringMigration)
+                {
+                    InitialUpdateRequiredDatabasePaths.Add(databasePath);
+                }
+
+                if (InitialUpdateCompletedDatabasePaths.Contains(databasePath))
+                {
+                    return false;
+                }
+
+                if (InitialUpdateTasks.TryGetValue(databasePath, out var existingInitialUpdateTask))
+                {
+                    initialUpdateTask = existingInitialUpdateTask;
+                    return true;
+                }
+
+                if (!InitialUpdateRequiredDatabasePaths.Contains(databasePath))
+                {
+                    return false;
+                }
+
+                initialUpdateTask = Task.Run(async () =>
+                {
+                    await UpdateAllCore().ConfigureAwait(false);
+                });
+
+                InitialUpdateTasks[databasePath] = initialUpdateTask;
+                _ = initialUpdateTask.ContinueWith(
+                    completedTask =>
+                    {
+                        lock (InitialUpdateLock)
+                        {
+                            InitialUpdateTasks.Remove(databasePath);
+                            if (completedTask.IsCompletedSuccessfully)
+                            {
+                                InitialUpdateRequiredDatabasePaths.Remove(databasePath);
+                                InitialUpdateCompletedDatabasePaths.Add(databasePath);
+                                return;
+                            }
+                        }
+
+                        _ = completedTask.Exception;
+                    },
+                    TaskScheduler.Default);
+
                 return true;
             }
+        }
 
-            var themeDirectory = System.IO.Path.GetDirectoryName(themePath);
-            if (string.IsNullOrEmpty(themeDirectory))
+        private ThemerrMediaItem SaveTrackedItem(
+            BaseItem item,
+            string themePath,
+            ThemerrMediaItem existingData,
+            bool inThemerrDb,
+            string youtubeThemeUrl,
+            DateTime inThemerrDbCheckedUtc)
+        {
+            var existingThemePath = GetExistingThemePath(item, themePath);
+            var themeProvider = GetCurrentThemeProvider(existingThemePath, existingData);
+            var themeMd5 = GetCurrentThemeMd5(themeProvider, existingThemePath, existingData);
+            var downloadedTimestampUtc = themeProvider == ThemerrThemeProvider.Themerr
+                ? existingData?.DownloadedTimestampUtc
+                : null;
+
+            return _themerrRepository.Save(
+                item,
+                themePath,
+                themeMd5,
+                youtubeThemeUrl,
+                downloadedTimestampUtc,
+                themeProvider,
+                inThemerrDb,
+                inThemerrDbCheckedUtc,
+                GetIssueUrl(item));
+        }
+
+        private (bool InThemerrDb, string YoutubeThemeUrl, DateTime CheckedUtc) GetThemerrDbAvailability(
+            BaseItem item,
+            string dbType,
+            ThemerrMediaItem existingData)
+        {
+            var checkedUtc = existingData?.InThemerrDbCheckedUtc;
+            if (checkedUtc.HasValue && DateTime.UtcNow - checkedUtc.Value <= ThemerrDbCacheDuration)
+            {
+                return (
+                    existingData.InThemerrDb,
+                    existingData.InThemerrDb ? existingData.YoutubeThemeUrl : null,
+                    checkedUtc.Value);
+            }
+
+            var refreshedUtc = DateTime.UtcNow;
+            var tmdbId = GetTmdbId(item);
+            if (string.IsNullOrEmpty(tmdbId))
+            {
+                return (false, null, refreshedUtc);
+            }
+
+            var themerrDbUrl = CreateThemerrDbLink(tmdbId, dbType);
+            var youtubeThemeUrl = GetYoutubeThemeUrl(themerrDbUrl, item);
+            return (
+                !string.IsNullOrEmpty(youtubeThemeUrl),
+                string.IsNullOrEmpty(youtubeThemeUrl) ? null : youtubeThemeUrl,
+                refreshedUtc);
+        }
+
+        private string GetCurrentThemeProvider(string existingThemePath, ThemerrMediaItem existingData)
+        {
+            if (string.IsNullOrEmpty(existingThemePath))
+            {
+                return existingData?.ThemeProvider == ThemerrThemeProvider.Themerr
+                    ? ThemerrThemeProvider.Themerr
+                    : null;
+            }
+
+            if (existingData == null)
+            {
+                return ThemerrThemeProvider.User;
+            }
+
+            if (existingData.ThemeProvider == ThemerrThemeProvider.User)
+            {
+                return ThemerrThemeProvider.User;
+            }
+
+            if (string.IsNullOrEmpty(existingData.ThemeMd5))
+            {
+                return existingData.ThemeProvider == ThemerrThemeProvider.Themerr
+                    ? ThemerrThemeProvider.Themerr
+                    : ThemerrThemeProvider.User;
+            }
+
+            var themeMd5 = GetMd5Hash(existingThemePath);
+            return string.Equals(themeMd5, existingData.ThemeMd5, StringComparison.OrdinalIgnoreCase)
+                ? ThemerrThemeProvider.Themerr
+                : ThemerrThemeProvider.User;
+        }
+
+        private string GetCurrentThemeMd5(
+            string themeProvider,
+            string existingThemePath,
+            ThemerrMediaItem existingData)
+        {
+            if (themeProvider != ThemerrThemeProvider.Themerr)
+            {
+                return null;
+            }
+
+            return !string.IsNullOrEmpty(existingThemePath)
+                ? GetMd5Hash(existingThemePath)
+                : existingData?.ThemeMd5;
+        }
+
+        private string GetExistingThemePath(BaseItem item, string themePath)
+        {
+            if (System.IO.File.Exists(themePath))
+            {
+                return themePath;
+            }
+
+            try
+            {
+                var themeSongs = item.GetThemeSongs();
+                if (themeSongs != null && themeSongs.Count > 0 && System.IO.File.Exists(themeSongs[0].Path))
+                {
+                    return themeSongs[0].Path;
+                }
+            }
+            catch (Exception e) when (e is InvalidOperationException || e is NullReferenceException)
+            {
+                _logger?.LogDebug(e, "Unable to read theme songs for {ItemName}", item.Name);
+            }
+
+            return null;
+        }
+
+        private bool MigrateLegacyThemerrData(BaseItem item, string themePath, ThemerrMediaItem existingData)
+        {
+            return GetLegacyThemerrDataPathCandidates(item, themePath, existingData)
+                .Any(themerrDataPath => _themerrRepository.MigrateLegacyData(item, themePath, themerrDataPath));
+        }
+
+        private IEnumerable<string> GetLegacyThemerrDataPathCandidates(
+            BaseItem item,
+            string themePath,
+            ThemerrMediaItem existingData)
+        {
+            void AddThemerrDataPathFromPath(List<string> pathList, string candidatePath)
+            {
+                var directory = GetDirectoryCandidate(candidatePath);
+                if (string.IsNullOrEmpty(directory))
+                {
+                    return;
+                }
+
+                pathList.Add(System.IO.Path.Combine(directory, "themerr.json"));
+            }
+
+            static string GetDirectoryCandidate(string path)
+            {
+                if (string.IsNullOrWhiteSpace(path))
+                {
+                    return null;
+                }
+
+                if (System.IO.Directory.Exists(path))
+                {
+                    return path;
+                }
+
+                if (System.IO.File.Exists(path) || System.IO.Path.HasExtension(path))
+                {
+                    return System.IO.Path.GetDirectoryName(path);
+                }
+
+                return path;
+            }
+
+            var paths = new List<string>
+            {
+                GetThemerrDataPath(item),
+            };
+
+            AddThemerrDataPathFromPath(paths, themePath);
+            AddThemerrDataPathFromPath(paths, existingData?.ThemePath);
+            AddThemerrDataPathFromPath(paths, existingData?.ItemPath);
+
+            var existingThemePath = GetExistingThemePath(item, themePath);
+            AddThemerrDataPathFromPath(paths, existingThemePath);
+            AddThemerrDataPathFromMatchingChildDirectory(paths, item, ThemerrMediaPath.GetItemDirectory(item));
+            AddThemerrDataPathFromMatchingChildDirectory(paths, item, GetDirectoryCandidate(existingData?.ItemPath));
+
+            return paths
+                .Where(path => !string.IsNullOrEmpty(path))
+                .Distinct(StringComparer.OrdinalIgnoreCase);
+        }
+
+        private void AddThemerrDataPathFromMatchingChildDirectory(
+            List<string> paths,
+            BaseItem item,
+            string rootDirectory)
+        {
+            if (string.IsNullOrEmpty(rootDirectory) || !System.IO.Directory.Exists(rootDirectory))
+            {
+                return;
+            }
+
+            paths.AddRange(
+                System.IO.Directory.EnumerateDirectories(rootDirectory)
+                    .Where(directory => IsMatchingMediaDirectory(item, directory))
+                    .Select(directory => System.IO.Path.Combine(directory, "themerr.json")));
+        }
+
+        private bool IsMatchingMediaDirectory(BaseItem item, string directory)
+        {
+            string NormalizeMediaName(string value)
+            {
+                if (string.IsNullOrEmpty(value))
+                {
+                    return string.Empty;
+                }
+
+                return new string(value.Where(char.IsLetterOrDigit).ToArray()).ToLowerInvariant();
+            }
+
+            var directoryName = System.IO.Path.GetFileName(directory);
+            var normalizedDirectoryName = NormalizeMediaName(directoryName);
+            var normalizedItemName = NormalizeMediaName(item.Name);
+
+            if (string.IsNullOrEmpty(normalizedDirectoryName) ||
+                string.IsNullOrEmpty(normalizedItemName) ||
+                !normalizedDirectoryName.Contains(normalizedItemName, StringComparison.OrdinalIgnoreCase))
             {
                 return false;
             }
 
-            var fallbackThemerrDataPath = System.IO.Path.Combine(themeDirectory, "themerr.json");
-            if (string.Equals(themerrDataPath, fallbackThemerrDataPath, StringComparison.OrdinalIgnoreCase))
-            {
-                return false;
-            }
-
-            return _themerrRepository.MigrateLegacyData(item, themePath, fallbackThemerrDataPath);
+            return item.ProductionYear == null ||
+                normalizedDirectoryName.Contains(item.ProductionYear.ToString(), StringComparison.OrdinalIgnoreCase);
         }
     }
 }

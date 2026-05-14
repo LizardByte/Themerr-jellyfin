@@ -31,10 +31,23 @@ namespace Jellyfin.Plugin.Themerr.Storage.Migrations
                 b.Property<DateTime?>("DownloadedTimestampUtc")
                     .HasColumnType("TEXT");
 
+                b.Property<bool>("InThemerrDb")
+                    .HasColumnType("INTEGER");
+
+                b.Property<DateTime?>("InThemerrDbCheckedUtc")
+                    .HasColumnType("TEXT");
+
+                b.Property<string>("IssueUrl")
+                    .HasColumnType("TEXT");
+
                 b.Property<string>("ItemId")
                     .HasColumnType("TEXT");
 
                 b.Property<string>("ItemKey")
+                    .IsRequired()
+                    .HasColumnType("TEXT");
+
+                b.Property<string>("ItemName")
                     .IsRequired()
                     .HasColumnType("TEXT");
 
@@ -45,10 +58,16 @@ namespace Jellyfin.Plugin.Themerr.Storage.Migrations
                     .IsRequired()
                     .HasColumnType("TEXT");
 
+                b.Property<int?>("ProductionYear")
+                    .HasColumnType("INTEGER");
+
                 b.Property<string>("ThemeMd5")
                     .HasColumnType("TEXT");
 
                 b.Property<string>("ThemePath")
+                    .HasColumnType("TEXT");
+
+                b.Property<string>("ThemeProvider")
                     .HasColumnType("TEXT");
 
                 b.Property<string>("TmdbId")

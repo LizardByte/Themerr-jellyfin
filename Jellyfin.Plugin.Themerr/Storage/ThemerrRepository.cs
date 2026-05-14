@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using MediaBrowser.Controller.Entities;
@@ -19,6 +20,7 @@ namespace Jellyfin.Plugin.Themerr.Storage
         private readonly ThemerrDatabaseMigrator _databaseMigrator;
         private readonly ILogger _logger;
         private readonly object _migrationLock = new object();
+        private bool _databaseCreatedDuringMigration;
         private bool _migrationsApplied;
 
         /// <summary>
@@ -37,6 +39,18 @@ namespace Jellyfin.Plugin.Themerr.Storage
         /// Gets the sqlite database path used by this repository.
         /// </summary>
         public string DatabasePath => _databasePath;
+
+        /// <summary>
+        /// Gets a value indicating whether this repository created the database file while applying migrations.
+        /// </summary>
+        public bool DatabaseCreatedDuringMigration
+        {
+            get
+            {
+                EnsureMigrated();
+                return _databaseCreatedDuringMigration;
+            }
+        }
 
         /// <summary>
         /// Gets the stable key for a Jellyfin media item.
@@ -67,12 +81,7 @@ namespace Jellyfin.Plugin.Themerr.Storage
         /// <returns>The folder path when available; otherwise, null.</returns>
         public static string GetItemPath(BaseItem item)
         {
-            return item switch
-            {
-                Movie movie => movie.ContainingFolderPath,
-                Series series => series.Path,
-                _ => item.Path,
-            };
+            return ThemerrMediaPath.GetItemDirectory(item);
         }
 
         /// <summary>
@@ -125,6 +134,24 @@ namespace Jellyfin.Plugin.Themerr.Storage
         }
 
         /// <summary>
+        /// Gets all tracked Themerr media item rows.
+        /// </summary>
+        /// <returns>All tracked media items sorted for display.</returns>
+        public IReadOnlyList<ThemerrMediaItem> GetAll()
+        {
+            EnsureMigrated();
+
+            using (var context = new ThemerrDbContext(_databasePath))
+            {
+                return context.MediaItems
+                    .OrderBy(mediaItem => mediaItem.ItemName)
+                    .ThenBy(mediaItem => mediaItem.ProductionYear)
+                    .ThenBy(mediaItem => mediaItem.ItemType)
+                    .ToList();
+            }
+        }
+
+        /// <summary>
         /// Saves Themerr metadata for a media item.
         /// </summary>
         /// <param name="item">The Jellyfin media item.</param>
@@ -132,13 +159,21 @@ namespace Jellyfin.Plugin.Themerr.Storage
         /// <param name="themeMd5">The theme md5 hash.</param>
         /// <param name="youtubeThemeUrl">The YouTube theme url.</param>
         /// <param name="downloadedTimestampUtc">The download timestamp.</param>
+        /// <param name="themeProvider">The theme provider.</param>
+        /// <param name="inThemerrDb">Whether ThemerrDB has a theme for this item.</param>
+        /// <param name="inThemerrDbCheckedUtc">When ThemerrDB availability was checked.</param>
+        /// <param name="issueUrl">The cached ThemerrDB issue url.</param>
         /// <returns>The saved Themerr metadata row.</returns>
         public ThemerrMediaItem Save(
             BaseItem item,
             string themePath,
-            string themeMd5,
-            string youtubeThemeUrl,
-            DateTime? downloadedTimestampUtc = null)
+            string themeMd5 = null,
+            string youtubeThemeUrl = null,
+            DateTime? downloadedTimestampUtc = null,
+            string themeProvider = null,
+            bool? inThemerrDb = null,
+            DateTime? inThemerrDbCheckedUtc = null,
+            string issueUrl = null)
         {
             EnsureMigrated();
 
@@ -160,12 +195,38 @@ namespace Jellyfin.Plugin.Themerr.Storage
 
                 mediaItem.ItemId = item.Id == Guid.Empty ? null : item.Id.ToString("N");
                 mediaItem.ItemType = GetItemType(item);
+                mediaItem.ItemName = item.Name ?? string.Empty;
+                mediaItem.ProductionYear = item.ProductionYear;
                 mediaItem.ItemPath = GetItemPath(item);
                 mediaItem.ThemePath = themePath;
                 mediaItem.TmdbId = item.GetProviderId(MetadataProvider.Tmdb);
                 mediaItem.ThemeMd5 = themeMd5;
+                mediaItem.ThemeProvider = themeProvider;
                 mediaItem.YoutubeThemeUrl = youtubeThemeUrl;
-                mediaItem.DownloadedTimestampUtc = downloadedTimestampUtc ?? now;
+                mediaItem.IssueUrl = issueUrl ?? mediaItem.IssueUrl;
+                if (inThemerrDb.HasValue)
+                {
+                    mediaItem.InThemerrDb = inThemerrDb.Value;
+                }
+
+                if (inThemerrDbCheckedUtc.HasValue)
+                {
+                    mediaItem.InThemerrDbCheckedUtc = inThemerrDbCheckedUtc;
+                }
+
+                if (downloadedTimestampUtc.HasValue)
+                {
+                    mediaItem.DownloadedTimestampUtc = downloadedTimestampUtc;
+                }
+                else if (themeProvider == ThemerrThemeProvider.Themerr && mediaItem.DownloadedTimestampUtc == null)
+                {
+                    mediaItem.DownloadedTimestampUtc = now;
+                }
+                else if (themeProvider != ThemerrThemeProvider.Themerr)
+                {
+                    mediaItem.DownloadedTimestampUtc = null;
+                }
+
                 mediaItem.UpdatedUtc = now;
 
                 context.SaveChanges();
@@ -239,7 +300,10 @@ namespace Jellyfin.Plugin.Themerr.Storage
                     themePath,
                     legacyData.ThemeMd5,
                     legacyData.YoutubeThemeUrl,
-                    legacyData.DownloadedTimestampUtc);
+                    legacyData.DownloadedTimestampUtc,
+                    ThemerrThemeProvider.Themerr,
+                    !string.IsNullOrEmpty(legacyData.YoutubeThemeUrl),
+                    DateTime.UtcNow);
 
                 File.Delete(legacyDataPath);
                 return true;
@@ -265,7 +329,7 @@ namespace Jellyfin.Plugin.Themerr.Storage
                     return;
                 }
 
-                _databaseMigrator.MigrateUp();
+                _databaseCreatedDuringMigration = _databaseMigrator.MigrateUp();
                 _migrationsApplied = true;
             }
         }

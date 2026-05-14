@@ -98,7 +98,11 @@
                 .addEventListener('pageshow', function() {
                     Dashboard.showLoadingMsg()
                     _ApiClient.getPluginConfiguration(ThemerrConfig.pluginUniqueId).then(function (config) {
-                        document.querySelector('#UpdateInterval').value = config.UpdateInterval
+                        let updateInterval = config.UpdateInterval
+                        if (updateInterval === undefined) {
+                            updateInterval = config.updateInterval
+                        }
+                        document.querySelector('#UpdateInterval').value = updateInterval
                         Dashboard.hideLoadingMsg()
                     })
                 })
@@ -107,7 +111,9 @@
                 .addEventListener('submit', function(e) {
                     Dashboard.showLoadingMsg()
                     _ApiClient.getPluginConfiguration(ThemerrConfig.pluginUniqueId).then(function (config) {
-                        config.UpdateInterval = document.querySelector('#UpdateInterval').value
+                        let updateInterval = parseInt(document.querySelector('#UpdateInterval').value, 10)
+                        config.UpdateInterval = updateInterval
+                        config.updateInterval = updateInterval
                         _ApiClient.updatePluginConfiguration(ThemerrConfig.pluginUniqueId, config).then(function (result) {
                             Dashboard.processPluginConfigurationUpdateResult(result)
                         })
@@ -205,7 +211,8 @@
                         if (response["media_count"] === 0 && page === 1) {
                             let message = "No media found!";
                             console.log(LogPrefix + message);
-                            return;
+                            total_pages = 0;
+                            break;
                         }
 
                         total_media_count += response["media_count"];
@@ -223,7 +230,7 @@
                     }
 
                     // Calculate the loading progress percentage
-                    let progressPercentage = Math.round((page / total_pages) * 100);
+                    let progressPercentage = total_pages === 0 ? 100 : Math.round((page / total_pages) * 100);
 
                     // Update the loading progress bar
                     let progressBar = document.querySelector('#ThemerrDashboardLoading .itemProgressBarForeground');

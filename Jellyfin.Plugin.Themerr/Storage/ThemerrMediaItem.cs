@@ -28,6 +28,16 @@ namespace Jellyfin.Plugin.Themerr.Storage
         public string ItemType { get; set; }
 
         /// <summary>
+        /// Gets or sets the display name of the Jellyfin item.
+        /// </summary>
+        public string ItemName { get; set; }
+
+        /// <summary>
+        /// Gets or sets the production year of the Jellyfin item.
+        /// </summary>
+        public int? ProductionYear { get; set; }
+
+        /// <summary>
         /// Gets or sets the current media folder path.
         /// </summary>
         public string ItemPath { get; set; }
@@ -46,6 +56,26 @@ namespace Jellyfin.Plugin.Themerr.Storage
         /// Gets or sets the hash of the downloaded theme file.
         /// </summary>
         public string ThemeMd5 { get; set; }
+
+        /// <summary>
+        /// Gets or sets the current theme provider.
+        /// </summary>
+        public string ThemeProvider { get; set; }
+
+        /// <summary>
+        /// Gets or sets a value indicating whether ThemerrDB has a theme for this item.
+        /// </summary>
+        public bool InThemerrDb { get; set; }
+
+        /// <summary>
+        /// Gets or sets the timestamp when ThemerrDB availability was last checked.
+        /// </summary>
+        public DateTime? InThemerrDbCheckedUtc { get; set; }
+
+        /// <summary>
+        /// Gets or sets the cached ThemerrDB issue url.
+        /// </summary>
+        public string IssueUrl { get; set; }
 
         /// <summary>
         /// Gets or sets the source YouTube theme url.
