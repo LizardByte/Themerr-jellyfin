@@ -155,29 +155,18 @@ namespace Jellyfin.Plugin.Themerr.Storage
         /// Saves Themerr metadata for a media item.
         /// </summary>
         /// <param name="item">The Jellyfin media item.</param>
-        /// <param name="themePath">The theme file path.</param>
-        /// <param name="themeMd5">The theme md5 hash.</param>
-        /// <param name="youtubeThemeUrl">The YouTube theme url.</param>
-        /// <param name="downloadedTimestampUtc">The download timestamp.</param>
-        /// <param name="themeProvider">The theme provider.</param>
-        /// <param name="inThemerrDb">Whether ThemerrDB has a theme for this item.</param>
-        /// <param name="inThemerrDbCheckedUtc">When ThemerrDB availability was checked.</param>
-        /// <param name="issueUrl">The cached ThemerrDB issue url.</param>
+        /// <param name="saveOptions">The metadata values to save.</param>
         /// <returns>The saved Themerr metadata row.</returns>
-        public ThemerrMediaItem Save(
-            BaseItem item,
-            string themePath,
-            string themeMd5 = null,
-            string youtubeThemeUrl = null,
-            DateTime? downloadedTimestampUtc = null,
-            string themeProvider = null,
-            bool? inThemerrDb = null,
-            DateTime? inThemerrDbCheckedUtc = null,
-            string issueUrl = null)
+        public ThemerrMediaItem Save(BaseItem item, ThemerrMediaItemSaveOptions saveOptions)
         {
+            if (saveOptions == null)
+            {
+                throw new ArgumentNullException(nameof(saveOptions));
+            }
+
             EnsureMigrated();
 
-            var itemKey = GetItemKey(item, themePath);
+            var itemKey = GetItemKey(item, saveOptions.ThemePath);
             var now = DateTime.UtcNow;
 
             using (var context = new ThemerrDbContext(_databasePath))
@@ -198,31 +187,31 @@ namespace Jellyfin.Plugin.Themerr.Storage
                 mediaItem.ItemName = item.Name ?? string.Empty;
                 mediaItem.ProductionYear = item.ProductionYear;
                 mediaItem.ItemPath = GetItemPath(item);
-                mediaItem.ThemePath = themePath;
+                mediaItem.ThemePath = saveOptions.ThemePath;
                 mediaItem.TmdbId = item.GetProviderId(MetadataProvider.Tmdb);
-                mediaItem.ThemeMd5 = themeMd5;
-                mediaItem.ThemeProvider = themeProvider;
-                mediaItem.YoutubeThemeUrl = youtubeThemeUrl;
-                mediaItem.IssueUrl = issueUrl ?? mediaItem.IssueUrl;
-                if (inThemerrDb.HasValue)
+                mediaItem.ThemeMd5 = saveOptions.ThemeMd5;
+                mediaItem.ThemeProvider = saveOptions.ThemeProvider;
+                mediaItem.YoutubeThemeUrl = saveOptions.YoutubeThemeUrl;
+                mediaItem.IssueUrl = saveOptions.IssueUrl ?? mediaItem.IssueUrl;
+                if (saveOptions.InThemerrDb.HasValue)
                 {
-                    mediaItem.InThemerrDb = inThemerrDb.Value;
+                    mediaItem.InThemerrDb = saveOptions.InThemerrDb.Value;
                 }
 
-                if (inThemerrDbCheckedUtc.HasValue)
+                if (saveOptions.InThemerrDbCheckedUtc.HasValue)
                 {
-                    mediaItem.InThemerrDbCheckedUtc = inThemerrDbCheckedUtc;
+                    mediaItem.InThemerrDbCheckedUtc = saveOptions.InThemerrDbCheckedUtc;
                 }
 
-                if (downloadedTimestampUtc.HasValue)
+                if (saveOptions.DownloadedTimestampUtc.HasValue)
                 {
-                    mediaItem.DownloadedTimestampUtc = downloadedTimestampUtc;
+                    mediaItem.DownloadedTimestampUtc = saveOptions.DownloadedTimestampUtc;
                 }
-                else if (themeProvider == ThemerrThemeProvider.Themerr && mediaItem.DownloadedTimestampUtc == null)
+                else if (saveOptions.ThemeProvider == ThemerrThemeProvider.Themerr && mediaItem.DownloadedTimestampUtc == null)
                 {
                     mediaItem.DownloadedTimestampUtc = now;
                 }
-                else if (themeProvider != ThemerrThemeProvider.Themerr)
+                else if (saveOptions.ThemeProvider != ThemerrThemeProvider.Themerr)
                 {
                     mediaItem.DownloadedTimestampUtc = null;
                 }
@@ -297,13 +286,16 @@ namespace Jellyfin.Plugin.Themerr.Storage
             {
                 Save(
                     item,
-                    themePath,
-                    legacyData.ThemeMd5,
-                    legacyData.YoutubeThemeUrl,
-                    legacyData.DownloadedTimestampUtc,
-                    ThemerrThemeProvider.Themerr,
-                    !string.IsNullOrEmpty(legacyData.YoutubeThemeUrl),
-                    DateTime.UtcNow);
+                    new ThemerrMediaItemSaveOptions
+                    {
+                        ThemePath = themePath,
+                        ThemeMd5 = legacyData.ThemeMd5,
+                        YoutubeThemeUrl = legacyData.YoutubeThemeUrl,
+                        DownloadedTimestampUtc = legacyData.DownloadedTimestampUtc,
+                        ThemeProvider = ThemerrThemeProvider.Themerr,
+                        InThemerrDb = !string.IsNullOrEmpty(legacyData.YoutubeThemeUrl),
+                        InThemerrDbCheckedUtc = DateTime.UtcNow,
+                    });
 
                 File.Delete(legacyDataPath);
                 return true;

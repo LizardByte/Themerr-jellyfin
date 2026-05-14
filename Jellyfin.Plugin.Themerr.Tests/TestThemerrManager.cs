@@ -357,10 +357,13 @@ public class TestThemerrManager
         themePath = Path.Combine(tempPath, "missing_theme_2.mp3");
         repository.Save(
             item,
-            themePath,
-            "missing-md5",
-            "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
-            themeProvider: ThemerrThemeProvider.Themerr);
+            new ThemerrMediaItemSaveOptions
+            {
+                ThemePath = themePath,
+                ThemeMd5 = "missing-md5",
+                YoutubeThemeUrl = "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
+                ThemeProvider = ThemerrThemeProvider.Themerr,
+            });
         Assert.True(manager.ContinueDownload(item, themePath), "ContinueDownload returned False");
         Assert.NotNull(repository.Get(item, themePath));
 
@@ -376,35 +379,51 @@ public class TestThemerrManager
         item = CreateMovie("continue-4");
         repository.Save(
             item,
-            themePath,
-            string.Empty,
-            "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
-            themeProvider: ThemerrThemeProvider.Themerr);
+            new ThemerrMediaItemSaveOptions
+            {
+                ThemePath = themePath,
+                ThemeMd5 = string.Empty,
+                YoutubeThemeUrl = "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
+                ThemeProvider = ThemerrThemeProvider.Themerr,
+            });
         Assert.True(manager.ContinueDownload(item, themePath), "ContinueDownload returned False");
 
         // test when both theme and data row exist, and md5 hashes match
         item = CreateMovie("continue-5");
         repository.Save(
             item,
-            themePath,
-            manager.GetMd5Hash(themePath),
-            "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
-            themeProvider: ThemerrThemeProvider.Themerr);
+            new ThemerrMediaItemSaveOptions
+            {
+                ThemePath = themePath,
+                ThemeMd5 = manager.GetMd5Hash(themePath),
+                YoutubeThemeUrl = "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
+                ThemeProvider = ThemerrThemeProvider.Themerr,
+            });
         Assert.True(manager.ContinueDownload(item, themePath), "ContinueDownload returned False");
 
         // test when both theme and data row exist, and md5 hashes do not match
         item = CreateMovie("continue-6");
         repository.Save(
             item,
-            themePath,
-            "different-md5",
-            "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
-            themeProvider: ThemerrThemeProvider.Themerr);
+            new ThemerrMediaItemSaveOptions
+            {
+                ThemePath = themePath,
+                ThemeMd5 = "different-md5",
+                YoutubeThemeUrl = "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
+                ThemeProvider = ThemerrThemeProvider.Themerr,
+            });
         Assert.False(manager.ContinueDownload(item, themePath), "ContinueDownload returned True");
 
         // test when a tracked item has a theme file but no Themerr provider metadata
         item = CreateMovie("continue-7");
-        repository.Save(item, themePath, inThemerrDb: false, inThemerrDbCheckedUtc: DateTime.UtcNow);
+        repository.Save(
+            item,
+            new ThemerrMediaItemSaveOptions
+            {
+                ThemePath = themePath,
+                InThemerrDb = false,
+                InThemerrDbCheckedUtc = DateTime.UtcNow,
+            });
         Assert.False(manager.ContinueDownload(item, themePath), "ContinueDownload returned True");
     }
 
@@ -524,10 +543,13 @@ public class TestThemerrManager
 
         repository.Save(
             item,
-            computedThemePath,
-            themeProvider: ThemerrThemeProvider.User,
-            inThemerrDb: false,
-            inThemerrDbCheckedUtc: DateTime.UtcNow);
+            new ThemerrMediaItemSaveOptions
+            {
+                ThemePath = computedThemePath,
+                ThemeProvider = ThemerrThemeProvider.User,
+                InThemerrDb = false,
+                InThemerrDbCheckedUtc = DateTime.UtcNow,
+            });
 
         var mockBaseItemLibraryManager = new Mock<ILibraryManager>();
         mockBaseItemLibraryManager
@@ -604,11 +626,14 @@ public class TestThemerrManager
 
         repository.Save(
             item,
-            currentThemePath,
-            themeProvider: ThemerrThemeProvider.User,
-            inThemerrDb: true,
-            inThemerrDbCheckedUtc: DateTime.UtcNow,
-            youtubeThemeUrl: youtubeThemeUrl);
+            new ThemerrMediaItemSaveOptions
+            {
+                ThemePath = currentThemePath,
+                ThemeProvider = ThemerrThemeProvider.User,
+                InThemerrDb = true,
+                InThemerrDbCheckedUtc = DateTime.UtcNow,
+                YoutubeThemeUrl = youtubeThemeUrl,
+            });
 
         using (var context = new ThemerrDbContext(repository.DatabasePath))
         {
@@ -641,10 +666,13 @@ public class TestThemerrManager
 
         repository.Save(
             item,
-            themePath,
-            inThemerrDb: false,
-            inThemerrDbCheckedUtc: checkedUtc,
-            issueUrl: manager.GetIssueUrl(item));
+            new ThemerrMediaItemSaveOptions
+            {
+                ThemePath = themePath,
+                InThemerrDb = false,
+                InThemerrDbCheckedUtc = checkedUtc,
+                IssueUrl = manager.GetIssueUrl(item),
+            });
 
         var syncedItem = manager.SyncLibraryItem(item);
 
@@ -677,11 +705,14 @@ public class TestThemerrManager
 
         repository.Save(
             item,
-            themePath,
-            inThemerrDb: true,
-            inThemerrDbCheckedUtc: checkedUtc,
-            issueUrl: manager.GetIssueUrl(item),
-            youtubeThemeUrl: youtubeThemeUrl);
+            new ThemerrMediaItemSaveOptions
+            {
+                ThemePath = themePath,
+                InThemerrDb = true,
+                InThemerrDbCheckedUtc = checkedUtc,
+                IssueUrl = manager.GetIssueUrl(item),
+                YoutubeThemeUrl = youtubeThemeUrl,
+            });
 
         var syncedItem = manager.SyncLibraryItem(item);
 

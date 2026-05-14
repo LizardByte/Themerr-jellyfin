@@ -349,7 +349,7 @@ namespace Jellyfin.Plugin.Themerr
                 return false;
             }
 
-            var existingThemeMd5 = themerrData?.ThemeMd5;
+            var existingThemeMd5 = themerrData.ThemeMd5;
 
             // if existing theme md5 is empty, don't skip
             if (string.IsNullOrEmpty(existingThemeMd5))
@@ -497,14 +497,17 @@ namespace Jellyfin.Plugin.Themerr
                 var timestampUtc = DateTime.UtcNow;
                 _themerrRepository.Save(
                     item,
-                    themePath,
-                    GetMd5Hash(themePath),
-                    youtubeThemeUrl,
-                    timestampUtc,
-                    ThemerrThemeProvider.Themerr,
-                    true,
-                    timestampUtc,
-                    GetIssueUrl(item));
+                    new ThemerrMediaItemSaveOptions
+                    {
+                        ThemePath = themePath,
+                        ThemeMd5 = GetMd5Hash(themePath),
+                        YoutubeThemeUrl = youtubeThemeUrl,
+                        DownloadedTimestampUtc = timestampUtc,
+                        ThemeProvider = ThemerrThemeProvider.Themerr,
+                        InThemerrDb = true,
+                        InThemerrDbCheckedUtc = timestampUtc,
+                        IssueUrl = GetIssueUrl(item),
+                    });
                 return _themerrRepository.Get(item, themePath) != null;
             }
             catch (Exception e)
@@ -727,14 +730,17 @@ namespace Jellyfin.Plugin.Themerr
 
             return _themerrRepository.Save(
                 item,
-                themePath,
-                themeMd5,
-                youtubeThemeUrl,
-                downloadedTimestampUtc,
-                themeProvider,
-                inThemerrDb,
-                inThemerrDbCheckedUtc,
-                GetIssueUrl(item));
+                new ThemerrMediaItemSaveOptions
+                {
+                    ThemePath = themePath,
+                    ThemeMd5 = themeMd5,
+                    YoutubeThemeUrl = youtubeThemeUrl,
+                    DownloadedTimestampUtc = downloadedTimestampUtc,
+                    ThemeProvider = themeProvider,
+                    InThemerrDb = inThemerrDb,
+                    InThemerrDbCheckedUtc = inThemerrDbCheckedUtc,
+                    IssueUrl = GetIssueUrl(item),
+                });
         }
 
         private (bool InThemerrDb, string YoutubeThemeUrl, DateTime CheckedUtc) GetThemerrDbAvailability(

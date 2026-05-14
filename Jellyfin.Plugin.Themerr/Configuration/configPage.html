@@ -111,7 +111,7 @@
                 .addEventListener('submit', function(e) {
                     Dashboard.showLoadingMsg()
                     _ApiClient.getPluginConfiguration(ThemerrConfig.pluginUniqueId).then(function (config) {
-                        let updateInterval = parseInt(document.querySelector('#UpdateInterval').value, 10)
+                        let updateInterval = Number.parseInt(document.querySelector('#UpdateInterval').value, 10)
                         config.UpdateInterval = updateInterval
                         config.updateInterval = updateInterval
                         _ApiClient.updatePluginConfiguration(ThemerrConfig.pluginUniqueId, config).then(function (result) {
@@ -211,7 +211,6 @@
                         if (response["media_count"] === 0 && page === 1) {
                             let message = "No media found!";
                             console.log(LogPrefix + message);
-                            total_pages = 0;
                             break;
                         }
 

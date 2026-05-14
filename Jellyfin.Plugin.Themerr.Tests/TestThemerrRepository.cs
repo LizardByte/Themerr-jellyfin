@@ -61,14 +61,17 @@ public class TestThemerrRepository
 
         repository.Save(
             item,
-            themePath,
-            "original-md5",
-            "https://www.youtube.com/watch?v=original",
-            downloadedTimestampUtc,
-            ThemerrThemeProvider.Themerr,
-            true,
-            inThemerrDbCheckedUtc,
-            issueUrl);
+            new ThemerrMediaItemSaveOptions
+            {
+                ThemePath = themePath,
+                ThemeMd5 = "original-md5",
+                YoutubeThemeUrl = "https://www.youtube.com/watch?v=original",
+                DownloadedTimestampUtc = downloadedTimestampUtc,
+                ThemeProvider = ThemerrThemeProvider.Themerr,
+                InThemerrDb = true,
+                InThemerrDbCheckedUtc = inThemerrDbCheckedUtc,
+                IssueUrl = issueUrl,
+            });
 
         var savedThemerrData = repository.Get(item, themePath);
         Assert.NotNull(savedThemerrData);
@@ -85,12 +88,15 @@ public class TestThemerrRepository
 
         repository.Save(
             item,
-            themePath,
-            "updated-md5",
-            "https://www.youtube.com/watch?v=updated",
-            themeProvider: ThemerrThemeProvider.Themerr,
-            inThemerrDb: true,
-            inThemerrDbCheckedUtc: DateTime.UtcNow);
+            new ThemerrMediaItemSaveOptions
+            {
+                ThemePath = themePath,
+                ThemeMd5 = "updated-md5",
+                YoutubeThemeUrl = "https://www.youtube.com/watch?v=updated",
+                ThemeProvider = ThemerrThemeProvider.Themerr,
+                InThemerrDb = true,
+                InThemerrDbCheckedUtc = DateTime.UtcNow,
+            });
 
         using (var context = new ThemerrDbContext(repository.DatabasePath))
         {
