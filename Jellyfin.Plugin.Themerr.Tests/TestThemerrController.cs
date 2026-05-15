@@ -1,6 +1,9 @@
-﻿using System.Collections;
+﻿using System;
+using System.Collections;
 using System.Collections.Generic;
+using System.IO;
 using Jellyfin.Plugin.Themerr.Api;
+using Jellyfin.Plugin.Themerr.Storage;
 using MediaBrowser.Common.Configuration;
 using MediaBrowser.Controller.Configuration;
 using MediaBrowser.Controller.Entities;
@@ -54,7 +57,7 @@ public class TestThemerrController
     }
 
     /// <summary>
-    /// Test GetProgress from API.
+    /// Test GetProgress from API with empty database.
     /// </summary>
     [Fact]
     [Trait("Category", "Unit")]
@@ -63,33 +66,26 @@ public class TestThemerrController
         var result = _controller.GetProgress();
         Assert.IsType<JsonResult>(result);
 
-        // ensure the following properties are int
-        Assert.IsType<int>(((JsonResult)result).Value?.GetType().GetProperty("media_count")?.GetValue(((JsonResult)result).Value, null));
-        Assert.IsType<int>(((JsonResult)result).Value?.GetType().GetProperty("media_with_themes")?.GetValue(((JsonResult)result).Value, null));
-        Assert.IsType<int>(((JsonResult)result).Value?.GetType().GetProperty("total_pages")?.GetValue(((JsonResult)result).Value, null));
+        var value = ((JsonResult)result).Value;
+        Assert.Equal(0, value?.GetType().GetProperty("total_media_count")?.GetValue(value, null));
+        Assert.Equal(0, value?.GetType().GetProperty("total_media_with_themes")?.GetValue(value, null));
+        Assert.Null(value?.GetType().GetProperty("generated_at")?.GetValue(value, null));
 
-        // ensure result["items"] is an array list
-        Assert.IsType<ArrayList>(((JsonResult)result).Value?.GetType().GetProperty("items")?.GetValue(((JsonResult)result).Value, null));
-
-        // ensure int values are 0
-        Assert.Equal(0, ((JsonResult)result).Value?.GetType().GetProperty("media_count")?.GetValue(((JsonResult)result).Value, null));
-        Assert.Equal(0, ((JsonResult)result).Value?.GetType().GetProperty("media_with_themes")?.GetValue(((JsonResult)result).Value, null));
-        Assert.Equal(0, ((JsonResult)result).Value?.GetType().GetProperty("total_pages")?.GetValue(((JsonResult)result).Value, null));
-
-        // ensure array list has no items
-        Assert.Equal(0, (((JsonResult)result).Value?.GetType().GetProperty("items")?.GetValue(((JsonResult)result).Value, null) as ArrayList)?.Count);
-
-        // todo: add tests for when there are items
+        var items = value?.GetType().GetProperty("items")?.GetValue(value, null) as ICollection;
+        Assert.NotNull(items);
+        Assert.Equal(0, items.Count);
     }
 
     /// <summary>
-    /// Test GetProgress from API with items in the library.
+    /// Test GetProgress from API with items pre-populated in the database.
     /// </summary>
     [Fact]
     [Trait("Category", "Unit")]
     public void TestGetProgressWithItems()
     {
-        var mockApplicationPaths = TestHelper.GetMockApplicationPaths();
+        var basePath = Path.Combine(Path.GetTempPath(), "ThemerrJellyfinTests", Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(basePath);
+        var mockApplicationPaths = TestHelper.GetMockApplicationPaths(basePath);
         var mockLibraryManager = new Mock<ILibraryManager>();
         var mockLogger = new Mock<ILogger<ThemerrController>>();
         var mockServerConfigurationManager = new Mock<IServerConfigurationManager>();
@@ -104,31 +100,25 @@ public class TestThemerrController
             .Setup(x => x.CreateLogger(It.IsAny<string>()))
             .Returns(new Mock<ILogger>().Object);
 
-        var libraryItems = new List<BaseItem>
+        var dbPath = ThemerrDatabasePath.GetDatabasePath(mockApplicationPaths.Object);
+        Directory.CreateDirectory(Path.GetDirectoryName(dbPath)!);
+        var repository = new ThemerrRepository(dbPath, new Mock<ILogger>().Object);
+
+        var movie = new Movie
         {
-            new Movie
-            {
-                Name = "Test Movie",
-                ProductionYear = 1970,
-                ProviderIds = new Dictionary<string, string>
-                {
-                    { MetadataProvider.Tmdb.ToString(), "0" },
-                },
-            },
-            new Series
-            {
-                Name = "Test Series",
-                ProductionYear = 1970,
-                ProviderIds = new Dictionary<string, string>
-                {
-                    { MetadataProvider.Tmdb.ToString(), "0" },
-                },
-            },
+            Name = "Test Movie",
+            ProductionYear = 1970,
+            ProviderIds = new Dictionary<string, string> { { MetadataProvider.Tmdb.ToString(), "1" } },
+        };
+        var series = new Series
+        {
+            Name = "Test Series",
+            ProductionYear = 1970,
+            ProviderIds = new Dictionary<string, string> { { MetadataProvider.Tmdb.ToString(), "2" } },
         };
 
-        mockLibraryManager
-            .Setup(x => x.GetItemList(It.IsAny<InternalItemsQuery>()))
-            .Returns(libraryItems);
+        repository.Save(movie, new ThemerrMediaItemSaveOptions { ThemePath = "/tmp/m.mp3", ThemeProvider = ThemerrThemeProvider.Themerr, InThemerrDb = true, InThemerrDbCheckedUtc = DateTime.UtcNow });
+        repository.Save(series, new ThemerrMediaItemSaveOptions { ThemePath = "/tmp/s.mp3", ThemeProvider = ThemerrThemeProvider.Themerr, InThemerrDb = true, InThemerrDbCheckedUtc = DateTime.UtcNow });
 
         var controller = new ThemerrController(
             mockApplicationPaths.Object,
@@ -138,30 +128,15 @@ public class TestThemerrController
             mockLoggerFactory.Object,
             mockXmlSerializer.Object);
 
-        // BaseItem.GetThemeSongs() uses BaseItem.LibraryManager (static) which is null without a full Jellyfin server
-        var mockBaseItemLibraryManager = new Mock<ILibraryManager>();
-        mockBaseItemLibraryManager
-            .Setup(x => x.GetItemList(It.IsAny<InternalItemsQuery>()))
-            .Returns(new List<BaseItem>());
-        BaseItem.LibraryManager = mockBaseItemLibraryManager.Object;
-
-        ActionResult result;
-        try
-        {
-            result = controller.GetProgress();
-        }
-        finally
-        {
-            BaseItem.LibraryManager = null;
-        }
-
+        var result = controller.GetProgress();
         Assert.IsType<JsonResult>(result);
 
         var value = ((JsonResult)result).Value;
-        var mediaCount = (int?)value?.GetType().GetProperty("media_count")?.GetValue(value, null);
-        var items = value?.GetType().GetProperty("items")?.GetValue(value, null) as ArrayList;
+        Assert.Equal(2, value?.GetType().GetProperty("total_media_count")?.GetValue(value, null));
+        Assert.Equal(2, value?.GetType().GetProperty("total_media_with_themes")?.GetValue(value, null));
+        Assert.NotNull(value?.GetType().GetProperty("generated_at")?.GetValue(value, null));
 
-        Assert.Equal(2, mediaCount);
+        var items = value?.GetType().GetProperty("items")?.GetValue(value, null) as IList;
         Assert.NotNull(items);
         Assert.Equal(2, items.Count);
     }

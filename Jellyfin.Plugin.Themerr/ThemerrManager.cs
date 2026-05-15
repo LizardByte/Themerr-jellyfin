@@ -229,6 +229,15 @@ namespace Jellyfin.Plugin.Themerr
         }
 
         /// <summary>
+        /// Returns all items currently tracked in the database, sorted for display.
+        /// </summary>
+        /// <returns>All tracked media items.</returns>
+        public IReadOnlyList<ThemerrMediaItem> GetAllTrackedItems()
+        {
+            return _themerrRepository.GetAll();
+        }
+
+        /// <summary>
         /// Download the theme song for a media item if it doesn't already exist.
         /// </summary>
         /// <param name="item">The Jellyfin media object.</param>
