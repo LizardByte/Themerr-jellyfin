@@ -78,54 +78,23 @@ namespace Jellyfin.Plugin.Themerr
         public override string Name => "Themerr";
 
         /// <summary>
-        /// Get a value from the themerr data file if it exists.
-        /// </summary>
-        /// <param name="key">The key to search for.</param>
-        /// <param name="themerrDataPath">The path to the themerr data file.</param>
-        /// <returns>The value of the key if it exists, null otherwise.</returns>
-        public string GetExistingThemerrDataValue(string key, string themerrDataPath)
-        {
-            if (!System.IO.File.Exists(themerrDataPath))
-            {
-                return null;
-            }
-
-            var jsonString = System.IO.File.ReadAllText(themerrDataPath);
-
-            try
-            {
-                dynamic jsonData = JsonConvert.DeserializeObject(jsonString);
-                return jsonData?[key];
-            }
-            catch (JsonReaderException e)
-            {
-                _logger.LogError(e, "Unable to parse themerr data file: {ThemerrDataPath}\n{JsonString}", themerrDataPath, jsonString);
-                return null;
-            }
-        }
-
-        /// <summary>
         /// Save a mp3 file from a YouTube video url.
         /// </summary>
         /// <param name="destination">The destination path.</param>
         /// <param name="videoUrl">The YouTube video url.</param>
         /// <returns>True if the file was saved successfully, false otherwise.</returns>
-        public bool SaveMp3(string destination, string videoUrl)
+        public async Task<bool> SaveMp3(string destination, string videoUrl)
         {
             try
             {
-                Task.Run(async () =>
-                {
-                    await _youtubeClientWrapper.DownloadAudioAsync(videoUrl, destination);
-                });
+                await _youtubeClientWrapper.DownloadAudioAsync(videoUrl, destination);
+                return true;
             }
             catch (Exception e)
             {
                 _logger.LogError(e, "Unable to download {VideoUrl} to {Destination}", videoUrl, destination);
                 return false;
             }
-
-            return WaitForFile(destination, 30000);
         }
 
         /// <summary>
@@ -184,20 +153,28 @@ namespace Jellyfin.Plugin.Themerr
         /// Synchronizes supported TMDB-backed library items into sqlite.
         /// </summary>
         /// <returns>The synchronized sqlite rows.</returns>
-        public IReadOnlyList<ThemerrMediaItem> SyncLibraryItems()
+        public async Task<IReadOnlyList<ThemerrMediaItem>> SyncLibraryItems()
         {
             if (TryGetOrStartInitialMigrationUpdateTask(out var initialUpdateTask))
             {
-                initialUpdateTask.GetAwaiter().GetResult();
+                await initialUpdateTask.ConfigureAwait(false);
                 return _themerrRepository.GetAll();
             }
 
-            return GetTmdbItemsFromLibrary()
-                .Select(SyncLibraryItem)
-                .Where(mediaItem => mediaItem != null)
-                .OrderBy(mediaItem => mediaItem.ItemName)
-                .ThenBy(mediaItem => mediaItem.ProductionYear)
-                .ThenBy(mediaItem => mediaItem.ItemType)
+            var results = new List<ThemerrMediaItem>();
+            foreach (var item in GetTmdbItemsFromLibrary())
+            {
+                var synced = await SyncLibraryItem(item).ConfigureAwait(false);
+                if (synced != null)
+                {
+                    results.Add(synced);
+                }
+            }
+
+            return results
+                .OrderBy(m => m.ItemName)
+                .ThenBy(m => m.ProductionYear)
+                .ThenBy(m => m.ItemType)
                 .ToList();
         }
 
@@ -206,7 +183,7 @@ namespace Jellyfin.Plugin.Themerr
         /// </summary>
         /// <param name="item">The Jellyfin media object.</param>
         /// <returns>The synchronized sqlite row when the item is supported; otherwise, null.</returns>
-        public ThemerrMediaItem SyncLibraryItem(BaseItem item)
+        public async Task<ThemerrMediaItem> SyncLibraryItem(BaseItem item)
         {
             var dbType = ThemerrDbType.Get(item);
             if (string.IsNullOrEmpty(dbType) || string.IsNullOrEmpty(GetTmdbId(item)))
@@ -219,7 +196,7 @@ namespace Jellyfin.Plugin.Themerr
             MigrateLegacyThemerrData(item, themePath, existingData);
 
             existingData = _themerrRepository.Get(item, themePath);
-            var availability = GetThemerrDbAvailability(item, dbType, existingData);
+            var availability = await GetThemerrDbAvailability(item, dbType, existingData).ConfigureAwait(false);
 
             return SaveTrackedItem(
                 item,
@@ -234,11 +211,10 @@ namespace Jellyfin.Plugin.Themerr
         /// Download the theme song for a media item if it doesn't already exist.
         /// </summary>
         /// <param name="item">The Jellyfin media object.</param>
-        public void ProcessItemTheme(BaseItem item)
+        public async Task ProcessItemTheme(BaseItem item)
         {
             var dbType = ThemerrDbType.Get(item);
 
-            // return if dbType is null
             if (string.IsNullOrEmpty(dbType))
             {
                 return;
@@ -251,14 +227,14 @@ namespace Jellyfin.Plugin.Themerr
 
             if (!ContinueDownload(item, themePath))
             {
-                SyncLibraryItem(item);
+                await SyncLibraryItem(item).ConfigureAwait(false);
                 return;
             }
 
             var existingYoutubeThemeUrl = existingThemerrData?.YoutubeThemeUrl;
             var existingThemeMd5 = existingThemerrData?.ThemeMd5;
 
-            var availability = GetThemerrDbAvailability(item, dbType, existingThemerrData);
+            var availability = await GetThemerrDbAvailability(item, dbType, existingThemerrData).ConfigureAwait(false);
             var youtubeThemeUrl = availability.YoutubeThemeUrl;
             var existingThemePath = GetExistingThemePath(item, themePath);
 
@@ -279,19 +255,21 @@ namespace Jellyfin.Plugin.Themerr
                 return;
             }
 
-            var successMp3 = SaveMp3(themePath, youtubeThemeUrl);
+            var successMp3 = await SaveMp3(themePath, youtubeThemeUrl).ConfigureAwait(false);
             if (!successMp3)
             {
                 return;
             }
 
-            var successThemerrData = SaveThemerrData(item, themePath, youtubeThemeUrl);
-            if (!successThemerrData)
+            SaveThemerrData(item, themePath, youtubeThemeUrl);
+            try
             {
-                return;
+                await item.RefreshMetadata(CancellationToken.None).ConfigureAwait(false);
             }
-
-            item.RefreshMetadata(CancellationToken.None);
+            catch (Exception e)
+            {
+                _logger.LogWarning(e, "Failed to refresh metadata for {ItemName}", item.Name);
+            }
         }
 
         /// <summary>
@@ -310,9 +288,9 @@ namespace Jellyfin.Plugin.Themerr
         /// </summary>
         /// <param name="item">The Jellyfin media object.</param>
         /// <returns>The theme provider.</returns>
-        public string GetThemeProvider(BaseItem item)
+        public async Task<string> GetThemeProvider(BaseItem item)
         {
-            return SyncLibraryItem(item)?.ThemeProvider;
+            return (await SyncLibraryItem(item).ConfigureAwait(false))?.ThemeProvider;
         }
 
         /// <summary>
@@ -320,9 +298,9 @@ namespace Jellyfin.Plugin.Themerr
         /// </summary>
         /// <param name="item">The Jellyfin media object.</param>
         /// <returns>True if the item exists in ThemerrDB, false otherwise.</returns>
-        public bool IsInThemerrDb(BaseItem item)
+        public async Task<bool> IsInThemerrDb(BaseItem item)
         {
-            return SyncLibraryItem(item)?.InThemerrDb == true;
+            return (await SyncLibraryItem(item).ConfigureAwait(false))?.InThemerrDb == true;
         }
 
         /// <summary>
@@ -415,14 +393,13 @@ namespace Jellyfin.Plugin.Themerr
         /// <param name="themerrDbUrl">The themerr database url.</param>
         /// <param name="item">The Jellyfin media object.</param>
         /// <returns>The YouTube theme url.</returns>
-        public string GetYoutubeThemeUrl(string themerrDbUrl, BaseItem item)
+        public async Task<string> GetYoutubeThemeUrl(string themerrDbUrl, BaseItem item)
         {
-            var client = new HttpClient();
             HttpResponseMessage response;
 
             try
             {
-                response = client.GetAsync(themerrDbUrl).GetAwaiter().GetResult();
+                response = await HttpClient.GetAsync(themerrDbUrl).ConfigureAwait(false);
             }
             catch (Exception e)
             {
@@ -439,7 +416,7 @@ namespace Jellyfin.Plugin.Themerr
                 return string.Empty;
             }
 
-            var jsonString = response.Content.ReadAsStringAsync().GetAwaiter().GetResult();
+            var jsonString = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
             dynamic jsonData = JsonConvert.DeserializeObject(jsonString);
             return jsonData?.youtube_theme_url;
         }
@@ -510,7 +487,7 @@ namespace Jellyfin.Plugin.Themerr
                         InThemerrDbCheckedUtc = timestampUtc,
                         IssueUrl = GetIssueUrl(item),
                     });
-                return _themerrRepository.Get(item, themePath) != null;
+                return true;
             }
             catch (Exception e)
             {
@@ -532,50 +509,6 @@ namespace Jellyfin.Plugin.Themerr
                 {
                     var hash = md5.ComputeHash(stream);
                     return BitConverter.ToString(hash).Replace("-", string.Empty).ToLowerInvariant();
-                }
-            }
-        }
-
-        /// <summary>
-        /// Wait for file to exist on disk and is not locked by another process.
-        /// </summary>
-        /// <param name="filePath">The file path to check.</param>
-        /// <param name="timeout">The maximum amount of time (in milliseconds) to wait.</param>
-        /// <returns>True if the file exists and is not locked, false otherwise.</returns>
-        public bool WaitForFile(string filePath, int timeout)
-        {
-            var startTime = DateTime.UtcNow;
-            while (!System.IO.File.Exists(filePath))
-            {
-                if (DateTime.UtcNow - startTime > TimeSpan.FromMilliseconds(timeout))
-                {
-                    return false;
-                }
-
-                Thread.Sleep(100);
-            }
-
-            // Wait until the file is not being used by another process
-            while (true)
-            {
-                try
-                {
-                    // Attempt to open and close the file to check for locks
-                    using (var stream = System.IO.File.Open(filePath, System.IO.FileMode.Open))
-                    {
-                        stream.Close();
-                    }
-
-                    return true;
-                }
-                catch (System.IO.IOException)
-                {
-                    if (DateTime.UtcNow - startTime > TimeSpan.FromMilliseconds(timeout))
-                    {
-                        return false;
-                    }
-
-                    Thread.Sleep(100);
                 }
             }
         }
@@ -646,16 +579,12 @@ namespace Jellyfin.Plugin.Themerr
             _timer.Change(Timeout.Infinite, Timeout.Infinite);
         }
 
-        private Task UpdateAllCore()
+        private async Task UpdateAllCore()
         {
-            var items = GetTmdbItemsFromLibrary();
-            foreach (var item in items)
+            foreach (var item in GetTmdbItemsFromLibrary())
             {
-                ProcessItemTheme(item);
-                SyncLibraryItem(item);
+                await ProcessItemTheme(item).ConfigureAwait(false);
             }
-
-            return Task.CompletedTask;
         }
 
         private bool TryGetOrStartInitialMigrationUpdateTask(out Task initialUpdateTask)
@@ -745,7 +674,7 @@ namespace Jellyfin.Plugin.Themerr
                 });
         }
 
-        private ThemerrDbAvailability GetThemerrDbAvailability(
+        private async Task<ThemerrDbAvailability> GetThemerrDbAvailability(
             BaseItem item,
             string dbType,
             ThemerrMediaItem existingData)
@@ -773,7 +702,7 @@ namespace Jellyfin.Plugin.Themerr
             }
 
             var themerrDbUrl = CreateThemerrDbLink(tmdbId, dbType);
-            var youtubeThemeUrl = GetYoutubeThemeUrl(themerrDbUrl, item);
+            var youtubeThemeUrl = await GetYoutubeThemeUrl(themerrDbUrl, item).ConfigureAwait(false);
             return new ThemerrDbAvailability
             {
                 InThemerrDb = !string.IsNullOrEmpty(youtubeThemeUrl),
