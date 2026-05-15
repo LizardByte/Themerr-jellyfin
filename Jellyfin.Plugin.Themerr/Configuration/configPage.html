@@ -180,6 +180,18 @@
                 })
             }
 
+            async function replaceWithThemerTheme(itemId) {
+                try {
+                    await _ApiClient.fetch({
+                        url: _ApiClient.getUrl('/Themerr/ReplaceTheme/' + itemId),
+                        type: 'POST',
+                    });
+                    await updateProgress();
+                } catch (error) {
+                    console.error(LogPrefix + 'Failed to replace theme: ' + error);
+                }
+            }
+
             async function updateProgress() {
                 let request = {
                     url: _ApiClient.getUrl('/Themerr/GetProgress'),
@@ -328,7 +340,13 @@
                     let tableColumnContribute = document.createElement('td')
                     tableColumnContribute.setAttribute('class', 'detailTableBodyCell')
 
-                    if (inThemerrDb === true && themeProvider !== 'themerr') {
+                    if (inThemerrDb === true && themeProvider === 'user') {
+                        let replaceButton = document.createElement('button')
+                        replaceButton.innerText = translate('replace_button')
+                        replaceButton.setAttribute('title', translate('replace_button_title'))
+                        replaceButton.addEventListener('click', () => replaceWithThemerTheme(all_items[item]["id"]))
+                        tableColumnContribute.appendChild(replaceButton)
+                    } else if (inThemerrDb === true && themeProvider !== 'themerr') {
                         let availableText = document.createElement('span')
                         availableText.setAttribute('style', 'font-size: 0.9em; color: grey;')
                         availableText.innerText = translate('available_in_themerr_db')

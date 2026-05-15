@@ -125,6 +125,23 @@ namespace Jellyfin.Plugin.Themerr.Api
         }
 
         /// <summary>
+        /// Replace a user-supplied theme with the ThemerrDB version.
+        ///
+        /// A response code of 204 indicates the theme was replaced successfully.
+        /// A response code of 404 indicates the item was not found or has no ThemerrDB theme URL stored.
+        /// </summary>
+        /// <param name="itemId">The Jellyfin item ID.</param>
+        /// <returns>A <see cref="NoContentResult"/> on success or <see cref="NotFoundResult"/> otherwise.</returns>
+        [HttpPost("ReplaceTheme/{itemId}")]
+        [ProducesResponseType(StatusCodes.Status204NoContent)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
+        public async Task<ActionResult> ReplaceTheme(Guid itemId)
+        {
+            var success = await _themerrManager.ReplaceWithThemerTheme(itemId);
+            return success ? NoContent() : NotFound();
+        }
+
+        /// <summary>
         /// Get the localization strings from Locale/{selected_locale}.json.
         /// </summary>
         ///

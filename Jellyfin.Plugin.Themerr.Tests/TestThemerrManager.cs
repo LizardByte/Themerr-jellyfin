@@ -127,6 +127,39 @@ public class TestThemerrManager
         return path;
     }
 
+    private static ThemerrManager CreateThemerrManagerWithMockYoutubeAndItemById(
+        BaseItem item,
+        ThemerrRepository? themerrRepository = null)
+    {
+        var audioStubPath = Path.Combine(Directory.GetCurrentDirectory(), "data", "audio_stub.mp3");
+
+        Mock<IApplicationPaths> mockApplicationPaths = TestHelper.GetMockApplicationPaths();
+        Mock<ILogger<ThemerrManager>> mockLogger = new();
+        Mock<IXmlSerializer> mockXmlSerializer = new();
+
+        var mockYoutubeClient = new Mock<IYoutubeClientWrapper>();
+        mockYoutubeClient
+            .Setup(y => y.DownloadAudioAsync(It.IsAny<string>(), It.IsAny<string>()))
+            .Returns<string, string>((_, destination) =>
+            {
+                File.Copy(audioStubPath, destination, true);
+                return Task.CompletedTask;
+            });
+
+        var mockLibraryManager = new Mock<ILibraryManager>();
+        mockLibraryManager
+            .Setup(x => x.GetItemById(item.Id))
+            .Returns(item);
+
+        return new ThemerrManager(
+            mockApplicationPaths.Object,
+            mockLibraryManager.Object,
+            mockLogger.Object,
+            mockXmlSerializer.Object,
+            mockYoutubeClient.Object,
+            themerrRepository);
+    }
+
     [Theory]
     [Trait("Category", "Unit")]
     [MemberData(nameof(YoutubeUrls))]
@@ -978,5 +1011,80 @@ public class TestThemerrManager
 
         // assert that `en` is NOT in the list
         Assert.DoesNotContain("en.json", result);
+    }
+
+    /// <summary>
+    /// Test ReplaceWithThemerTheme returns false when item is not found.
+    /// </summary>
+    [Fact]
+    [Trait("Category", "Unit")]
+    public async Task TestReplaceWithThemerThemeItemNotFound()
+    {
+        var result = await _themerrManager.ReplaceWithThemerTheme(Guid.Empty);
+        Assert.False(result);
+    }
+
+    /// <summary>
+    /// Test ReplaceWithThemerTheme returns false when no YouTube URL is stored.
+    /// </summary>
+    [Fact]
+    [Trait("Category", "Unit")]
+    public async Task TestReplaceWithThemerThemeNoStoredUrl()
+    {
+        var movie = CreateMovie("1");
+        var repository = CreateThemerrRepository();
+
+        repository.Save(movie, new ThemerrMediaItemSaveOptions
+        {
+            ThemePath = "/tmp/theme.mp3",
+            ThemeProvider = ThemerrThemeProvider.User,
+            InThemerrDb = true,
+            InThemerrDbCheckedUtc = DateTime.UtcNow,
+            YoutubeThemeUrl = null,
+        });
+
+        var manager = CreateThemerrManagerWithMockYoutubeAndItemById(movie, repository);
+        var result = await manager.ReplaceWithThemerTheme(movie.Id);
+        Assert.False(result);
+    }
+
+    /// <summary>
+    /// Test ReplaceWithThemerTheme downloads and replaces a user-supplied theme.
+    /// </summary>
+    [Fact]
+    [Trait("Category", "Unit")]
+    public async Task TestReplaceWithThemerTheme()
+    {
+        var movie = CreateMovie("1");
+        var repository = CreateThemerrRepository();
+
+        repository.Save(movie, new ThemerrMediaItemSaveOptions
+        {
+            ThemePath = "/tmp/theme.mp3",
+            ThemeProvider = ThemerrThemeProvider.User,
+            InThemerrDb = true,
+            InThemerrDbCheckedUtc = DateTime.UtcNow,
+            YoutubeThemeUrl = "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
+        });
+
+        var manager = CreateThemerrManagerWithMockYoutubeAndItemById(movie, repository);
+        var themePath = manager.GetThemePath(movie);
+
+        try
+        {
+            var result = await manager.ReplaceWithThemerTheme(movie.Id);
+            Assert.True(result);
+            Assert.True(File.Exists(themePath));
+
+            var savedItem = repository.Get(movie, themePath);
+            Assert.Equal(ThemerrThemeProvider.Themerr, savedItem?.ThemeProvider);
+        }
+        finally
+        {
+            if (File.Exists(themePath))
+            {
+                File.Delete(themePath);
+            }
+        }
     }
 }
