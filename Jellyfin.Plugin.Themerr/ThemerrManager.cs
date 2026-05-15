@@ -364,6 +364,56 @@ namespace Jellyfin.Plugin.Themerr
         }
 
         /// <summary>
+        /// Replace a user-supplied theme with the ThemerrDB version.
+        /// Reads the YouTube URL from the existing SQLite row — no live ThemerrDB call needed.
+        /// </summary>
+        /// <param name="itemId">The Jellyfin item ID.</param>
+        /// <returns>True if the theme was replaced successfully; otherwise false.</returns>
+        public async Task<bool> ReplaceWithThemerTheme(Guid itemId)
+        {
+            var item = _libraryManager.GetItemById(itemId);
+            if (item == null)
+            {
+                _logger.LogWarning("ReplaceWithThemerTheme: item not found for ID {ItemId}", itemId);
+                return false;
+            }
+
+            var themePath = GetThemePath(item);
+            if (string.IsNullOrEmpty(themePath))
+            {
+                return false;
+            }
+
+            var existingData = _themerrRepository.Get(item, themePath);
+            var youtubeThemeUrl = existingData?.YoutubeThemeUrl;
+
+            if (string.IsNullOrEmpty(youtubeThemeUrl))
+            {
+                _logger.LogWarning("ReplaceWithThemerTheme: no stored YouTube URL for {ItemName}", item.Name);
+                return false;
+            }
+
+            var success = await SaveMp3(themePath, youtubeThemeUrl).ConfigureAwait(false);
+            if (!success)
+            {
+                return false;
+            }
+
+            SaveThemerrData(item, themePath, youtubeThemeUrl);
+
+            try
+            {
+                await item.RefreshMetadata(CancellationToken.None).ConfigureAwait(false);
+            }
+            catch (Exception e)
+            {
+                _logger.LogWarning(e, "Failed to refresh metadata for {ItemName}", item.Name);
+            }
+
+            return true;
+        }
+
+        /// <summary>
         /// Get the path to the themerr data file.
         /// </summary>
         /// <param name="item">The Jellyfin media object.</param>

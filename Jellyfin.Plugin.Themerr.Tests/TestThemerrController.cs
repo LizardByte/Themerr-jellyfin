@@ -47,6 +47,10 @@ public class TestThemerrController
         // Set up the Configuration property of the IServerConfigurationManager mock to return the TestableServerConfiguration
         mockServerConfigurationManager.Setup(x => x.Configuration).Returns(testableServerConfiguration);
 
+        mockLoggerFactory
+            .Setup(x => x.CreateLogger(It.IsAny<string>()))
+            .Returns(new Mock<ILogger>().Object);
+
         _controller = new ThemerrController(
             mockApplicationPaths.Object,
             mockLibraryManager.Object,
@@ -162,5 +166,16 @@ public class TestThemerrController
         // Assert the data contains the expected keys
         Assert.True(data.ContainsKey("locale"));
         Assert.True(data.ContainsKey("fallback"));
+    }
+
+    /// <summary>
+    /// Test ReplaceTheme returns 404 when item is not found in the library.
+    /// </summary>
+    [Fact]
+    [Trait("Category", "Unit")]
+    public async Task TestReplaceThemeNotFound()
+    {
+        var result = await _controller.ReplaceTheme(Guid.NewGuid());
+        Assert.IsType<NotFoundResult>(result);
     }
 }
