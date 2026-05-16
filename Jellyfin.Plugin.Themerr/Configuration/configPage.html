@@ -337,6 +337,7 @@
                 tableHeader.appendChild(tableHeaderRow)
 
                 let columns = ['Title', 'Year', 'Type', 'Contribute', 'Status']
+                let contributeHeaderCell = null
 
                 // create table header columns
                 for (let column in columns) {
@@ -345,9 +346,13 @@
                     tableHeaderColumn.setAttribute('scope', 'col')
                     tableHeaderColumn.innerText = translate(columns[column].toLowerCase())
                     tableHeaderRow.appendChild(tableHeaderColumn)
+                    if (columns[column] === 'Contribute') {
+                        contributeHeaderCell = tableHeaderColumn
+                    }
                 }
 
                 const BUTTON_KEYS = { themerr: 'edit_button', user: 'contribute_button' }
+                const replaceableItems = []
 
                 // loop over items
                 for (let item in all_items) {
@@ -387,6 +392,9 @@
                     let tableColumnContribute = document.createElement('td')
                     tableColumnContribute.setAttribute('class', 'detailTableBodyCell')
 
+                    let tableColumnStatus = document.createElement('td')
+                    tableColumnStatus.setAttribute('class', 'detailTableBodyCell')
+
                     if (inThemerrDb === true && themeProvider === 'user') {
                         let replaceButton = document.createElement('a')
                         replaceButton.setAttribute('is', 'emby-linkbutton')
@@ -396,6 +404,13 @@
                         replaceButton.addEventListener('click', () => replaceWithThemerTheme(all_items[item]["id"], all_items[item]["issue_url"], tableColumnContribute, tableColumnStatus, replaceButton))
                         replaceButton.innerText = translate('replace_button')
                         tableColumnContribute.appendChild(replaceButton)
+                        replaceableItems.push({
+                            id: all_items[item]["id"],
+                            issueUrl: all_items[item]["issue_url"],
+                            tableColumnContribute,
+                            tableColumnStatus,
+                            replaceButton,
+                        })
                     } else if (inThemerrDb === true && themeProvider !== 'themerr') {
                         let availableText = document.createElement('span')
                         availableText.setAttribute('style', 'font-size: 0.9em; color: grey;')
@@ -413,8 +428,6 @@
                     tableRow.appendChild(tableColumnContribute)
 
                     const status = STATUS_CONFIG[themeProvider] || { icon: 'cancel', color: '#ff0000', key: 'no_theme_song' }
-                    let tableColumnStatus = document.createElement('td')
-                    tableColumnStatus.setAttribute('class', 'detailTableBodyCell')
 
                     let statusSpan = document.createElement('span')
                     let statusText = document.createElement('span')
@@ -426,6 +439,31 @@
                     tableColumnStatus.appendChild(statusSpan)
                     tableColumnStatus.appendChild(statusText)
                     tableRow.appendChild(tableColumnStatus)
+                }
+
+                if (replaceableItems.length > 0) {
+                    let replaceAllButton = document.createElement('a')
+                    replaceAllButton.setAttribute('is', 'emby-linkbutton')
+                    replaceAllButton.setAttribute('class', 'raised button-submit block emby-button')
+                    replaceAllButton.setAttribute('style', 'margin-top: 6px;')
+                    replaceAllButton.setAttribute('title', translate('replace_all_button_title'))
+                    replaceAllButton.innerText = translate('replace_all_button')
+                    replaceAllButton.addEventListener('click', async () => {
+                        replaceAllButton.innerText = translate('replacing_button')
+                        replaceAllButton.style.opacity = '0.6'
+                        replaceAllButton.style.pointerEvents = 'none'
+                        for (const entry of replaceableItems) {
+                            await replaceWithThemerTheme(
+                                entry.id,
+                                entry.issueUrl,
+                                entry.tableColumnContribute,
+                                entry.tableColumnStatus,
+                                entry.replaceButton
+                            )
+                        }
+                        replaceAllButton.style.display = 'none'
+                    })
+                    contributeHeaderCell.appendChild(replaceAllButton)
                 }
             }
 
