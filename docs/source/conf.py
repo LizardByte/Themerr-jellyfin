@@ -153,6 +153,9 @@ sphinx_csharp_ext_search_pages = {
     'System.Collections.Generic': (
         f'https://learn.microsoft.com/en-us/dotnet/api/system.collections.generic.%s?view=net-{dotnet_version}',
     ),
+    'System.Net.Http': (
+        f'https://learn.microsoft.com/en-us/dotnet/api/system.net.http.%s?view=net-{dotnet_version}',
+    ),
     'Microsoft': (
         f'https://learn.microsoft.com/en-us/dotnet/api/microsoft.%s?view=dotnet-plat-ext-{dotnet_version}',
     ),
@@ -232,6 +235,11 @@ sphinx_csharp_ext_type_map = {
         '': [
             'HashSet',
             'IReadOnlyList',
+        ],
+    },
+    'System.Net.Http': {
+        '': [
+            'HttpClient',
         ],
     },
     'Microsoft': {

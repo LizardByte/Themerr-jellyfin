@@ -38,6 +38,8 @@ namespace Jellyfin.Plugin.Themerr
         private static readonly HashSet<string> InitialUpdateCompletedDatabasePaths =
             new HashSet<string>(StringComparer.OrdinalIgnoreCase);
 
+        private static readonly HttpClient HttpClient = new HttpClient();
+
         private readonly ILibraryManager _libraryManager;
         private readonly Timer _timer;
         private readonly ILogger<ThemerrManager> _logger;
