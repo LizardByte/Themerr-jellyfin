@@ -33,6 +33,20 @@
                             The interval, in minutes, between theme song updates.
                         </div>
                     </div>
+                    <div class="checkboxContainer checkboxContainer-withDescription">
+                        <label class="emby-checkbox-label">
+                            <input id="BackupUserSuppliedTheme" name="BackupUserSuppliedTheme"
+                                   type="checkbox" is="emby-checkbox" />
+                            <span class="checkboxButtonIcon"></span>
+                            <span class="checkboxTitle" data-localize="backup_user_supplied_theme">
+                                Create backup of user supplied mp3 during replace
+                            </span>
+                        </label>
+                        <div class="fieldDescription checkboxFieldDescription"
+                             data-localize="backup_user_supplied_theme_desc">
+                            When replacing a user supplied theme with the ThemerrDB version, save the original as theme.backup.mp3.
+                        </div>
+                    </div>
                     <div>
                         <button is="emby-button" type="submit" class="raised button-submit block emby-button">
                             <span data-localize="save">Save</span>
@@ -103,6 +117,8 @@
                             updateInterval = config.updateInterval
                         }
                         document.querySelector('#UpdateInterval').value = updateInterval
+                        document.querySelector('#BackupUserSuppliedTheme').checked =
+                            config.BackupUserSuppliedTheme !== false
                         Dashboard.hideLoadingMsg()
                     })
                 })
@@ -114,6 +130,8 @@
                         let updateInterval = Number.parseInt(document.querySelector('#UpdateInterval').value, 10)
                         config.UpdateInterval = updateInterval
                         config.updateInterval = updateInterval
+                        config.BackupUserSuppliedTheme =
+                            document.querySelector('#BackupUserSuppliedTheme').checked
                         _ApiClient.updatePluginConfiguration(ThemerrConfig.pluginUniqueId, config).then(function (result) {
                             Dashboard.processPluginConfigurationUpdateResult(result)
                         })
@@ -200,7 +218,7 @@
                     tableColumnContribute.innerHTML = '';
                     let editButton = document.createElement('a');
                     editButton.setAttribute('is', 'emby-linkbutton');
-                    editButton.setAttribute('class', 'raised headerHelpButton button-submit emby-button');
+                    editButton.setAttribute('class', 'raised button-submit block emby-button');
                     editButton.setAttribute('target', '_blank');
                     editButton.setAttribute('href', issueUrl);
                     editButton.innerText = translate('edit_button');
@@ -386,7 +404,7 @@
                     } else {
                         let contributeButton = document.createElement('a')
                         contributeButton.setAttribute('is', 'emby-linkbutton')
-                        contributeButton.setAttribute('class', 'raised headerHelpButton button-submit emby-button')
+                        contributeButton.setAttribute('class', 'raised button-submit block emby-button')
                         contributeButton.setAttribute('target', '_blank')
                         contributeButton.setAttribute('href', all_items[item]["issue_url"])
                         contributeButton.innerText = translate(BUTTON_KEYS[themeProvider] || 'add_button')

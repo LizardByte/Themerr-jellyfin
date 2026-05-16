@@ -24,6 +24,8 @@
   "update_interval_desc": "The interval, in minutes, between theme song updates.",
   "update_theme_songs": "Update Theme Songs",
   "updating_theme_songs": "Updating theme songs...",
+  "backup_user_supplied_theme": "Create backup of user supplied mp3 during replace",
+  "backup_user_supplied_theme_desc": "When replacing a user supplied theme with the ThemerrDB version, save the original as theme.backup.mp3.",
   "replace_button": "Replace",
   "replacing_button": "Replacing...",
   "replace_button_title": "Replace user supplied theme with ThemerrDB theme",

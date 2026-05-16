@@ -20,6 +20,16 @@ public class TestPluginConfiguration
     }
 
     /// <summary>
+    /// Test that BackupUserSuppliedTheme defaults to true.
+    /// </summary>
+    [Fact]
+    [Trait("Category", "Unit")]
+    public void TestPluginConfigurationBackupUserSuppliedThemeDefaultsToTrue()
+    {
+        Assert.True(_configuration.BackupUserSuppliedTheme);
+    }
+
+    /// <summary>
     /// Test getting the default PluginConfiguration.
     /// </summary>
     [Fact]

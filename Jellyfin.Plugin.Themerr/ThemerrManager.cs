@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Net;
 using System.Net.Http;
@@ -393,10 +394,24 @@ namespace Jellyfin.Plugin.Themerr
                 return false;
             }
 
+            var backupPath = Path.Combine(Path.GetDirectoryName(themePath)!, "theme.backup.mp3");
+            var backupCreated = false;
+            if (ThemerrPlugin.Instance?.Configuration.BackupUserSuppliedTheme == true && File.Exists(themePath))
+            {
+                _logger.LogInformation("ReplaceWithThemerTheme: Backing up existing theme for {ItemName}", item.Name);
+                File.Move(themePath, backupPath, overwrite: true);
+                backupCreated = true;
+            }
+
             _logger.LogInformation("ReplaceWithThemerTheme: Starting mp3 save {ItemName}", item.Name);
             var success = await SaveMp3(themePath, youtubeThemeUrl).ConfigureAwait(false);
             if (!success)
             {
+                if (backupCreated && File.Exists(backupPath))
+                {
+                    File.Move(backupPath, themePath, overwrite: true);
+                }
+
                 return false;
             }
 
