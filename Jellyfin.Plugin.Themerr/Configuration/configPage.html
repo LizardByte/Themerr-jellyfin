@@ -34,12 +34,16 @@
                         </div>
                     </div>
                     <div class="checkboxContainer checkboxContainer-withDescription">
-                        <label class="emby-checkbox-label">
+                        <label style="display:flex; align-items:center; gap:0.4em; cursor:pointer;"
+                               class="emby-checkbox-label">
                             <input id="BackupUserSuppliedTheme" name="BackupUserSuppliedTheme"
-                                   type="checkbox" is="emby-checkbox" />
-                            <span class="checkboxButtonIcon"></span>
-                            <span class="checkboxTitle" data-localize="backup_user_supplied_theme">
-                                Create backup of user supplied mp3 during replace
+                                   type="checkbox" is="emby-checkbox"
+                                   data-embycheckbox="true" class="emby-checkbox" />
+                            <span class="checkboxLabel"
+                                  data-localize="backup_user_supplied_theme">Create backup of user supplied mp3 during replace</span>
+                            <span class="checkboxOutline">
+                                <span class="material-icons checkboxIcon checkboxIcon-checked check" aria-hidden="true"></span>
+                                <span class="material-icons checkboxIcon checkboxIcon-unchecked" aria-hidden="true"></span>
                             </span>
                         </label>
                         <div class="fieldDescription checkboxFieldDescription"
@@ -117,8 +121,12 @@
                             updateInterval = config.updateInterval
                         }
                         document.querySelector('#UpdateInterval').value = updateInterval
+                        let backupUserSuppliedTheme = config.BackupUserSuppliedTheme
+                        if (backupUserSuppliedTheme === undefined) {
+                            backupUserSuppliedTheme = config.backupUserSuppliedTheme
+                        }
                         document.querySelector('#BackupUserSuppliedTheme').checked =
-                            config.BackupUserSuppliedTheme !== false
+                            backupUserSuppliedTheme !== false
                         Dashboard.hideLoadingMsg()
                     })
                 })
@@ -130,8 +138,9 @@
                         let updateInterval = Number.parseInt(document.querySelector('#UpdateInterval').value, 10)
                         config.UpdateInterval = updateInterval
                         config.updateInterval = updateInterval
-                        config.BackupUserSuppliedTheme =
-                            document.querySelector('#BackupUserSuppliedTheme').checked
+                        const backupChecked = document.querySelector('#BackupUserSuppliedTheme').checked
+                        config.BackupUserSuppliedTheme = backupChecked
+                        config.backupUserSuppliedTheme = backupChecked
                         _ApiClient.updatePluginConfiguration(ThemerrConfig.pluginUniqueId, config).then(function (result) {
                             Dashboard.processPluginConfigurationUpdateResult(result)
                         })
@@ -445,8 +454,9 @@
                     let replaceAllButton = document.createElement('a')
                     replaceAllButton.setAttribute('is', 'emby-linkbutton')
                     replaceAllButton.setAttribute('class', 'raised button-submit block emby-button')
-                    replaceAllButton.setAttribute('style', 'margin-top: 6px;')
+                    replaceAllButton.setAttribute('style', 'margin-top: 6px; white-space: nowrap;')
                     replaceAllButton.setAttribute('title', translate('replace_all_button_title'))
+                    replaceAllButton.setAttribute('target', '_blank')
                     replaceAllButton.innerText = translate('replace_all_button')
                     replaceAllButton.addEventListener('click', async () => {
                         replaceAllButton.innerText = translate('replacing_button')
