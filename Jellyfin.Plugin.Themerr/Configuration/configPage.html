@@ -180,13 +180,38 @@
                 })
             }
 
-            async function replaceWithThemerTheme(itemId) {
+            const STATUS_CONFIG = {
+                themerr: { icon: 'check', color: '#00ff00', key: 'themerr_provided' },
+                user: { icon: 'person', color: '#00a4dc', key: 'user_provided' },
+            }
+
+            async function replaceWithThemerTheme(itemId, issueUrl, tableColumnContribute, tableColumnStatus) {
                 try {
                     await _ApiClient.fetch({
                         url: _ApiClient.getUrl('/Themerr/ReplaceTheme/' + itemId),
                         type: 'POST',
                     });
-                    await updateProgress();
+
+                    tableColumnContribute.innerHTML = '';
+                    let editButton = document.createElement('a');
+                    editButton.setAttribute('is', 'emby-linkbutton');
+                    editButton.setAttribute('class', 'raised headerHelpButton button-submit emby-button');
+                    editButton.setAttribute('target', '_blank');
+                    editButton.setAttribute('href', issueUrl);
+                    editButton.innerText = translate('edit_button');
+                    tableColumnContribute.appendChild(editButton);
+
+                    tableColumnStatus.innerHTML = '';
+                    const themerStatus = STATUS_CONFIG['themerr'];
+                    let statusSpan = document.createElement('span');
+                    let statusText = document.createElement('span');
+                    statusSpan.setAttribute('class', 'material-icons');
+                    statusText.setAttribute('class', 'detailTableBodyCell');
+                    statusSpan.classList.add(themerStatus.icon);
+                    statusSpan.setAttribute('style', 'margin-right: 6px; color: ' + themerStatus.color + ';');
+                    statusText.innerText = translate(themerStatus.key);
+                    tableColumnStatus.appendChild(statusSpan);
+                    tableColumnStatus.appendChild(statusText);
                 } catch (error) {
                     console.error(LogPrefix + 'Failed to replace theme: ' + error);
                 }
@@ -297,10 +322,6 @@
                 }
 
                 const BUTTON_KEYS = { themerr: 'edit_button', user: 'contribute_button' }
-                const STATUS_CONFIG = {
-                    themerr: { icon: 'check', color: '#00ff00', key: 'themerr_provided' },
-                    user: { icon: 'person', color: '#00a4dc', key: 'user_provided' },
-                }
 
                 // loop over items
                 for (let item in all_items) {
@@ -346,7 +367,7 @@
                         replaceButton.setAttribute('class', 'raised button-submit block emby-button')
                         replaceButton.setAttribute('title', translate('replace_button_title'))
                         replaceButton.setAttribute('target', '_blank')
-                        replaceButton.addEventListener('click', () => replaceWithThemerTheme(all_items[item]["id"]))
+                        replaceButton.addEventListener('click', () => replaceWithThemerTheme(all_items[item]["id"], all_items[item]["issue_url"], tableColumnContribute, tableColumnStatus))
                         replaceButton.innerText = translate('replace_button')
                         tableColumnContribute.appendChild(replaceButton)
                     } else if (inThemerrDb === true && themeProvider !== 'themerr') {
