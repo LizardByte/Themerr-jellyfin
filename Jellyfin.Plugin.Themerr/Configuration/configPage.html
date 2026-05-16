@@ -341,10 +341,13 @@
                     tableColumnContribute.setAttribute('class', 'detailTableBodyCell')
 
                     if (inThemerrDb === true && themeProvider === 'user') {
-                        let replaceButton = document.createElement('button')
-                        replaceButton.innerText = translate('replace_button')
+                        let replaceButton = document.createElement('a')
+                        replaceButton.setAttribute('is', 'emby-linkbutton')
+                        replaceButton.setAttribute('class', 'raised button-submit block emby-button')
                         replaceButton.setAttribute('title', translate('replace_button_title'))
+                        replaceButton.setAttribute('target', '_blank')
                         replaceButton.addEventListener('click', () => replaceWithThemerTheme(all_items[item]["id"]))
+                        replaceButton.innerText = translate('replace_button')
                         tableColumnContribute.appendChild(replaceButton)
                     } else if (inThemerrDb === true && themeProvider !== 'themerr') {
                         let availableText = document.createElement('span')

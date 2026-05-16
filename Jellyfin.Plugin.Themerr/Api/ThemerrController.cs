@@ -137,6 +137,7 @@ namespace Jellyfin.Plugin.Themerr.Api
         [ProducesResponseType(StatusCodes.Status404NotFound)]
         public async Task<ActionResult> ReplaceTheme(Guid itemId)
         {
+            _logger.LogInformation("Starting theme replacement of {ItemId}", itemId);
             var success = await _themerrManager.ReplaceWithThemerTheme(itemId);
             return success ? NoContent() : NotFound();
         }

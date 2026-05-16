@@ -393,16 +393,19 @@ namespace Jellyfin.Plugin.Themerr
                 return false;
             }
 
+            _logger.LogInformation("ReplaceWithThemerTheme: Starting mp3 save {ItemName}", item.Name);
             var success = await SaveMp3(themePath, youtubeThemeUrl).ConfigureAwait(false);
             if (!success)
             {
                 return false;
             }
 
+            _logger.LogInformation("ReplaceWithThemerTheme: Saving Themerr Data for {ItemName}", item.Name);
             SaveThemerrData(item, themePath, youtubeThemeUrl);
 
             try
             {
+                _logger.LogInformation("ReplaceWithThemerTheme: Refresh MetaData for {ItemName}", item.Name);
                 await item.RefreshMetadata(CancellationToken.None).ConfigureAwait(false);
             }
             catch (Exception e)
