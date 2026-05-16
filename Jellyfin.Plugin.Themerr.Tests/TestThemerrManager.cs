@@ -1,3 +1,4 @@
+using System.Reflection;
 using Jellyfin.Plugin.Themerr.Storage;
 using MediaBrowser.Common.Configuration;
 using MediaBrowser.Controller.Entities;
@@ -1086,5 +1087,62 @@ public class TestThemerrManager
                 File.Delete(themePath);
             }
         }
+    }
+
+    [Fact]
+    [Trait("Category", "Unit")]
+    private void TestName()
+    {
+        Assert.Equal("Themerr", _themerrManager.Name);
+    }
+
+    [Fact]
+    [Trait("Category", "Unit")]
+    private async Task TestRunAsync()
+    {
+        await _themerrManager.RunAsync();
+    }
+
+    [Fact]
+    [Trait("Category", "Unit")]
+    private void TestDispose()
+    {
+        var manager = CreateThemerrManager();
+        manager.Dispose();
+    }
+
+    [Fact]
+    [Trait("Category", "Unit")]
+    private void TestSaveThemerrDataError()
+    {
+        var repository = CreateThemerrRepository();
+        var manager = CreateThemerrManager(repository);
+        var item = CreateMovie("error-save-data");
+        var nonExistentPath = Path.Combine(Path.GetTempPath(), "nonexistent_" + Guid.NewGuid() + ".mp3");
+
+        var result = manager.SaveThemerrData(item, nonExistentPath, "https://www.youtube.com/watch?v=test");
+        Assert.False(result);
+    }
+
+    [Fact]
+    [Trait("Category", "Unit")]
+    private void TestOnTimerElapsed()
+    {
+        var manager = CreateThemerrManager();
+        var method = typeof(ThemerrManager).GetMethod(
+            "OnTimerElapsed",
+            BindingFlags.NonPublic | BindingFlags.Instance);
+        Assert.NotNull(method);
+        method.Invoke(manager, null);
+        manager.Dispose();
+    }
+
+    [Fact]
+    [Trait("Category", "Unit")]
+    private void TestStartInitialMigrationUpdate()
+    {
+        var repository = CreateThemerrRepository();
+        var manager = CreateThemerrManager(repository);
+        manager.StartInitialMigrationUpdate();
     }
 }

@@ -1,5 +1,7 @@
 using Jellyfin.Plugin.Themerr.Storage;
 using MediaBrowser.Common.Configuration;
+using MediaBrowser.Controller.Entities;
+using MediaBrowser.Controller.Entities.Audio;
 using MediaBrowser.Controller.Entities.Movies;
 using MediaBrowser.Model.Entities;
 using Microsoft.EntityFrameworkCore;
@@ -189,5 +191,230 @@ public class TestThemerrRepository
                 { MetadataProvider.Tmdb.ToString(), tmdbId },
             },
         };
+    }
+
+    [Fact]
+    [Trait("Category", "Unit")]
+    public void TestDeleteFound()
+    {
+        var repository = CreateRepository();
+        var item = CreateMovie("delete-found");
+        var themePath = Path.Combine(CreateTempDirectory(), "theme.mp3");
+
+        repository.Save(item, new ThemerrMediaItemSaveOptions
+        {
+            ThemePath = themePath,
+            ThemeProvider = ThemerrThemeProvider.Themerr,
+            InThemerrDb = true,
+            InThemerrDbCheckedUtc = DateTime.UtcNow,
+        });
+
+        Assert.True(repository.Delete(item, themePath));
+        Assert.Null(repository.Get(item, themePath));
+    }
+
+    [Fact]
+    [Trait("Category", "Unit")]
+    public void TestDeleteNotFound()
+    {
+        var repository = CreateRepository();
+        var item = CreateMovie("delete-missing");
+        var themePath = Path.Combine(CreateTempDirectory(), "theme.mp3");
+
+        Assert.False(repository.Delete(item, themePath));
+    }
+
+    [Fact]
+    [Trait("Category", "Unit")]
+    public void TestMigrateUpViaRepository()
+    {
+        var databasePath = CreateDatabasePath();
+        var repository = new ThemerrRepository(databasePath, new Mock<ILogger>().Object);
+
+        repository.MigrateUp();
+
+        using var context = new ThemerrDbContext(databasePath);
+        Assert.Contains("20260512230000_InitialCreate", context.Database.GetAppliedMigrations());
+    }
+
+    [Fact]
+    [Trait("Category", "Unit")]
+    public void TestMigrateDownViaRepository()
+    {
+        var databasePath = CreateDatabasePath();
+        var repository = new ThemerrRepository(databasePath, new Mock<ILogger>().Object);
+
+        repository.MigrateUp();
+        repository.MigrateDown();
+
+        using var context = new ThemerrDbContext(databasePath);
+        Assert.Empty(context.Database.GetAppliedMigrations());
+    }
+
+    [Fact]
+    [Trait("Category", "Unit")]
+    public void TestGetItemKeyWithJellyfinId()
+    {
+        var item = new Movie { Id = Guid.NewGuid(), Name = "Test Movie" };
+        var key = ThemerrRepository.GetItemKey(item, "/tmp/theme.mp3");
+
+        Assert.StartsWith("Movie:jellyfin:", key);
+    }
+
+    [Fact]
+    [Trait("Category", "Unit")]
+    public void TestGetItemKeyWithPathFallback()
+    {
+        var item = new Movie
+        {
+            Name = "Test Movie",
+            ProviderIds = new Dictionary<string, string>(),
+        };
+        var key = ThemerrRepository.GetItemKey(item, "/tmp/theme.mp3");
+
+        Assert.Equal("Movie:path:/tmp/theme.mp3", key);
+    }
+
+    [Fact]
+    [Trait("Category", "Unit")]
+    public void TestGetItemTypeUnsupported()
+    {
+        var item = new MusicAlbum { Name = "Test Album" };
+        Assert.Equal("MusicAlbum", ThemerrRepository.GetItemType(item));
+    }
+
+    [Fact]
+    [Trait("Category", "Unit")]
+    public void TestSaveThrowsOnNullSaveOptions()
+    {
+        var repository = CreateRepository();
+        var item = CreateMovie("null-options");
+
+        Assert.Throws<ArgumentNullException>(() => repository.Save(item, null!));
+    }
+
+    [Fact]
+    [Trait("Category", "Unit")]
+    public void TestSaveWithUserProviderClearsDownloadedTimestamp()
+    {
+        var repository = CreateRepository();
+        var item = CreateMovie("user-provider");
+        var themePath = Path.Combine(CreateTempDirectory(), "theme.mp3");
+
+        repository.Save(item, new ThemerrMediaItemSaveOptions
+        {
+            ThemePath = themePath,
+            ThemeProvider = ThemerrThemeProvider.Themerr,
+            InThemerrDb = true,
+            InThemerrDbCheckedUtc = DateTime.UtcNow,
+        });
+
+        Assert.NotNull(repository.Get(item, themePath)?.DownloadedTimestampUtc);
+
+        repository.Save(item, new ThemerrMediaItemSaveOptions
+        {
+            ThemePath = themePath,
+            ThemeProvider = ThemerrThemeProvider.User,
+            InThemerrDb = true,
+            InThemerrDbCheckedUtc = DateTime.UtcNow,
+        });
+
+        Assert.Null(repository.Get(item, themePath)?.DownloadedTimestampUtc);
+    }
+
+    [Fact]
+    [Trait("Category", "Unit")]
+    public void TestMigrateLegacyDataNullJson()
+    {
+        var repository = CreateRepository();
+        var item = CreateMovie("null-json-legacy");
+        var themePath = Path.Combine(CreateTempDirectory(), "theme.mp3");
+        var legacyDataPath = Path.Combine(CreateTempDirectory(), "themerr.json");
+
+        File.WriteAllText(legacyDataPath, "null");
+
+        Assert.False(repository.MigrateLegacyData(item, themePath, legacyDataPath));
+        Assert.False(File.Exists(legacyDataPath));
+        Assert.Null(repository.Get(item, themePath));
+    }
+
+    [Fact]
+    [Trait("Category", "Unit")]
+    public void TestMigrateLegacyDataMissingPath()
+    {
+        var repository = CreateRepository();
+        var item = CreateMovie("missing-legacy");
+        var themePath = Path.Combine(CreateTempDirectory(), "theme.mp3");
+
+        Assert.False(repository.MigrateLegacyData(item, themePath, string.Empty));
+        Assert.False(repository.MigrateLegacyData(
+            item,
+            themePath,
+            Path.Combine(CreateTempDirectory(), "nonexistent.json")));
+    }
+
+    [Fact]
+    [Trait("Category", "Unit")]
+    public void TestDatabaseCreatedDuringMigration()
+    {
+        var databasePath = Path.Combine(CreateTempDirectory(), "new_themerr.db");
+        var repository = new ThemerrRepository(databasePath, new Mock<ILogger>().Object);
+
+        Assert.True(repository.DatabaseCreatedDuringMigration);
+    }
+
+    [Fact]
+    [Trait("Category", "Unit")]
+    public void TestThemerrMediaItemIdProperty()
+    {
+        var repository = CreateRepository();
+        var item = CreateMovie("id-prop-test");
+        var themePath = Path.Combine(CreateTempDirectory(), "theme.mp3");
+
+        repository.Save(item, new ThemerrMediaItemSaveOptions
+        {
+            ThemePath = themePath,
+            ThemeProvider = ThemerrThemeProvider.Themerr,
+            InThemerrDb = true,
+            InThemerrDbCheckedUtc = DateTime.UtcNow,
+        });
+
+        var saved = repository.GetAll();
+        Assert.NotEmpty(saved);
+        Assert.True(saved[0].Id > 0);
+    }
+
+    [Fact]
+    [Trait("Category", "Unit")]
+    public void TestDbContextWithOptions()
+    {
+        var dbPath = Path.Combine(CreateTempDirectory(), "ctx_options_test.db");
+        var options = new DbContextOptionsBuilder<ThemerrDbContext>()
+            .UseSqlite($"Data Source={dbPath}")
+            .Options;
+
+        using var context = new ThemerrDbContext(options);
+        context.Database.EnsureCreated();
+        Assert.NotNull(context.MediaItems);
+    }
+
+    [Fact]
+    [Trait("Category", "Unit")]
+    public void TestGetItemDirectoryUnsupportedType()
+    {
+        var item = new MusicAlbum { Name = "Test Album" };
+        var result = ThemerrMediaPath.GetItemDirectory(item);
+        Assert.Null(result);
+    }
+
+    [Fact]
+    [Trait("Category", "Unit")]
+    public void TestGetDirectoryFromPathBarePath()
+    {
+        // A path with no extension that doesn't exist as dir or file → returns itself
+        var item = new Movie { Name = "Test", Path = "/nonexistent/bare/noexit" };
+
+        var result = ThemerrMediaPath.GetItemDirectory(item);
+        Assert.Equal("/nonexistent/bare/noexit", result);
     }
 }
