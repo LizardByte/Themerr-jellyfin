@@ -99,7 +99,7 @@ namespace Jellyfin.Plugin.Themerr.Api
             page = Math.Max(page, 1);
             pageSize = Math.Max(pageSize, 1);
 
-            var mediaItems = _themerrManager.SyncLibraryItems();
+            var mediaItems = _themerrManager.SyncLibraryItems().GetAwaiter().GetResult();
 
             // calculate total media count before applying pagination
             var totalMediaCount = mediaItems.Count;
