@@ -7,12 +7,10 @@
   "dashboard_loading": "Dashboard Loading...",
   "edit_button": "Edit",
   "movie": "Movie",
-  "no_snapshot_yet": "Run 'Update Theme Songs' to generate the progress dashboard.",
   "no_theme_song": "No theme song",
   "plugin_relies": "This plugin relies on the TMDB provider. Please make sure it is enabled!",
   "save": "Save",
   "series": "Series",
-  "snapshot_generated_at": "Last updated:",
   "status": "Status",
   "support_center": "Support Center",
   "themerr_provided": "Themerr provided",
@@ -24,9 +22,6 @@
   "update_interval_desc": "The interval, in minutes, between theme song updates.",
   "update_theme_songs": "Update Theme Songs",
   "updating_theme_songs": "Updating theme songs...",
-  "replace_button": "Replace",
-  "replacing_button": "Replacing...",
-  "replace_button_title": "Replace user supplied theme with ThemerrDB theme",
   "user_provided": "User provided",
   "year": "Year"
 }
