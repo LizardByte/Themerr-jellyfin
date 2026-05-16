@@ -28,7 +28,12 @@ public class TestThemerrStartupService
             mockLoggerFactory.Object,
             mockXmlSerializer.Object);
 
-        await service.StartAsync(CancellationToken.None);
-        await service.StopAsync(CancellationToken.None);
+        var startTask = service.StartAsync(CancellationToken.None);
+        Assert.True(startTask.IsCompletedSuccessfully);
+        await startTask;
+
+        var stopTask = service.StopAsync(CancellationToken.None);
+        Assert.True(stopTask.IsCompletedSuccessfully);
+        await stopTask;
     }
 }

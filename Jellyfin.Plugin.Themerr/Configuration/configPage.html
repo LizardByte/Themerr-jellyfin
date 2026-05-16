@@ -185,7 +185,12 @@
                 user: { icon: 'person', color: '#00a4dc', key: 'user_provided' },
             }
 
-            async function replaceWithThemerTheme(itemId, issueUrl, tableColumnContribute, tableColumnStatus) {
+            async function replaceWithThemerTheme(itemId, issueUrl, tableColumnContribute, tableColumnStatus, replaceButton) {
+                const originalText = replaceButton.innerText;
+                replaceButton.innerText = translate('replacing_button');
+                replaceButton.style.opacity = '0.6';
+                replaceButton.style.pointerEvents = 'none';
+
                 try {
                     await _ApiClient.fetch({
                         url: _ApiClient.getUrl('/Themerr/ReplaceTheme/' + itemId),
@@ -213,6 +218,9 @@
                     tableColumnStatus.appendChild(statusSpan);
                     tableColumnStatus.appendChild(statusText);
                 } catch (error) {
+                    replaceButton.innerText = originalText;
+                    replaceButton.style.opacity = '';
+                    replaceButton.style.pointerEvents = '';
                     console.error(LogPrefix + 'Failed to replace theme: ' + error);
                 }
             }
@@ -367,7 +375,7 @@
                         replaceButton.setAttribute('class', 'raised button-submit block emby-button')
                         replaceButton.setAttribute('title', translate('replace_button_title'))
                         replaceButton.setAttribute('target', '_blank')
-                        replaceButton.addEventListener('click', () => replaceWithThemerTheme(all_items[item]["id"], all_items[item]["issue_url"], tableColumnContribute, tableColumnStatus))
+                        replaceButton.addEventListener('click', () => replaceWithThemerTheme(all_items[item]["id"], all_items[item]["issue_url"], tableColumnContribute, tableColumnStatus, replaceButton))
                         replaceButton.innerText = translate('replace_button')
                         tableColumnContribute.appendChild(replaceButton)
                     } else if (inThemerrDb === true && themeProvider !== 'themerr') {

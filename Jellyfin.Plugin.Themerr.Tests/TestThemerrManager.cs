@@ -1100,7 +1100,9 @@ public class TestThemerrManager
     [Trait("Category", "Unit")]
     private async Task TestRunAsync()
     {
-        await _themerrManager.RunAsync();
+        var task = _themerrManager.RunAsync();
+        Assert.True(task.IsCompletedSuccessfully);
+        await task;
     }
 
     [Fact]
@@ -1108,7 +1110,9 @@ public class TestThemerrManager
     private void TestDispose()
     {
         var manager = CreateThemerrManager();
+        Assert.NotNull(manager);
         manager.Dispose();
+        manager.Dispose(); // IDisposable contract requires idempotency
     }
 
     [Fact]
@@ -1139,10 +1143,12 @@ public class TestThemerrManager
 
     [Fact]
     [Trait("Category", "Unit")]
-    private void TestStartInitialMigrationUpdate()
+    private async Task TestStartInitialMigrationUpdate()
     {
         var repository = CreateThemerrRepository();
         var manager = CreateThemerrManager(repository);
         manager.StartInitialMigrationUpdate();
+        var syncedItems = await manager.SyncLibraryItems();
+        Assert.Empty(syncedItems);
     }
 }
