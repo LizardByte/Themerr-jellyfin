@@ -18,8 +18,14 @@ The config file for StyleCop.Analyzers is ``.editorconfig``.
 Sphinx
 ------
 Themerr-jellyfin uses `Sphinx <https://www.sphinx-doc.org/en/master/>`__ for documentation building. Sphinx, along with
-other required python dependencies are included in the `./docs/requirements.txt` file. Python is required to build
+other required python dependencies are included in the ``docs`` extra in ``pyproject.toml``. Python is required to build
 sphinx docs. Installation and setup of python will not be covered here.
+
+Install the documentation dependencies with:
+
+.. code-block:: bash
+
+   python -m pip install ".[docs]"
 
 The config file for Sphinx is ``docs/source/conf.py``. This is already included in the root of the repo and should not
 be modified.

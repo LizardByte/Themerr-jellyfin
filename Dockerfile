@@ -78,7 +78,7 @@ RUN <<_PIP
 set -e
 python3 -m pip install --no-cache-dir --upgrade \
   pip setuptools wheel
-python3 -m pip install --no-cache-dir -r requirements-dev.txt
+python3 -m pip install --no-cache-dir ".[dev]"
 _PIP
 
 # build
