@@ -86,16 +86,8 @@ RUN <<_BUILD
 #!/bin/bash
 # force the workflow to fail if any command fails
 set -e
-# jprm fails if output directory does not exist, so create it
-mkdir -p ./artifacts
-# check if build version is empty or "v" (v may be supplied with no version for PR events)
-if [[ -z "${BUILD_VERSION}" || "${BUILD_VERSION}" == "v" ]]; then
-  BUILD_VERSION="0.0.0.0"
-else
-  # remove the v prefix from the version
-  BUILD_VERSION="${BUILD_VERSION#v}"
-fi
-python3 -m jprm --verbosity=debug plugin build "./" --version="${BUILD_VERSION}" --output="./artifacts"
+# build wrapper generates build.yaml and creates the output directory for jprm
+python3 ./scripts/build_plugin.py --version="${BUILD_VERSION}" --output="./artifacts" --verbosity=debug
 mkdir -p /artifacts
 unzip ./artifacts/*.zip -d /artifacts
 _BUILD
