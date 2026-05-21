@@ -68,27 +68,12 @@
                 <br>
                 <!-- Create Theme Progress Dashboard -->
                 <form>
-                    <div id="ThemerrDashboardLoading">
-                        <h2 data-localize="dashboard_loading">Dashboard Loading...</h2>
-                        <div is="emby-progressbar" class="itemProgressBar" style="height: 20px;">
-                            <div class="itemProgressBarForeground" style="width: 0;">
-                                <span style="margin-left: 0.5em;">0%</span>
-                            </div>
-                        </div>
-                    </div>
-
                     <div id="ThemerrDashboard" style="display: none;">
                         <h2 data-localize="completion_dashboard">Completion Dashboard</h2>
                     </div>
                 </form>
             </div>
         </div>
-
-        <!-- Remove IDE complaints -->
-        <!-- ApiClient -->
-        <script type="text/javascript" src="../../third-party/jellyfin-apiclient-javascript/src/apiClient.js"></script>
-        <!-- Dashboard -->
-        <script type="text/javascript" src="../../third-party/jellyfin-web/src/utils/dashboard.js"></script>
 
         <script type="text/javascript">
             function getThemerrConfig() {
@@ -285,8 +270,6 @@
                     console.log(LogPrefix + "total_media_with_themes: " + response["total_media_with_themes"]);
                     console.log(LogPrefix + "generated_at: " + response["generated_at"]);
 
-                    document.querySelector('#ThemerrDashboardLoading').style.display = 'none';
-
                     createDashboard(
                         response["total_media_count"],
                         response["total_media_with_themes"],
@@ -322,31 +305,6 @@
                     ThemerrDashboard.appendChild(generatedAtEl)
                 }
 
-                // create progress bar
-                let progressBar = document.createElement('div')
-                progressBar.setAttribute('is', 'emby-progressbar')
-                progressBar.setAttribute('class', 'itemProgressBar')
-                progressBar.setAttribute('style', 'height: 20px;')
-                ThemerrDashboard.appendChild(progressBar)
-
-                // calculate percent complete
-                let percentComplete = 0
-                if (total_media_count > 0) {
-                    percentComplete = Math.round((total_media_with_themes / total_media_count) * 100)
-                }
-
-                // progress bar foreground
-                let progressBarForeground = document.createElement('div')
-                progressBarForeground.setAttribute('class', 'itemProgressBarForeground')
-                progressBarForeground.setAttribute('style', 'width: ' + percentComplete + '%;')
-                progressBar.appendChild(progressBarForeground)
-
-                // progress bar text
-                let progressBarText = document.createElement('span')
-                progressBarText.setAttribute('style', 'margin-left: 0.5em;')
-                progressBarText.innerText = percentComplete + '%'
-                progressBarForeground.appendChild(progressBarText)
-
                 // add break
                 ThemerrDashboard.appendChild(document.createElement('br'))
 
@@ -355,29 +313,35 @@
                 replaceAllDiv.setAttribute('style', 'margin-bottom: 0.75em;')
                 ThemerrDashboard.appendChild(replaceAllDiv)
 
-                // filter bar
+                // add break
+                ThemerrDashboard.appendChild(document.createElement('br'))
+
+                // filter dropdown
                 let filterBar = document.createElement('div')
                 filterBar.setAttribute('id', 'ThemerrFilterBar')
                 filterBar.setAttribute('style', 'margin-bottom: 0.75em;')
                 ThemerrDashboard.appendChild(filterBar)
 
+                let filterSelect = document.createElement('select')
+                filterSelect.setAttribute('is', 'emby-select')
+
                 for (const [key] of Object.entries(FILTER_PREDICATES)) {
                     const count = all_items.filter(FILTER_PREDICATES[key]).length
-                    let btn = document.createElement('button')
-                    btn.setAttribute('data-filter', key)
-                    btn.setAttribute('style', 'margin-right: 0.5em; margin-bottom: 0.4em;')
-                    btn.innerText = translate('filter_' + key) + ' (' + count + ')'
+                    let option = document.createElement('option')
+                    option.setAttribute('value', key)
+                    option.innerText = translate('filter_' + key) + ' (' + count + ')'
                     if (key === activeFilter) {
-                        btn.setAttribute('class', 'raised button-submit emby-button')
+                        option.setAttribute('selected', 'selected')
                     }
-                    btn.addEventListener('click', () => {
-                        activeFilter = key
-                        filterBar.querySelectorAll('button').forEach(b => b.removeAttribute('class'))
-                        btn.setAttribute('class', 'raised button-submit emby-button')
-                        refreshView()
-                    })
-                    filterBar.appendChild(btn)
+                    filterSelect.appendChild(option)
                 }
+
+                filterSelect.addEventListener('change', () => {
+                    activeFilter = filterSelect.value
+                    refreshView()
+                })
+
+                filterBar.appendChild(filterSelect)
 
                 // create table
                 let table = document.createElement('table')
@@ -558,7 +522,9 @@
             }
 
             // on ready
-            initializePage();
+            document.getElementById('ThemerrConfigPage').addEventListener('pageshow', function () {
+                initializePage();
+            });
         </script>
     </div>
 </body>
