@@ -26,11 +26,11 @@
   "updating_theme_songs": "Обновяване на тематичните песни...",
   "backup_user_supplied_theme": "Създаване на резервно копие на предоставените от потребителя mp3 по време на замяната",
   "backup_user_supplied_theme_desc": "Когато заменяте тема, предоставена от потребителя, с версията на ThemerrDB, запазете оригинала като theme.backup.mp3.",
-  "replace_all_button": "Replace All",
-  "replace_all_button_title": "Replace all user supplied themes with ThemerrDB themes",
-  "replace_button": "Replace",
-  "replacing_button": "Replacing...",
-  "replace_button_title": "Replace user supplied theme with ThemerrDB theme",
+  "replace_all_button": "Замяна на всички",
+  "replace_all_button_title": "Заменете всички теми, предоставени от потребителя, с теми на ThemerrDB",
+  "replace_button": "Замяна на",
+  "replacing_button": "Замяна на...",
+  "replace_button_title": "Заменете темата, предоставена от потребителя, с темата на ThemerrDB",
   "user_provided": "Предоставен от потребителя",
   "year": "Година"
 }
