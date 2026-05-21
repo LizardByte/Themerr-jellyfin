@@ -32,8 +32,22 @@ Compile
 
 .. code-block:: bash
 
-   mkdir -p ./build
-   python -m jprm plugin build --output ./build
+   python ./scripts/build_plugin.py --output ./build
+
+The generated ``build.yaml`` is printed to stdout before JPRM runs and is left in the repository root
+by default. Use ``--remove-build-yaml`` to delete it after the script finishes.
+
+Release builds can pass an explicit plugin version:
+
+.. code-block:: bash
+
+   python ./scripts/build_plugin.py --version v1.2.3 --output ./build
+
+Any generated ``build.yaml`` field can be overridden with a ``THEMERR_`` environment variable.
+Use the field name in upper snake case, such as ``THEMERR_NAME``, ``THEMERR_TARGET_ABI``,
+``THEMERR_FRAMEWORK``, ``THEMERR_VERSION``, or ``THEMERR_CHANGELOG``. ``THEMERR_ARTIFACTS`` accepts
+a JSON string array, a newline-separated list, or a comma-separated list. CI sets
+``THEMERR_CHANGELOG`` from the release body automatically.
 
 Remote Build
 ------------

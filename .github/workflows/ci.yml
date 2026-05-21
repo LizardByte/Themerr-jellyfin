@@ -72,16 +72,24 @@ jobs:
         with:
           dotnet-version: "9.0.x"
 
+      - name: Setup Python
+        uses: actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405  # v6.2.0
+        with:
+          python-version: '3.14'
+
+      - name: Install Python requirements
+        run: python -m pip install -r ./requirements-dev.txt
+
       - name: Build Plugin
         id: jprm
-        uses: oddstr13/jellyfin-plugin-repository-manager@9497a0a499416cc572ed2e07a391d9f943a37b4d  # v1.1.1
-        with:
-          path: .
-          output: ./build
-          version: ${{ needs.release-setup.outputs.release_version }}
-          dotnet-config: Release
-          dotnet-target: net9.0
-          verbosity: debug
+        env:
+          RELEASE_VERSION: ${{ needs.release-setup.outputs.release_version }}
+          THEMERR_CHANGELOG: ${{ needs.release-setup.outputs.release_body }}
+        run: |
+          python ./scripts/build_plugin.py \
+            --version "${RELEASE_VERSION}" \
+            --output ./build \
+            --verbosity debug
 
       - name: Test
         id: test
