@@ -26,11 +26,11 @@
   "updating_theme_songs": "Aktualizace znělek...",
   "backup_user_supplied_theme": "Vytvořit zálohu uživatele dodaného mp3 při nahrazení",
   "backup_user_supplied_theme_desc": "Při výměně uživatelského motivu s verzí ThemerrDB, uložte originální téma.backup.mp3.",
-  "replace_all_button": "Replace All",
-  "replace_all_button_title": "Replace all user supplied themes with ThemerrDB themes",
-  "replace_button": "Replace",
-  "replacing_button": "Replacing...",
-  "replace_button_title": "Replace user supplied theme with ThemerrDB theme",
+  "replace_all_button": "Nahradit vše",
+  "replace_all_button_title": "Nahradit motivy dodané všem uživatelům ThemerrDB motivy",
+  "replace_button": "Nahradit",
+  "replacing_button": "Nahrazuji...",
+  "replace_button_title": "Nahradit uživatelem dodaný motiv ThemerrDB",
   "user_provided": "Uživatel zadán",
   "year": "Rok"
 }

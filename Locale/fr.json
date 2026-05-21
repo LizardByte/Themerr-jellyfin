@@ -26,11 +26,11 @@
   "updating_theme_songs": "Mise à jour des chansons du thème...",
   "backup_user_supplied_theme": "Créer une sauvegarde du mp3 fourni par l'utilisateur lors du remplacement",
   "backup_user_supplied_theme_desc": "Lorsque vous remplacez un thème fourni par un utilisateur avec la version ThemerrDB, enregistrez l'original en tant que theme.backup.mp3.",
-  "replace_all_button": "Replace All",
-  "replace_all_button_title": "Replace all user supplied themes with ThemerrDB themes",
-  "replace_button": "Replace",
-  "replacing_button": "Replacing...",
-  "replace_button_title": "Replace user supplied theme with ThemerrDB theme",
+  "replace_all_button": "Remplacer tout",
+  "replace_all_button_title": "Remplacer tous les thèmes fournis par l'utilisateur par des thèmes ThemerrDB",
+  "replace_button": "Remplacer",
+  "replacing_button": "Remplacement en cours...",
+  "replace_button_title": "Remplacer le thème fourni par l'utilisateur par le thème ThemerrDB",
   "user_provided": "Utilisateur fourni",
   "year": "Année"
 }
