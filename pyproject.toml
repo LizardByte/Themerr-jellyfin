@@ -1,0 +1,39 @@
+[build-system]
+requires = ["setuptools", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "themerr-jellyfin"
+version = "0.0.0.0"
+description = "Plugin for Jellyfin that adds theme songs to movies and TV shows using ThemerrDB"
+readme = "README.rst"
+requires-python = ">=3.14"
+license = {text = "AGPL-3.0-only"}
+authors = [
+    {name = "LizardByte", email = "lizardbyte@users.noreply.github.com"}
+]
+
+[project.optional-dependencies]
+dev = [
+    "flake8==7.3.0",
+    "jprm==1.1.0",
+    "PyYAML==6.0.3",
+]
+docs = [
+    "breathe==4.36.0",
+    "furo==2025.12.19",
+    "myst-parser==5.1.0",
+    "rstcheck[sphinx]==6.2.5",
+    "rstfmt==0.0.14",
+    "Sphinx==9.1.0",
+    "sphinx-copybutton==0.5.2",
+    "sphinx-csharp @ file:./third-party/sphinx-csharp",
+]
+
+[project.urls]
+Homepage = "https://github.com/LizardByte/Themerr-jellyfin"
+Repository = "https://github.com/LizardByte/Themerr-jellyfin"
+Issues = "https://github.com/LizardByte/Themerr-jellyfin/issues"
+
+[tool.setuptools]
+py-modules = []
