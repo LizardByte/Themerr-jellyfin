@@ -15,7 +15,13 @@ namespace Jellyfin.Plugin.Themerr.Configuration
         public PluginConfiguration()
         {
             _updateInterval = 60;
+            BackupUserSuppliedTheme = true;
         }
+
+        /// <summary>
+        /// Gets or sets a value indicating whether to back up a user-supplied theme.mp3 as theme.backup.mp3 before replacing it.
+        /// </summary>
+        public bool BackupUserSuppliedTheme { get; set; }
 
         /// <summary>
         /// Gets or sets the time between scheduled updates, in minutes.

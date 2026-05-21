@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Net;
 using System.Net.Http;
@@ -361,6 +362,73 @@ namespace Jellyfin.Plugin.Themerr
         public string GetThemePath(BaseItem item)
         {
             return ThemerrMediaPath.GetThemePath(item);
+        }
+
+        /// <summary>
+        /// Replace a user-supplied theme with the ThemerrDB version.
+        /// Reads the YouTube URL from the existing SQLite row — no live ThemerrDB call needed.
+        /// </summary>
+        /// <param name="itemId">The Jellyfin item ID.</param>
+        /// <returns>True if the theme was replaced successfully; otherwise false.</returns>
+        public async Task<bool> ReplaceWithThemerTheme(Guid itemId)
+        {
+            var item = _libraryManager.GetItemById(itemId);
+            if (item == null)
+            {
+                _logger.LogWarning("ReplaceWithThemerTheme: item not found for ID {ItemId}", itemId);
+                return false;
+            }
+
+            var themePath = GetThemePath(item);
+            if (string.IsNullOrEmpty(themePath))
+            {
+                return false;
+            }
+
+            var existingData = _themerrRepository.Get(item, themePath);
+            var youtubeThemeUrl = existingData?.YoutubeThemeUrl;
+
+            if (string.IsNullOrEmpty(youtubeThemeUrl))
+            {
+                _logger.LogWarning("ReplaceWithThemerTheme: no stored YouTube URL for {ItemName}", item.Name);
+                return false;
+            }
+
+            var backupPath = Path.Combine(Path.GetDirectoryName(themePath)!, "theme.backup.mp3");
+            var backupCreated = false;
+            if (ThemerrPlugin.Instance?.Configuration.BackupUserSuppliedTheme == true && File.Exists(themePath))
+            {
+                _logger.LogInformation("ReplaceWithThemerTheme: Backing up existing theme for {ItemName}", item.Name);
+                File.Move(themePath, backupPath, overwrite: true);
+                backupCreated = true;
+            }
+
+            _logger.LogInformation("ReplaceWithThemerTheme: Starting mp3 save {ItemName}", item.Name);
+            var success = await SaveMp3(themePath, youtubeThemeUrl).ConfigureAwait(false);
+            if (!success)
+            {
+                if (backupCreated && File.Exists(backupPath))
+                {
+                    File.Move(backupPath, themePath, overwrite: true);
+                }
+
+                return false;
+            }
+
+            _logger.LogInformation("ReplaceWithThemerTheme: Saving Themerr Data for {ItemName}", item.Name);
+            SaveThemerrData(item, themePath, youtubeThemeUrl);
+
+            try
+            {
+                _logger.LogInformation("ReplaceWithThemerTheme: Refresh MetaData for {ItemName}", item.Name);
+                await item.RefreshMetadata(CancellationToken.None).ConfigureAwait(false);
+            }
+            catch (Exception e)
+            {
+                _logger.LogWarning(e, "Failed to refresh metadata for {ItemName}", item.Name);
+            }
+
+            return true;
         }
 
         /// <summary>

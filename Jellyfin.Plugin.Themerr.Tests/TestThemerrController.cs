@@ -47,6 +47,10 @@ public class TestThemerrController
         // Set up the Configuration property of the IServerConfigurationManager mock to return the TestableServerConfiguration
         mockServerConfigurationManager.Setup(x => x.Configuration).Returns(testableServerConfiguration);
 
+        mockLoggerFactory
+            .Setup(x => x.CreateLogger(It.IsAny<string>()))
+            .Returns(new Mock<ILogger>().Object);
+
         _controller = new ThemerrController(
             mockApplicationPaths.Object,
             mockLibraryManager.Object,
@@ -161,6 +165,58 @@ public class TestThemerrController
 
         // Assert the data contains the expected keys
         Assert.True(data.ContainsKey("locale"));
+        Assert.True(data.ContainsKey("fallback"));
+    }
+
+    /// <summary>
+    /// Test ReplaceTheme returns 404 when item is not found in the library.
+    /// </summary>
+    [Fact]
+    [Trait("Category", "Unit")]
+    public async Task TestReplaceThemeNotFound()
+    {
+        var result = await _controller.ReplaceTheme(Guid.NewGuid());
+        Assert.IsType<NotFoundResult>(result);
+    }
+
+    /// <summary>
+    /// Test GetTranslations with a locale whose regional variant file doesn't exist, covering
+    /// the null-stream warning branch inside the locale loop.
+    /// </summary>
+    [Fact]
+    [Trait("Category", "Unit")]
+    public void TestGetTranslationsWithMissingRegionalLocale()
+    {
+        var mockApplicationPaths = TestHelper.GetMockApplicationPaths();
+        var mockLibraryManager = new Mock<ILibraryManager>();
+        var mockLogger = new Mock<ILogger<ThemerrController>>();
+        var mockServerConfigurationManager = new Mock<IServerConfigurationManager>();
+        var mockLoggerFactory = new Mock<ILoggerFactory>();
+        var mockXmlSerializer = new Mock<IXmlSerializer>();
+
+        // "fr-FR" produces ["fr_FR.json", "fr.json"]; fr_FR.json has no embedded resource,
+        // so the first iteration hits the null-stream warning-log-and-continue branch.
+        mockServerConfigurationManager
+            .Setup(x => x.Configuration)
+            .Returns(new TestableServerConfiguration("fr-FR"));
+
+        mockLoggerFactory
+            .Setup(x => x.CreateLogger(It.IsAny<string>()))
+            .Returns(new Mock<ILogger>().Object);
+
+        var controller = new ThemerrController(
+            mockApplicationPaths.Object,
+            mockLibraryManager.Object,
+            mockLogger.Object,
+            mockServerConfigurationManager.Object,
+            mockLoggerFactory.Object,
+            mockXmlSerializer.Object);
+
+        var result = controller.GetTranslations();
+        Assert.IsType<OkObjectResult>(result);
+
+        var data = (result as OkObjectResult)?.Value as Dictionary<string, object>;
+        Assert.NotNull(data);
         Assert.True(data.ContainsKey("fallback"));
     }
 }
