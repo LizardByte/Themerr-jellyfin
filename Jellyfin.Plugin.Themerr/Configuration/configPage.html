@@ -104,6 +104,22 @@
             ThemerrConfig = getThemerrConfig()
             LogPrefix = getLogPrefix()
 
+            let activeFilter = 'all'
+
+            const FILTER_PREDICATES = {
+                all:                () => true,
+                user_not_in_db:     i => i.theme_provider === 'user' && i.in_themerr_db !== true,
+                user_in_db:         i => i.theme_provider === 'user' && i.in_themerr_db === true,
+                no_theme_in_db:     i => !i.theme_provider && i.in_themerr_db === true,
+                no_theme_not_in_db: i => !i.theme_provider && i.in_themerr_db !== true,
+                themerr_supplied:   i => i.theme_provider === 'themerr',
+            }
+
+            const STATUS_CONFIG = {
+                themerr: { icon: 'check', color: '#00ff00', key: 'themerr_provided' },
+                user: { icon: 'person', color: '#00a4dc', key: 'user_provided' },
+            }
+
             // if ApiClient is not defined, define it
             if (typeof ApiClient === 'undefined') {
                 _ApiClient = new ApiClient()
@@ -188,12 +204,17 @@
             }
 
             function download() {
-                let request = {
+                const btn = document.querySelector('#refresh-library')
+                const btnSpan = btn.querySelector('span')
+                const originalText = btnSpan.innerText
+                btnSpan.innerText = translate('running_theme_update')
+                btn.style.opacity = '0.6'
+                btn.style.pointerEvents = 'none'
+
+                _ApiClient.fetch({
                     url: _ApiClient.getUrl('/Themerr/TriggerUpdate'),
                     type: 'POST'
-                }
-
-                _ApiClient.fetch(request).then(function () {
+                }).then(function () {
                     let message = translate('updating_theme_songs')
                     Dashboard.alert(message)
                     console.log(LogPrefix + message)
@@ -201,15 +222,13 @@
                     let message = translate('unexpected_error_occured')
                     Dashboard.alert({
                         message: message
-
                     })
                     console.log(LogPrefix + message)
+                }).finally(function () {
+                    btnSpan.innerText = originalText
+                    btn.style.opacity = ''
+                    btn.style.pointerEvents = ''
                 })
-            }
-
-            const STATUS_CONFIG = {
-                themerr: { icon: 'check', color: '#00ff00', key: 'themerr_provided' },
-                user: { icon: 'person', color: '#00a4dc', key: 'user_provided' },
             }
 
             async function replaceWithThemerTheme(itemId, issueUrl, tableColumnContribute, tableColumnStatus, replaceButton) {
@@ -331,6 +350,35 @@
                 // add break
                 ThemerrDashboard.appendChild(document.createElement('br'))
 
+                // replace all button container — above filter bar and table
+                let replaceAllDiv = document.createElement('div')
+                replaceAllDiv.setAttribute('style', 'margin-bottom: 0.75em;')
+                ThemerrDashboard.appendChild(replaceAllDiv)
+
+                // filter bar
+                let filterBar = document.createElement('div')
+                filterBar.setAttribute('id', 'ThemerrFilterBar')
+                filterBar.setAttribute('style', 'margin-bottom: 0.75em;')
+                ThemerrDashboard.appendChild(filterBar)
+
+                for (const [key] of Object.entries(FILTER_PREDICATES)) {
+                    const count = all_items.filter(FILTER_PREDICATES[key]).length
+                    let btn = document.createElement('button')
+                    btn.setAttribute('data-filter', key)
+                    btn.setAttribute('style', 'margin-right: 0.5em; margin-bottom: 0.4em;')
+                    btn.innerText = translate('filter_' + key) + ' (' + count + ')'
+                    if (key === activeFilter) {
+                        btn.setAttribute('class', 'raised button-submit emby-button')
+                    }
+                    btn.addEventListener('click', () => {
+                        activeFilter = key
+                        filterBar.querySelectorAll('button').forEach(b => b.removeAttribute('class'))
+                        btn.setAttribute('class', 'raised button-submit emby-button')
+                        refreshView()
+                    })
+                    filterBar.appendChild(btn)
+                }
+
                 // create table
                 let table = document.createElement('table')
                 table.setAttribute('id', 'ThemerrProgressTable')
@@ -346,7 +394,6 @@
                 tableHeader.appendChild(tableHeaderRow)
 
                 let columns = ['Title', 'Year', 'Type', 'Contribute', 'Status']
-                let contributeHeaderCell = null
 
                 // create table header columns
                 for (let column in columns) {
@@ -355,48 +402,87 @@
                     tableHeaderColumn.setAttribute('scope', 'col')
                     tableHeaderColumn.innerText = translate(columns[column].toLowerCase())
                     tableHeaderRow.appendChild(tableHeaderColumn)
-                    if (columns[column] === 'Contribute') {
-                        contributeHeaderCell = tableHeaderColumn
-                    }
                 }
 
+                let tableBody = document.createElement('tbody')
+                table.appendChild(tableBody)
+
+                function refreshView() {
+                    tableBody.innerHTML = ''
+                    const replaceableItems = renderTableRows(all_items.filter(FILTER_PREDICATES[activeFilter]), tableBody)
+                    setupReplaceAllButton(replaceAllDiv, replaceableItems)
+                }
+
+                refreshView()
+            }
+
+            function setupReplaceAllButton(container, replaceableItems) {
+                container.innerHTML = ''
+                if (replaceableItems.length === 0) return
+
+                let replaceAllButton = document.createElement('a')
+                replaceAllButton.setAttribute('is', 'emby-linkbutton')
+                replaceAllButton.setAttribute('class', 'raised button-submit block emby-button')
+                replaceAllButton.setAttribute('style', 'white-space: nowrap;')
+                replaceAllButton.setAttribute('title', translate('replace_all_button_title'))
+                replaceAllButton.setAttribute('target', '_blank')
+                replaceAllButton.innerText = translate('replace_all_button')
+                replaceAllButton.addEventListener('click', async () => {
+                    replaceAllButton.innerText = translate('replacing_button')
+                    replaceAllButton.style.opacity = '0.6'
+                    replaceAllButton.style.pointerEvents = 'none'
+                    for (const entry of replaceableItems) {
+                        await replaceWithThemerTheme(
+                            entry.id,
+                            entry.issueUrl,
+                            entry.tableColumnContribute,
+                            entry.tableColumnStatus,
+                            entry.replaceButton
+                        )
+                    }
+                    replaceAllButton.style.display = 'none'
+                })
+                container.appendChild(replaceAllButton)
+            }
+
+            function renderTableRows(items, tableBody) {
                 const BUTTON_KEYS = { themerr: 'edit_button', user: 'contribute_button' }
                 const replaceableItems = []
 
                 // loop over items
-                for (let item in all_items) {
+                for (let item in items) {
                     console.log(LogPrefix + "------------------")
                     console.log(LogPrefix + "item: " + item)
-                    console.log(LogPrefix + "name: " + all_items[item]["name"])
-                    console.log(LogPrefix + "id: " + all_items[item]["id"])
-                    console.log(LogPrefix + "issue_url: " + all_items[item]["issue_url"])
-                    console.log(LogPrefix + "type: " + all_items[item]["type"])
-                    console.log(LogPrefix + "theme_provider: " + all_items[item]["theme_provider"])
-                    console.log(LogPrefix + "year: " + all_items[item]["year"])
-                    console.log(LogPrefix + "in_themerr_db: " + all_items[item]["in_themerr_db"])
+                    console.log(LogPrefix + "name: " + items[item]["name"])
+                    console.log(LogPrefix + "id: " + items[item]["id"])
+                    console.log(LogPrefix + "issue_url: " + items[item]["issue_url"])
+                    console.log(LogPrefix + "type: " + items[item]["type"])
+                    console.log(LogPrefix + "theme_provider: " + items[item]["theme_provider"])
+                    console.log(LogPrefix + "year: " + items[item]["year"])
+                    console.log(LogPrefix + "in_themerr_db: " + items[item]["in_themerr_db"])
 
                     // create table row
                     let tableRow = document.createElement('tr')
-                    table.appendChild(tableRow)
+                    tableBody.appendChild(tableRow)
 
                     // create table columns
                     let tableColumnTitle = document.createElement('td')
                     tableColumnTitle.setAttribute('class', 'detailTableBodyCell')
-                    tableColumnTitle.innerText = all_items[item]["name"]
+                    tableColumnTitle.innerText = items[item]["name"]
                     tableRow.appendChild(tableColumnTitle)
 
                     let tableColumnYear = document.createElement('td')
                     tableColumnYear.setAttribute('class', 'detailTableBodyCell')
-                    tableColumnYear.innerText = all_items[item]["year"]
+                    tableColumnYear.innerText = items[item]["year"]
                     tableRow.appendChild(tableColumnYear)
 
                     let tableColumnType = document.createElement('td')
                     tableColumnType.setAttribute('class', 'detailTableBodyCell')
-                    tableColumnType.innerText = translate(all_items[item]["type"].toLowerCase())
+                    tableColumnType.innerText = translate(items[item]["type"].toLowerCase())
                     tableRow.appendChild(tableColumnType)
 
-                    const themeProvider = all_items[item]["theme_provider"]
-                    const inThemerrDb = all_items[item]["in_themerr_db"]
+                    const themeProvider = items[item]["theme_provider"]
+                    const inThemerrDb = items[item]["in_themerr_db"]
 
                     let tableColumnContribute = document.createElement('td')
                     tableColumnContribute.setAttribute('class', 'detailTableBodyCell')
@@ -410,12 +496,12 @@
                         replaceButton.setAttribute('class', 'raised button-submit block emby-button')
                         replaceButton.setAttribute('title', translate('replace_button_title'))
                         replaceButton.setAttribute('target', '_blank')
-                        replaceButton.addEventListener('click', () => replaceWithThemerTheme(all_items[item]["id"], all_items[item]["issue_url"], tableColumnContribute, tableColumnStatus, replaceButton))
+                        replaceButton.addEventListener('click', () => replaceWithThemerTheme(items[item]["id"], items[item]["issue_url"], tableColumnContribute, tableColumnStatus, replaceButton))
                         replaceButton.innerText = translate('replace_button')
                         tableColumnContribute.appendChild(replaceButton)
                         replaceableItems.push({
-                            id: all_items[item]["id"],
-                            issueUrl: all_items[item]["issue_url"],
+                            id: items[item]["id"],
+                            issueUrl: items[item]["issue_url"],
                             tableColumnContribute,
                             tableColumnStatus,
                             replaceButton,
@@ -430,7 +516,7 @@
                         contributeButton.setAttribute('is', 'emby-linkbutton')
                         contributeButton.setAttribute('class', 'raised button-submit block emby-button')
                         contributeButton.setAttribute('target', '_blank')
-                        contributeButton.setAttribute('href', all_items[item]["issue_url"])
+                        contributeButton.setAttribute('href', items[item]["issue_url"])
                         contributeButton.innerText = translate(BUTTON_KEYS[themeProvider] || 'add_button')
                         tableColumnContribute.appendChild(contributeButton)
                     }
@@ -450,31 +536,7 @@
                     tableRow.appendChild(tableColumnStatus)
                 }
 
-                if (replaceableItems.length > 0) {
-                    let replaceAllButton = document.createElement('a')
-                    replaceAllButton.setAttribute('is', 'emby-linkbutton')
-                    replaceAllButton.setAttribute('class', 'raised button-submit block emby-button')
-                    replaceAllButton.setAttribute('style', 'margin-top: 6px; white-space: nowrap;')
-                    replaceAllButton.setAttribute('title', translate('replace_all_button_title'))
-                    replaceAllButton.setAttribute('target', '_blank')
-                    replaceAllButton.innerText = translate('replace_all_button')
-                    replaceAllButton.addEventListener('click', async () => {
-                        replaceAllButton.innerText = translate('replacing_button')
-                        replaceAllButton.style.opacity = '0.6'
-                        replaceAllButton.style.pointerEvents = 'none'
-                        for (const entry of replaceableItems) {
-                            await replaceWithThemerTheme(
-                                entry.id,
-                                entry.issueUrl,
-                                entry.tableColumnContribute,
-                                entry.tableColumnStatus,
-                                entry.replaceButton
-                            )
-                        }
-                        replaceAllButton.style.display = 'none'
-                    })
-                    contributeHeaderCell.appendChild(replaceAllButton)
-                }
+                return replaceableItems
             }
 
             function localize() {
@@ -491,8 +553,8 @@
             function initializePage() {
                 getTranslations().then(() => {
                     localize();
+                    updateProgress();
                 })
-                updateProgress();
             }
 
             // on ready

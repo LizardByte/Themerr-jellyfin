@@ -35,7 +35,6 @@ public class TestThemerrManager
         Mock<IApplicationPaths> mockApplicationPaths = TestHelper.GetMockApplicationPaths();
         Mock<ILibraryManager> mockLibraryManager = new();
         Mock<ILogger<ThemerrManager>> mockLogger = new();
-        Mock<IXmlSerializer> mockXmlSerializer = new();
 
         var audioStubPath = Path.Combine(Directory.GetCurrentDirectory(), "data", "audio_stub.mp3");
 
@@ -51,14 +50,12 @@ public class TestThemerrManager
         _themerrManager = new ThemerrManager(
             mockApplicationPaths.Object,
             mockLibraryManager.Object,
-            mockLogger.Object,
-            mockXmlSerializer.Object);
+            mockLogger.Object);
 
         _themerrManagerWithMockYoutube = new ThemerrManager(
             mockApplicationPaths.Object,
             mockLibraryManager.Object,
             mockLogger.Object,
-            mockXmlSerializer.Object,
             mockYoutubeClient.Object);
     }
 
@@ -80,7 +77,6 @@ public class TestThemerrManager
         Mock<IApplicationPaths> mockApplicationPaths = TestHelper.GetMockApplicationPaths();
         Mock<ILibraryManager> mockLibraryManager = new();
         Mock<ILogger<ThemerrManager>> mockLogger = new();
-        Mock<IXmlSerializer> mockXmlSerializer = new();
 
         if (libraryItems != null)
         {
@@ -93,7 +89,6 @@ public class TestThemerrManager
             mockApplicationPaths.Object,
             mockLibraryManager.Object,
             mockLogger.Object,
-            mockXmlSerializer.Object,
             themerrRepository: themerrRepository);
     }
 
@@ -148,7 +143,6 @@ public class TestThemerrManager
     {
         Mock<IApplicationPaths> mockApplicationPaths = TestHelper.GetMockApplicationPaths();
         Mock<ILogger<ThemerrManager>> mockLogger = new();
-        Mock<IXmlSerializer> mockXmlSerializer = new();
 
         var mockYoutubeClient = new Mock<IYoutubeClientWrapper>();
         mockYoutubeClient
@@ -164,7 +158,6 @@ public class TestThemerrManager
             mockApplicationPaths.Object,
             mockLibraryManager.Object,
             mockLogger.Object,
-            mockXmlSerializer.Object,
             mockYoutubeClient.Object,
             themerrRepository);
     }
@@ -177,7 +170,6 @@ public class TestThemerrManager
 
         Mock<IApplicationPaths> mockApplicationPaths = TestHelper.GetMockApplicationPaths();
         Mock<ILogger<ThemerrManager>> mockLogger = new();
-        Mock<IXmlSerializer> mockXmlSerializer = new();
 
         var mockYoutubeClient = new Mock<IYoutubeClientWrapper>();
         mockYoutubeClient
@@ -197,7 +189,6 @@ public class TestThemerrManager
             mockApplicationPaths.Object,
             mockLibraryManager.Object,
             mockLogger.Object,
-            mockXmlSerializer.Object,
             mockYoutubeClient.Object,
             themerrRepository);
     }
@@ -1322,9 +1313,9 @@ public class TestThemerrManager
 
     [Fact]
     [Trait("Category", "Unit")]
-    private void TestName()
+    private void TestIsNotBasePlugin()
     {
-        Assert.Equal("Themerr", _themerrManager.Name);
+        Assert.False(typeof(ThemerrManager).IsSubclassOf(typeof(MediaBrowser.Common.Plugins.BasePlugin<Configuration.PluginConfiguration>)));
     }
 
     [Fact]

@@ -10,7 +10,6 @@ using MediaBrowser.Controller.Entities;
 using MediaBrowser.Controller.Entities.Movies;
 using MediaBrowser.Controller.Entities.TV;
 using MediaBrowser.Controller.Library;
-using MediaBrowser.Model.Serialization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
 using Moq;
@@ -39,7 +38,6 @@ public class TestThemerrController
         Mock<ILogger<ThemerrController>> mockLogger = new();
         Mock<IServerConfigurationManager> mockServerConfigurationManager = new();
         Mock<ILoggerFactory> mockLoggerFactory = new();
-        Mock<IXmlSerializer> mockXmlSerializer = new();
 
         // Create a TestableServerConfiguration with UICulture set to "en-US"
         var testableServerConfiguration = new TestableServerConfiguration("en-US");
@@ -56,8 +54,7 @@ public class TestThemerrController
             mockLibraryManager.Object,
             mockLogger.Object,
             mockServerConfigurationManager.Object,
-            mockLoggerFactory.Object,
-            mockXmlSerializer.Object);
+            mockLoggerFactory.Object);
     }
 
     /// <summary>
@@ -94,7 +91,6 @@ public class TestThemerrController
         var mockLogger = new Mock<ILogger<ThemerrController>>();
         var mockServerConfigurationManager = new Mock<IServerConfigurationManager>();
         var mockLoggerFactory = new Mock<ILoggerFactory>();
-        var mockXmlSerializer = new Mock<IXmlSerializer>();
 
         mockServerConfigurationManager
             .Setup(x => x.Configuration)
@@ -129,8 +125,7 @@ public class TestThemerrController
             mockLibraryManager.Object,
             mockLogger.Object,
             mockServerConfigurationManager.Object,
-            mockLoggerFactory.Object,
-            mockXmlSerializer.Object);
+            mockLoggerFactory.Object);
 
         var result = controller.GetProgress();
         Assert.IsType<JsonResult>(result);
@@ -192,7 +187,6 @@ public class TestThemerrController
         var mockLogger = new Mock<ILogger<ThemerrController>>();
         var mockServerConfigurationManager = new Mock<IServerConfigurationManager>();
         var mockLoggerFactory = new Mock<ILoggerFactory>();
-        var mockXmlSerializer = new Mock<IXmlSerializer>();
 
         // "fr-FR" produces ["fr_FR.json", "fr.json"]; fr_FR.json has no embedded resource,
         // so the first iteration hits the null-stream warning-log-and-continue branch.
@@ -209,8 +203,7 @@ public class TestThemerrController
             mockLibraryManager.Object,
             mockLogger.Object,
             mockServerConfigurationManager.Object,
-            mockLoggerFactory.Object,
-            mockXmlSerializer.Object);
+            mockLoggerFactory.Object);
 
         var result = controller.GetTranslations();
         Assert.IsType<OkObjectResult>(result);

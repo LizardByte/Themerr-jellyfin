@@ -1,7 +1,6 @@
 using Jellyfin.Plugin.Themerr.ScheduledTasks;
 using MediaBrowser.Common.Configuration;
 using MediaBrowser.Controller.Library;
-using MediaBrowser.Model.Serialization;
 using Microsoft.Extensions.Logging;
 using Moq;
 
@@ -17,7 +16,6 @@ public class TestThemerrTasks
         Mock<ILibraryManager> mockLibraryManager = new();
         Mock<ILogger<ThemerrTasks>> mockLogger = new();
         Mock<ILoggerFactory> mockLoggerFactory = new();
-        Mock<IXmlSerializer> mockXmlSerializer = new();
 
         mockLoggerFactory
             .Setup(x => x.CreateLogger(It.IsAny<string>()))
@@ -27,8 +25,7 @@ public class TestThemerrTasks
             mockApplicationPaths.Object,
             mockLibraryManager.Object,
             mockLogger.Object,
-            mockLoggerFactory.Object,
-            mockXmlSerializer.Object);
+            mockLoggerFactory.Object);
 
         Assert.Equal("Update Theme Songs", tasks.Name);
         Assert.Equal("Update ThemeSongs", tasks.Key);

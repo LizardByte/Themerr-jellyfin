@@ -1,7 +1,6 @@
 using System.Threading;
 using MediaBrowser.Common.Configuration;
 using MediaBrowser.Controller.Library;
-using MediaBrowser.Model.Serialization;
 using Microsoft.Extensions.Logging;
 using Moq;
 
@@ -16,7 +15,6 @@ public class TestThemerrStartupService
         Mock<IApplicationPaths> mockApplicationPaths = TestHelper.GetMockApplicationPaths();
         Mock<ILibraryManager> mockLibraryManager = new();
         Mock<ILoggerFactory> mockLoggerFactory = new();
-        Mock<IXmlSerializer> mockXmlSerializer = new();
 
         mockLoggerFactory
             .Setup(x => x.CreateLogger(It.IsAny<string>()))
@@ -25,8 +23,7 @@ public class TestThemerrStartupService
         var service = new ThemerrStartupService(
             mockApplicationPaths.Object,
             mockLibraryManager.Object,
-            mockLoggerFactory.Object,
-            mockXmlSerializer.Object);
+            mockLoggerFactory.Object);
 
         var startTask = service.StartAsync(CancellationToken.None);
         Assert.True(startTask.IsCompletedSuccessfully);
