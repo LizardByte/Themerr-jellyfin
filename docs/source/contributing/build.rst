@@ -4,7 +4,7 @@ Compiling Themerr-jellyfin requires the following:
 
 - `git <https://git-scm.com/>`__
 - `.net9.0 SDK <https://dotnet.microsoft.com/en-us/download/dotnet/9.0>`__
-- `python 3.x <https://www.python.org/downloads/>`__
+- `python >=3.14 <https://www.python.org/downloads/>`__
 
 Clone
 -----
@@ -25,7 +25,7 @@ Install Requirements
 
 .. code-block:: bash
 
-   python -m pip install -r ./requirements-dev.txt
+   python -m pip install ".[dev]"
 
 Compile
 -------
@@ -46,7 +46,7 @@ Release builds can pass an explicit plugin version:
 Any generated ``build.yaml`` field can be overridden with a ``THEMERR_`` environment variable.
 Use the field name in upper snake case, such as ``THEMERR_NAME``, ``THEMERR_TARGET_ABI``,
 ``THEMERR_FRAMEWORK``, ``THEMERR_VERSION``, or ``THEMERR_CHANGELOG``. ``THEMERR_ARTIFACTS`` accepts
-a JSON string array, a newline-separated list, or a comma-separated list. CI sets
+a YAML list, a JSON string array, a newline-separated list, or a comma-separated list. CI sets
 ``THEMERR_CHANGELOG`` from the release body automatically.
 
 Remote Build
