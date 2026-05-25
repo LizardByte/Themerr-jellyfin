@@ -58,8 +58,7 @@
                     </div>
                     <br>
                     <div>
-                        <button is="emby-button" type="button" class="raised block" id="refresh-library"
-                                onclick=download()>
+                        <button is="emby-button" type="button" class="raised block" id="refresh-library">
                             <span data-localize="update_theme_songs">Update Theme Songs</span>
                         </button>
                     </div>
@@ -76,6 +75,7 @@
         </div>
 
         <script type="text/javascript">
+        (function() {
             function getThemerrConfig() {
                 return {
                     pluginUniqueId: 'e41ef0c4-c413-41ba-b4fa-8c565dc3c969'
@@ -297,6 +297,42 @@
                     ThemerrDashboard.appendChild(noDataMsg)
                     return
                 }
+
+                const themerr_count  = all_items.filter(i => i.theme_provider === 'themerr').length
+                const user_count     = all_items.filter(i => i.theme_provider === 'user').length
+                const no_theme_count = all_items.filter(i => !i.theme_provider).length
+
+                function pct(n) { return total_media_count > 0 ? (n / total_media_count * 100).toFixed(1) : 0 }
+
+                const progressSegments = [
+                    { count: themerr_count,  color: '#00a4dc', labelKey: 'themerr_provided' },
+                    { count: user_count,     color: '#ffc107', labelKey: 'user_provided'    },
+                    { count: no_theme_count, color: '#dc3545', labelKey: 'no_theme_song'    },
+                ]
+
+                let progressBar = document.createElement('div')
+                progressBar.setAttribute('style', 'display:flex; width:100%; height:24px; border-radius:4px; overflow:hidden; margin-bottom:0.75em;')
+
+                for (const seg of progressSegments) {
+                    if (seg.count === 0) continue
+                    let seg_el = document.createElement('div')
+                    const p = pct(seg.count)
+                    seg_el.setAttribute('style',
+                        'width:' + p + '%;' +
+                        ' min-width:2px;' +
+                        ' background:' + seg.color + ';' +
+                        ' cursor:default;' +
+                        ' display:flex; align-items:center; justify-content:center;' +
+                        ' overflow:hidden; font-size:0.75em; font-weight:bold; color:#fff;'
+                    )
+                    seg_el.setAttribute('title', translate(seg.labelKey) + ': ' + seg.count + ' (' + p + '%)')
+                    if (parseFloat(p) >= 8) {
+                        seg_el.innerText = p + '%'
+                    }
+                    progressBar.appendChild(seg_el)
+                }
+
+                ThemerrDashboard.appendChild(progressBar)
 
                 if (generated_at) {
                     let generatedAtEl = document.createElement('p')
@@ -523,8 +559,12 @@
 
             // on ready
             document.getElementById('ThemerrConfigPage').addEventListener('pageshow', function () {
+                console.log('pageshow event hit');
                 initializePage();
             });
+
+            document.getElementById('refresh-library').addEventListener('click', download);
+        })();
         </script>
     </div>
 </body>
