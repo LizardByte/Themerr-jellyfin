@@ -326,7 +326,7 @@
                         ' overflow:hidden; font-size:0.75em; font-weight:bold; color:#fff;'
                     )
                     seg_el.setAttribute('title', translate(seg.labelKey) + ': ' + seg.count + ' (' + p + '%)')
-                    if (parseFloat(p) >= 8) {
+                    if (Number.parseFloat(p) >= 8) {
                         seg_el.innerText = p + '%'
                     }
                     progressBar.appendChild(seg_el)
