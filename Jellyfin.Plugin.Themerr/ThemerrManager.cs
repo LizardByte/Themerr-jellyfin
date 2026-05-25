@@ -366,7 +366,7 @@ namespace Jellyfin.Plugin.Themerr
 
         /// <summary>
         /// Replace a user-supplied theme with the ThemerrDB version.
-        /// Reads the YouTube URL from the existing SQLite row — no live ThemerrDB call needed.
+        /// Always fetches the latest URL from ThemerrDB, falling back to the stored URL on failure.
         /// </summary>
         /// <param name="itemId">The Jellyfin item ID.</param>
         /// <returns>True if the theme was replaced successfully; otherwise false.</returns>
@@ -385,12 +385,25 @@ namespace Jellyfin.Plugin.Themerr
                 return false;
             }
 
-            var existingData = _themerrRepository.Get(item, themePath);
-            var youtubeThemeUrl = existingData?.YoutubeThemeUrl;
+            // Always fetch the latest URL from ThemerrDB (null bypasses the 24h cache)
+            string youtubeThemeUrl = null;
+            var dbType = ThemerrDbType.Get(item);
+            if (!string.IsNullOrEmpty(dbType))
+            {
+                var availability = await GetThemerrDbAvailability(item, dbType, null).ConfigureAwait(false);
+                youtubeThemeUrl = availability.YoutubeThemeUrl;
+            }
+
+            // Fall back to stored URL when ThemerrDB has no entry or is unreachable
+            if (string.IsNullOrEmpty(youtubeThemeUrl))
+            {
+                var existingData = _themerrRepository.Get(item, themePath);
+                youtubeThemeUrl = existingData?.YoutubeThemeUrl;
+            }
 
             if (string.IsNullOrEmpty(youtubeThemeUrl))
             {
-                _logger.LogWarning("ReplaceWithThemerTheme: no stored YouTube URL for {ItemName}", item.Name);
+                _logger.LogWarning("ReplaceWithThemerTheme: no YouTube URL found for {ItemName}", item.Name);
                 return false;
             }
 
