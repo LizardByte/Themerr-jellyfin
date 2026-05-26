@@ -88,9 +88,9 @@
             ThemerrConfig = getThemerrConfig()
             LogPrefix = getLogPrefix()
 
-            activeFilter = 'all'
+            var activeFilter = 'all'
 
-            FILTER_PREDICATES = {
+            var FILTER_PREDICATES = {
                 all: () => true,
                 user_not_in_db: i => i.theme_provider === 'user' && i.in_themerr_db !== true,
                 user_in_db: i => i.theme_provider === 'user' && i.in_themerr_db === true,
@@ -99,7 +99,7 @@
                 themerr_supplied: i => i.theme_provider === 'themerr',
             }
 
-            STATUS_CONFIG = {
+            var STATUS_CONFIG = {
                 themerr: { icon: 'check', color: '#00ff00', key: 'themerr_provided' },
                 user: { icon: 'person', color: '#00a4dc', key: 'user_provided' },
             }
@@ -154,7 +154,7 @@
                     return false
                 })
 
-            themerr_translations = {};
+            var themerr_translations = {};
             function getTranslations() {
                 return new Promise((resolve, reject) => {
                     let request = {
