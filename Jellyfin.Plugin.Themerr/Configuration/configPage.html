@@ -92,12 +92,12 @@
             let activeFilter = 'all'
 
             const FILTER_PREDICATES = {
-                all:                () => true,
-                user_not_in_db:     i => i.theme_provider === 'user' && i.in_themerr_db !== true,
-                user_in_db:         i => i.theme_provider === 'user' && i.in_themerr_db === true,
-                no_theme_in_db:     i => !i.theme_provider && i.in_themerr_db === true,
+                all: () => true,
+                user_not_in_db: i => i.theme_provider === 'user' && i.in_themerr_db !== true,
+                user_in_db: i => i.theme_provider === 'user' && i.in_themerr_db === true,
+                no_theme_in_db: i => !i.theme_provider && i.in_themerr_db === true,
                 no_theme_not_in_db: i => !i.theme_provider && i.in_themerr_db !== true,
-                themerr_supplied:   i => i.theme_provider === 'themerr',
+                themerr_supplied: i => i.theme_provider === 'themerr',
             }
 
             const STATUS_CONFIG = {
@@ -298,16 +298,16 @@
                     return
                 }
 
-                const themerr_count  = all_items.filter(i => i.theme_provider === 'themerr').length
-                const user_count     = all_items.filter(i => i.theme_provider === 'user').length
+                const themerr_count = all_items.filter(i => i.theme_provider === 'themerr').length
+                const user_count = all_items.filter(i => i.theme_provider === 'user').length
                 const no_theme_count = all_items.filter(i => !i.theme_provider).length
 
                 function pct(n) { return total_media_count > 0 ? (n / total_media_count * 100).toFixed(1) : 0 }
 
                 const progressSegments = [
-                    { count: themerr_count,  color: '#00a4dc', labelKey: 'themerr_provided' },
-                    { count: user_count,     color: '#ffc107', labelKey: 'user_provided'    },
-                    { count: no_theme_count, color: '#dc3545', labelKey: 'no_theme_song'    },
+                    { count: themerr_count, color: '#00a4dc', labelKey: 'themerr_provided' },
+                    { count: user_count, color: '#ffc107', labelKey: 'user_provided' },
+                    { count: no_theme_count, color: '#dc3545', labelKey: 'no_theme_song' },
                 ]
 
                 let progressBar = document.createElement('div')
