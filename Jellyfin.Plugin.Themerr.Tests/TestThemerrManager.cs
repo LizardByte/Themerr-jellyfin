@@ -1064,7 +1064,9 @@ public class TestThemerrManager
     [Trait("Category", "Unit")]
     public async Task TestReplaceWithThemerThemeNoStoredUrl()
     {
-        var movie = CreateMovie("1");
+        // TMDB ID "0" is a known-absent sentinel that returns 404 from ThemerrDB,
+        // so neither ThemerrDB nor the stored URL will have a value.
+        var movie = CreateMovie("0");
         var repository = CreateThemerrRepository();
 
         repository.Save(movie, new ThemerrMediaItemSaveOptions
@@ -1075,6 +1077,23 @@ public class TestThemerrManager
             InThemerrDbCheckedUtc = DateTime.UtcNow,
             YoutubeThemeUrl = null,
         });
+
+        var manager = CreateThemerrManagerWithMockYoutubeAndItemById(movie, repository);
+        var result = await manager.ReplaceWithThemerTheme(movie.Id);
+        Assert.False(result);
+    }
+
+    /// <summary>
+    /// Test ReplaceWithThemerTheme returns false when the item has no repository row and ThemerrDB has no entry.
+    /// </summary>
+    [Fact]
+    [Trait("Category", "Unit")]
+    public async Task TestReplaceWithThemerThemeNoRepositoryRow()
+    {
+        // TMDB ID "0" returns 404 from ThemerrDB; no row saved to the repository,
+        // so the null-conditional fallback (existingData?.YoutubeThemeUrl) returns null.
+        var movie = CreateMovie("0");
+        var repository = CreateThemerrRepository();
 
         var manager = CreateThemerrManagerWithMockYoutubeAndItemById(movie, repository);
         var result = await manager.ReplaceWithThemerTheme(movie.Id);
