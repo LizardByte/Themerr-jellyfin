@@ -129,6 +129,9 @@
                         document.querySelector('#BackupUserSuppliedTheme').checked =
                             backupUserSuppliedTheme !== false
                         Dashboard.hideLoadingMsg()
+                    }).catch(function() {
+                        Dashboard.hideLoadingMsg()
+                        console.log(LogPrefix + 'Failed to load plugin configuration')
                     })
                 })
 
@@ -556,6 +559,8 @@
                 getTranslations().then(() => {
                     localize();
                     updateProgress();
+                }).catch(function() {
+                    console.log(LogPrefix + 'Failed to initialize page')
                 })
             }
 
