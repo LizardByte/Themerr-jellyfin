@@ -58,7 +58,7 @@
                     </div>
                     <br>
                     <div>
-                        <button is="emby-button" type="button" class="raised block" id="refresh-library">
+                        <button is="emby-button" type="button" class="raised block" id="refresh-library" onclick="download()">
                             <span data-localize="update_theme_songs">Update Theme Songs</span>
                         </button>
                     </div>
@@ -75,7 +75,6 @@
         </div>
 
         <script type="text/javascript">
-        (function() {
             function getThemerrConfig() {
                 return {
                     pluginUniqueId: 'e41ef0c4-c413-41ba-b4fa-8c565dc3c969'
@@ -89,9 +88,9 @@
             ThemerrConfig = getThemerrConfig()
             LogPrefix = getLogPrefix()
 
-            let activeFilter = 'all'
+            activeFilter = 'all'
 
-            const FILTER_PREDICATES = {
+            FILTER_PREDICATES = {
                 all: () => true,
                 user_not_in_db: i => i.theme_provider === 'user' && i.in_themerr_db !== true,
                 user_in_db: i => i.theme_provider === 'user' && i.in_themerr_db === true,
@@ -100,7 +99,7 @@
                 themerr_supplied: i => i.theme_provider === 'themerr',
             }
 
-            const STATUS_CONFIG = {
+            STATUS_CONFIG = {
                 themerr: { icon: 'check', color: '#00ff00', key: 'themerr_provided' },
                 user: { icon: 'person', color: '#00a4dc', key: 'user_provided' },
             }
@@ -116,6 +115,7 @@
             document.querySelector('#ThemerrConfigPage')
                 .addEventListener('pageshow', function() {
                     Dashboard.showLoadingMsg()
+                    initializePage()
                     _ApiClient.getPluginConfiguration(ThemerrConfig.pluginUniqueId).then(function (config) {
                         let updateInterval = config.UpdateInterval
                         if (updateInterval === undefined) {
@@ -151,7 +151,7 @@
                     return false
                 })
 
-            let translations = {};
+            themerr_translations = {};
             function getTranslations() {
                 return new Promise((resolve, reject) => {
                     let request = {
@@ -161,13 +161,13 @@
                     }
 
                     _ApiClient.fetch(request).then(function (response) {
-                        console.log(LogPrefix + "translations: " + response)
+                        console.log(LogPrefix + "themerr_translations: " + response)
 
-                        translations = response
+                        themerr_translations = response
                         resolve();  // Resolve the Promise when the request is complete
                     }).catch(function () {
-                        // this message cannot be translated due to translations not being loaded
-                        let message = "Unexpected error occurred getting translations."
+                        // this message cannot be translated due to themerr_translations not being loaded
+                        let message = "Unexpected error occurred getting themerr_translations."
                         Dashboard.alert({
                             message: message
                         })
@@ -178,10 +178,10 @@
             }
 
             function translate(key) {
-                if (translations['locale'] && translations['locale'][key] !== undefined) {
-                    return translations['locale'][key];
-                } else if (translations['fallback'] && translations['fallback'][key] !== undefined) {
-                    return translations['fallback'][key];
+                if (themerr_translations['locale'] && themerr_translations['locale'][key] !== undefined) {
+                    return themerr_translations['locale'][key];
+                } else if (themerr_translations['fallback'] && themerr_translations['fallback'][key] !== undefined) {
+                    return themerr_translations['fallback'][key];
                 } else {
                     console.log(LogPrefix + "Error translating string: " + key);
                     return key;
@@ -196,10 +196,12 @@
                 btn.style.opacity = '0.6'
                 btn.style.pointerEvents = 'none'
 
-                _ApiClient.fetch({
+                let request = {
                     url: _ApiClient.getUrl('/Themerr/TriggerUpdate'),
                     type: 'POST'
-                }).then(function () {
+                }
+
+                _ApiClient.fetch(request).then(function () {
                     let message = translate('updating_theme_songs')
                     Dashboard.alert(message)
                     console.log(LogPrefix + message)
@@ -325,9 +327,9 @@
                         ' display:flex; align-items:center; justify-content:center;' +
                         ' overflow:hidden; font-size:0.75em; font-weight:bold; color:#fff;'
                     )
-                    segmentDiv.setAttribute('title', translate(segment.labelKey) + ': ' + segment.count + ' (' + p + '%)')
-                    if (Number.parseFloat(p) >= 8) {
-                        segmentDiv.innerText = p + '%'
+                    segmentDiv.setAttribute('title', translate(segment.labelKey) + ': ' + segment.count + ' (' + segmentPercentage + '%)')
+                    if (Number.parseFloat(segmentPercentage) >= 8) {
+                        segmentDiv.innerText = segmentPercentage + '%'
                     }
                     progressBar.appendChild(segmentDiv)
                 }
@@ -540,7 +542,7 @@
             }
 
             function localize() {
-                if (!translations) {
+                if (!themerr_translations) {
                     return;
                 }
                 let elements = document.querySelectorAll('[data-localize]')
@@ -557,14 +559,6 @@
                 })
             }
 
-            // on ready
-            document.getElementById('ThemerrConfigPage').addEventListener('pageshow', function () {
-                console.log('pageshow event hit');
-                initializePage();
-            });
-
-            document.getElementById('refresh-library').addEventListener('click', download);
-        })();
         </script>
     </div>
 </body>
