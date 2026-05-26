@@ -4,7 +4,6 @@ using System.Threading;
 using System.Threading.Tasks;
 using MediaBrowser.Common.Configuration;
 using MediaBrowser.Controller.Library;
-using MediaBrowser.Model.Serialization;
 using MediaBrowser.Model.Tasks;
 using Microsoft.Extensions.Logging;
 
@@ -25,20 +24,17 @@ namespace Jellyfin.Plugin.Themerr.ScheduledTasks
         /// <param name="libraryManager">The library manager.</param>
         /// <param name="logger">The logger.</param>
         /// <param name="loggerFactory">The logger factory.</param>
-        /// <param name="xmlSerializer">The XML serializer.</param>
         public ThemerrTasks(
             IApplicationPaths applicationPaths,
             ILibraryManager libraryManager,
             ILogger<ThemerrTasks> logger,
-            ILoggerFactory loggerFactory,
-            IXmlSerializer xmlSerializer)
+            ILoggerFactory loggerFactory)
         {
             _logger = logger;
             _themerrManager = new ThemerrManager(
                 applicationPaths,
                 libraryManager,
-                loggerFactory.CreateLogger<ThemerrManager>(),
-                xmlSerializer);
+                loggerFactory.CreateLogger<ThemerrManager>());
         }
 
         /// <summary>

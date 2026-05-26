@@ -2,7 +2,6 @@ using System.Threading;
 using System.Threading.Tasks;
 using MediaBrowser.Common.Configuration;
 using MediaBrowser.Controller.Library;
-using MediaBrowser.Model.Serialization;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 
@@ -21,18 +20,15 @@ namespace Jellyfin.Plugin.Themerr
         /// <param name="applicationPaths">The application paths.</param>
         /// <param name="libraryManager">The library manager.</param>
         /// <param name="loggerFactory">The logger factory.</param>
-        /// <param name="xmlSerializer">The XML serializer.</param>
         public ThemerrStartupService(
             IApplicationPaths applicationPaths,
             ILibraryManager libraryManager,
-            ILoggerFactory loggerFactory,
-            IXmlSerializer xmlSerializer)
+            ILoggerFactory loggerFactory)
         {
             _themerrManager = new ThemerrManager(
                 applicationPaths,
                 libraryManager,
-                loggerFactory.CreateLogger<ThemerrManager>(),
-                xmlSerializer);
+                loggerFactory.CreateLogger<ThemerrManager>());
         }
 
         /// <inheritdoc />

@@ -10,22 +10,20 @@ using Jellyfin.Data.Enums;
 using Jellyfin.Plugin.Themerr.Configuration;
 using Jellyfin.Plugin.Themerr.Storage;
 using MediaBrowser.Common.Configuration;
-using MediaBrowser.Common.Plugins;
 using MediaBrowser.Controller.Entities;
 using MediaBrowser.Controller.Entities.Movies;
 using MediaBrowser.Controller.Entities.TV;
 using MediaBrowser.Controller.Library;
 using MediaBrowser.Model.Entities;
-using MediaBrowser.Model.Serialization;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
 
 namespace Jellyfin.Plugin.Themerr
 {
     /// <summary>
-    /// The main entry point for the plugin.
+    /// Manages theme song downloads and library synchronisation for the Themerr plugin.
     /// </summary>
-    public class ThemerrManager : BasePlugin<PluginConfiguration>, IDisposable
+    public class ThemerrManager : IDisposable
     {
         private static readonly TimeSpan ThemerrDbCacheDuration = TimeSpan.FromHours(24);
         private static readonly object InitialUpdateLock = new object();
@@ -53,17 +51,14 @@ namespace Jellyfin.Plugin.Themerr
         /// <param name="applicationPaths">The application paths.</param>
         /// <param name="libraryManager">The library manager.</param>
         /// <param name="logger">The logger.</param>
-        /// <param name="xmlSerializer">The XML serializer.</param>
         /// <param name="youtubeClientWrapper">The YouTube client wrapper. Uses the default implementation when null.</param>
         /// <param name="themerrRepository">The Themerr sqlite repository. Uses the default implementation when null.</param>
         public ThemerrManager(
             IApplicationPaths applicationPaths,
             ILibraryManager libraryManager,
             ILogger<ThemerrManager> logger,
-            IXmlSerializer xmlSerializer,
             IYoutubeClientWrapper youtubeClientWrapper = null,
             ThemerrRepository themerrRepository = null)
-            : base(applicationPaths, xmlSerializer)
         {
             _libraryManager = libraryManager;
             _logger = logger;
@@ -72,11 +67,6 @@ namespace Jellyfin.Plugin.Themerr
             _themerrRepository = themerrRepository ??
                 new ThemerrRepository(ThemerrDatabasePath.GetDatabasePath(applicationPaths), logger);
         }
-
-        /// <summary>
-        /// Gets the plugin instance.
-        /// </summary>
-        public override string Name => "Themerr";
 
         /// <summary>
         /// Save a mp3 file from a YouTube video url.
