@@ -34,7 +34,8 @@ formats: all
 
 python:
   install:
-    - method: pip
+    - method: uv
+      command: sync
       path: .
-      extra_requirements:
+      groups:
         - docs

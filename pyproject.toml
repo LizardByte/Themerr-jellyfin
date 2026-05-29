@@ -13,7 +13,7 @@ authors = [
     {name = "LizardByte", email = "lizardbyte@users.noreply.github.com"}
 ]
 
-[project.optional-dependencies]
+[dependency-groups]
 dev = [
     "flake8==7.3.0",
     "jprm==1.1.0",
@@ -27,8 +27,11 @@ docs = [
     "rstfmt==0.0.14",
     "Sphinx==9.1.0",
     "sphinx-copybutton==0.5.2",
-    "sphinx-csharp @ file:./third-party/sphinx-csharp",
+    "sphinx-csharp",
 ]
+
+[tool.uv.sources]
+sphinx-csharp = { path = "third-party/sphinx-csharp" }
 
 [project.urls]
 Homepage = "https://github.com/LizardByte/Themerr-jellyfin"
