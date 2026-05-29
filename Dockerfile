@@ -7,7 +7,7 @@ FROM ubuntu:26.04 AS base
 
 ENV DEBIAN_FRONTEND=noninteractive
 
-FROM base as buildstage
+FROM base AS buildstage
 
 # build args
 ARG BUILD_VERSION
@@ -16,6 +16,7 @@ ARG GITHUB_SHA=$COMMIT
 # note: BUILD_VERSION may be blank, COMMIT is also available
 
 ENV VIRTUAL_ENV=/opt/venv
+ENV UV_PROJECT_ENVIRONMENT=${VIRTUAL_ENV}
 
 SHELL ["/bin/bash", "-o", "pipefail", "-c"]
 # install dependencies
@@ -26,6 +27,7 @@ set -e
 apt-get update -y
 apt-get install -y --no-install-recommends \
   ca-certificates \
+  curl \
   libbrotli1 \
   libc6 \
   libgcc-s1 \
@@ -34,11 +36,9 @@ apt-get install -y --no-install-recommends \
   libssl3t64 \
   libstdc++6 \
   python3 \
-  python3-pip \
   python3-venv \
   tzdata \
   unzip \
-  wget \
   zlib1g
 apt-get clean
 rm -rf /var/lib/apt/lists/*
@@ -50,21 +50,22 @@ RUN <<_DOTNET
 #!/bin/bash
 set -e
 url="https://dot.net/v1/dotnet-install.sh"
-wget --quiet "$url" -O dotnet-install.sh
+curl --proto "=https" --tlsv1.2 --silent --show-error --fail --location "$url" --output dotnet-install.sh
 chmod +x ./dotnet-install.sh
 ./dotnet-install.sh --channel 9.0
 _DOTNET
 
-# create venv
-RUN <<_VENV
+# install uv
+RUN <<_UV
 #!/bin/bash
 set -e
-# create and source the virtual environment
-python3 -m venv ${VIRTUAL_ENV}
-_VENV
+url="https://astral.sh/uv/install.sh"
+curl --proto "=https" --tlsv1.2 --silent --show-error --fail --location "$url" --output uv-install.sh
+sh uv-install.sh
+_UV
 
-# add dotnet and venv to path
-ENV PATH="/root/.dotnet:${VIRTUAL_ENV}/bin:${PATH}"
+# add dotnet, uv, and the project environment to path
+ENV PATH="/root/.dotnet:/root/.local/bin:${VIRTUAL_ENV}/bin:${PATH}"
 
 # create build dir and copy GitHub repo there
 COPY --link . /build
@@ -72,14 +73,12 @@ COPY --link . /build
 # set build dir
 WORKDIR /build
 
-# update pip
-RUN <<_PIP
+# install Python dependencies
+RUN <<_UV_SYNC
 #!/bin/bash
 set -e
-python3 -m pip install --no-cache-dir --upgrade \
-  pip setuptools wheel
-python3 -m pip install --no-cache-dir ".[dev]"
-_PIP
+uv sync --frozen --only-group dev --python python3 --no-python-downloads --no-build --no-install-project
+_UV_SYNC
 
 # build
 RUN <<_BUILD
@@ -87,7 +86,12 @@ RUN <<_BUILD
 # force the workflow to fail if any command fails
 set -e
 # build wrapper generates build.yaml and creates the output directory for jprm
-python3 ./scripts/build_plugin.py --version="${BUILD_VERSION}" --output="./artifacts" --verbosity=debug
+uv run --frozen \
+  --no-sync python \
+  ./scripts/build_plugin.py \
+  --version="${BUILD_VERSION}" \
+  --output="./artifacts" \
+  --verbosity=debug
 mkdir -p /artifacts
 unzip ./artifacts/*.zip -d /artifacts
 _BUILD
