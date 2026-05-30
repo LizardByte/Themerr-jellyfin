@@ -24,6 +24,7 @@ namespace Jellyfin.Plugin.Themerr.Tests;
 public class TestThemerrController
 {
     private readonly ThemerrController _controller;
+    private readonly ThemerrLocalizationController _localizationController;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="TestThemerrController"/> class.
@@ -36,6 +37,7 @@ public class TestThemerrController
         Mock<IApplicationPaths> mockApplicationPaths = TestHelper.GetMockApplicationPaths();
         Mock<ILibraryManager> mockLibraryManager = new();
         Mock<ILogger<ThemerrController>> mockLogger = new();
+        Mock<ILogger<ThemerrLocalizationController>> mockLocalizationLogger = new();
         Mock<IServerConfigurationManager> mockServerConfigurationManager = new();
         Mock<ILoggerFactory> mockLoggerFactory = new();
 
@@ -53,8 +55,10 @@ public class TestThemerrController
             mockApplicationPaths.Object,
             mockLibraryManager.Object,
             mockLogger.Object,
-            mockServerConfigurationManager.Object,
             mockLoggerFactory.Object);
+        _localizationController = new ThemerrLocalizationController(
+            mockServerConfigurationManager.Object,
+            mockLocalizationLogger.Object);
     }
 
     /// <summary>
@@ -89,12 +93,7 @@ public class TestThemerrController
         var mockApplicationPaths = TestHelper.GetMockApplicationPaths(basePath);
         var mockLibraryManager = new Mock<ILibraryManager>();
         var mockLogger = new Mock<ILogger<ThemerrController>>();
-        var mockServerConfigurationManager = new Mock<IServerConfigurationManager>();
         var mockLoggerFactory = new Mock<ILoggerFactory>();
-
-        mockServerConfigurationManager
-            .Setup(x => x.Configuration)
-            .Returns(new TestableServerConfiguration("en-US"));
 
         mockLoggerFactory
             .Setup(x => x.CreateLogger(It.IsAny<string>()))
@@ -124,7 +123,6 @@ public class TestThemerrController
             mockApplicationPaths.Object,
             mockLibraryManager.Object,
             mockLogger.Object,
-            mockServerConfigurationManager.Object,
             mockLoggerFactory.Object);
 
         var result = controller.GetProgress();
@@ -147,7 +145,7 @@ public class TestThemerrController
     [Trait("Category", "Unit")]
     public void TestGetTranslations()
     {
-        var actionResult = _controller.GetTranslations();
+        var actionResult = _localizationController.GetTranslations();
         Assert.IsType<OkObjectResult>(actionResult);
 
         // Cast the result to OkObjectResult to access the data
@@ -182,11 +180,8 @@ public class TestThemerrController
     [Trait("Category", "Unit")]
     public void TestGetTranslationsWithMissingRegionalLocale()
     {
-        var mockApplicationPaths = TestHelper.GetMockApplicationPaths();
-        var mockLibraryManager = new Mock<ILibraryManager>();
-        var mockLogger = new Mock<ILogger<ThemerrController>>();
+        var mockLogger = new Mock<ILogger<ThemerrLocalizationController>>();
         var mockServerConfigurationManager = new Mock<IServerConfigurationManager>();
-        var mockLoggerFactory = new Mock<ILoggerFactory>();
 
         // "fr-FR" produces ["fr_FR.json", "fr.json"]; fr_FR.json has no embedded resource,
         // so the first iteration hits the null-stream warning-log-and-continue branch.
@@ -194,16 +189,9 @@ public class TestThemerrController
             .Setup(x => x.Configuration)
             .Returns(new TestableServerConfiguration("fr-FR"));
 
-        mockLoggerFactory
-            .Setup(x => x.CreateLogger(It.IsAny<string>()))
-            .Returns(new Mock<ILogger>().Object);
-
-        var controller = new ThemerrController(
-            mockApplicationPaths.Object,
-            mockLibraryManager.Object,
-            mockLogger.Object,
+        var controller = new ThemerrLocalizationController(
             mockServerConfigurationManager.Object,
-            mockLoggerFactory.Object);
+            mockLogger.Object);
 
         var result = controller.GetTranslations();
         Assert.IsType<OkObjectResult>(result);
