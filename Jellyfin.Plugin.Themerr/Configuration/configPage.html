@@ -85,8 +85,8 @@
                 return '[Themerr] - '
             }
 
-            ThemerrConfig = getThemerrConfig()
-            LogPrefix = getLogPrefix()
+            var ThemerrConfig = getThemerrConfig()
+            var LogPrefix = getLogPrefix()
 
             var activeFilter = 'all'
 
@@ -105,6 +105,7 @@
             }
 
             // if ApiClient is not defined, define it
+            var _ApiClient
             if (typeof ApiClient === 'undefined') {
                 _ApiClient = new ApiClient()
             }
@@ -550,7 +551,7 @@
                 }
                 let elements = document.querySelectorAll('[data-localize]')
                 for (let element of elements) {
-                    let key = element.getAttribute('data-localize');
+                    let key = element.dataset.localize;
                     element.innerText = translate(key);
                 }
             }

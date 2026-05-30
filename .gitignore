@@ -411,3 +411,6 @@ build.yaml
 
 # Python egg-info
 *.egg-info/
+
+# Test coverage
+coverage/

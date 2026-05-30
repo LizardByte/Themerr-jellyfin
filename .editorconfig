@@ -105,10 +105,16 @@ csharp_style_var_elsewhere = true:silent
 dotnet_diagnostic.cs0162.severity = error
 
 # Remove this commented out code.
-dotnet_diagnostic.s125.severity = warning
+dotnet_diagnostic.s125.severity = error
 
 # Complete the task associated to this 'TODO' comment.
 dotnet_diagnostic.s1135.severity = warning
+
+# Change return type to 'void'; not a single caller uses the returned value.
+dotnet_diagnostic.S3241.severity = error
+
+# Await async alternatives instead of using blocking operations.
+dotnet_diagnostic.S6966.severity = error
 
 # Remove the unused local variable 'foo'.
 dotnet_diagnostic.S1481.severity = error
@@ -123,7 +129,7 @@ dotnet_diagnostic.s2139.severity = error
 dotnet_diagnostic.s2953.severity = error
 
 # Fix this implementation of 'IDisposable' to conform to the dispose pattern.
-dotnet_diagnostic.s3881.severity = warning
+dotnet_diagnostic.s3881.severity = error
 
 # Logging in a catch clause should pass the caught exception as a parameter.
 dotnet_diagnostic.s6667.severity = error
@@ -158,6 +164,12 @@ dotnet_diagnostic.SA1028.severity = error
 # Using directive should appear within a namespace declaration
 dotnet_diagnostic.sa1200.severity = None
 
+# A member should not follow a nested type
+dotnet_diagnostic.SA1201.severity = error
+
+# Public members should come before private members
+dotnet_diagnostic.SA1202.severity = error
+
 # Field '_blah' should not begin with an underscore
 dotnet_diagnostic.sa1309.severity = None
 
@@ -167,5 +179,13 @@ dotnet_diagnostic.sa1413.severity = error
 # Single-line comments should not be followed by blank line
 dotnet_diagnostic.sa1512.severity = error
 
+# A closing brace should not be preceded by a blank line
+dotnet_diagnostic.SA1508.severity = error
+
 # The file header is missing or not located at the top of the file
 dotnet_diagnostic.sa1633.severity = None
+
+## xUnit Analyzers
+
+# Do not use Assert.Equal() to check for collection size.
+dotnet_diagnostic.xUnit2013.severity = error
