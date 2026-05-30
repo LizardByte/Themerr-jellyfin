@@ -53,7 +53,7 @@ namespace Jellyfin.Plugin.Themerr.Api
             _logger.LogInformation("Server culture: {ServerCulture}", culture);
 
             // get file paths from LocalizationManager
-            var filePaths = ThemerrManager.GetCultureResource(culture);
+            var filePaths = ThemerrLocalizationManager.GetCultureResource(culture);
 
             // Get the current assembly
             var assembly = Assembly.GetExecutingAssembly();
@@ -86,6 +86,11 @@ namespace Jellyfin.Plugin.Themerr.Api
 
                 // Add the localized strings to the 'locale' key
                 result["locale"] = localizedStrings;
+            }
+
+            if (string.Equals(culture, "en", StringComparison.OrdinalIgnoreCase))
+            {
+                return Ok(result);
             }
 
             // Now get the fallback resource

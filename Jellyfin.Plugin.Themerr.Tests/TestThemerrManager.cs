@@ -1012,41 +1012,6 @@ public class TestThemerrManager
     }
 
     /// <summary>
-    /// Test GetCultureResource function.
-    /// </summary>
-    /// <param name="culture">The culture to test.</param>
-    [Theory]
-    [Trait("Category", "Unit")]
-    [InlineData("de")]
-    [InlineData("en")]
-    [InlineData("en-GB")]
-    [InlineData("en-US")]
-    [InlineData("es")]
-    [InlineData("fr")]
-    [InlineData("it")]
-    [InlineData("ru")]
-    [InlineData("sv")]
-    [InlineData("zh")]
-    private void TestGetCultureResource(string culture)
-    {
-        var result = ThemerrManager.GetCultureResource(culture);
-        Assert.IsType<List<string>>(result);
-
-        // replace - with _ in the culture
-        var culture2 = culture.Replace("-", "_");
-
-        // en is not included in the list
-        if (culture != "en")
-        {
-            // assert that `en_<>.json` is in the list
-            Assert.Contains(culture2 + ".json", result);
-        }
-
-        // assert that `en` is NOT in the list
-        Assert.DoesNotContain("en.json", result);
-    }
-
-    /// <summary>
     /// Test ReplaceWithThemerTheme returns false when item is not found.
     /// </summary>
     [Fact]

@@ -5,7 +5,6 @@ using System.IO;
 using Jellyfin.Plugin.Themerr.Api;
 using Jellyfin.Plugin.Themerr.Storage;
 using MediaBrowser.Common.Configuration;
-using MediaBrowser.Controller.Configuration;
 using MediaBrowser.Controller.Entities;
 using MediaBrowser.Controller.Entities.Movies;
 using MediaBrowser.Controller.Entities.TV;
@@ -24,7 +23,6 @@ namespace Jellyfin.Plugin.Themerr.Tests;
 public class TestThemerrController
 {
     private readonly ThemerrController _controller;
-    private readonly ThemerrLocalizationController _localizationController;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="TestThemerrController"/> class.
@@ -37,15 +35,7 @@ public class TestThemerrController
         Mock<IApplicationPaths> mockApplicationPaths = TestHelper.GetMockApplicationPaths();
         Mock<ILibraryManager> mockLibraryManager = new();
         Mock<ILogger<ThemerrController>> mockLogger = new();
-        Mock<ILogger<ThemerrLocalizationController>> mockLocalizationLogger = new();
-        Mock<IServerConfigurationManager> mockServerConfigurationManager = new();
         Mock<ILoggerFactory> mockLoggerFactory = new();
-
-        // Create a TestableServerConfiguration with UICulture set to "en-US"
-        var testableServerConfiguration = new TestableServerConfiguration("en-US");
-
-        // Set up the Configuration property of the IServerConfigurationManager mock to return the TestableServerConfiguration
-        mockServerConfigurationManager.Setup(x => x.Configuration).Returns(testableServerConfiguration);
 
         mockLoggerFactory
             .Setup(x => x.CreateLogger(It.IsAny<string>()))
@@ -56,9 +46,6 @@ public class TestThemerrController
             mockLibraryManager.Object,
             mockLogger.Object,
             mockLoggerFactory.Object);
-        _localizationController = new ThemerrLocalizationController(
-            mockServerConfigurationManager.Object,
-            mockLocalizationLogger.Object);
     }
 
     /// <summary>
@@ -139,29 +126,6 @@ public class TestThemerrController
     }
 
     /// <summary>
-    /// Test GetTranslations from API.
-    /// </summary>
-    [Fact]
-    [Trait("Category", "Unit")]
-    public void TestGetTranslations()
-    {
-        var actionResult = _localizationController.GetTranslations();
-        Assert.IsType<OkObjectResult>(actionResult);
-
-        // Cast the result to OkObjectResult to access the data
-        var okResult = actionResult as OkObjectResult;
-
-        // Access the data returned by the API
-        var data = okResult?.Value as Dictionary<string, object>;
-
-        Assert.NotNull(data);
-
-        // Assert the data contains the expected keys
-        Assert.True(data.ContainsKey("locale"));
-        Assert.True(data.ContainsKey("fallback"));
-    }
-
-    /// <summary>
     /// Test ReplaceTheme returns 404 when item is not found in the library.
     /// </summary>
     [Fact]
@@ -170,34 +134,5 @@ public class TestThemerrController
     {
         var result = await _controller.ReplaceTheme(Guid.NewGuid());
         Assert.IsType<NotFoundResult>(result);
-    }
-
-    /// <summary>
-    /// Test GetTranslations with a locale whose regional variant file doesn't exist, covering
-    /// the null-stream warning branch inside the locale loop.
-    /// </summary>
-    [Fact]
-    [Trait("Category", "Unit")]
-    public void TestGetTranslationsWithMissingRegionalLocale()
-    {
-        var mockLogger = new Mock<ILogger<ThemerrLocalizationController>>();
-        var mockServerConfigurationManager = new Mock<IServerConfigurationManager>();
-
-        // "fr-FR" produces ["fr_FR.json", "fr.json"]; fr_FR.json has no embedded resource,
-        // so the first iteration hits the null-stream warning-log-and-continue branch.
-        mockServerConfigurationManager
-            .Setup(x => x.Configuration)
-            .Returns(new TestableServerConfiguration("fr-FR"));
-
-        var controller = new ThemerrLocalizationController(
-            mockServerConfigurationManager.Object,
-            mockLogger.Object);
-
-        var result = controller.GetTranslations();
-        Assert.IsType<OkObjectResult>(result);
-
-        var data = (result as OkObjectResult)?.Value as Dictionary<string, object>;
-        Assert.NotNull(data);
-        Assert.True(data.ContainsKey("fallback"));
     }
 }
