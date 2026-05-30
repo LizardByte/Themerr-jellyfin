@@ -223,6 +223,9 @@ sphinx_csharp_ext_type_map = {
             'IProgress',
             'TimeSpan',
         ],
+        'IO': [
+            'Stream',
+        ],
         'Threading': [
             'CancellationToken',
             'Timer',
