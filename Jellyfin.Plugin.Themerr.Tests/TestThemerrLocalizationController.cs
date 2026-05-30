@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.IO;
 using Jellyfin.Plugin.Themerr.Api;
 using MediaBrowser.Controller.Configuration;
 using Microsoft.AspNetCore.Mvc;
@@ -103,5 +104,48 @@ public class TestThemerrLocalizationController
         var data = (result as OkObjectResult)?.Value as Dictionary<string, object>;
         Assert.NotNull(data);
         Assert.True(data.ContainsKey("fallback"));
+    }
+
+    /// <summary>
+    /// Test GetTranslations returns an error when the fallback locale resource is missing.
+    /// </summary>
+    [Fact]
+    [Trait("Category", "Unit")]
+    public void TestGetTranslationsWithMissingFallbackLocale()
+    {
+        var mockLogger = new Mock<ILogger<ThemerrLocalizationController>>();
+        var mockServerConfigurationManager = new Mock<IServerConfigurationManager>();
+
+        mockServerConfigurationManager
+            .Setup(x => x.Configuration)
+            .Returns(new TestableServerConfiguration("fr"));
+
+        var controller = new MissingFallbackResourceController(
+            mockServerConfigurationManager.Object,
+            mockLogger.Object);
+
+        var result = controller.GetTranslations();
+        var statusCodeResult = Assert.IsType<StatusCodeResult>(result);
+        Assert.Equal(500, statusCodeResult.StatusCode);
+    }
+
+    private sealed class MissingFallbackResourceController : ThemerrLocalizationController
+    {
+        public MissingFallbackResourceController(
+            IServerConfigurationManager configurationManager,
+            ILogger<ThemerrLocalizationController> logger)
+            : base(configurationManager, logger)
+        {
+        }
+
+        protected override Stream GetResourceStream(string resourceName)
+        {
+            if (resourceName == "Jellyfin.Plugin.Themerr.Locale.en.json")
+            {
+                return null!;
+            }
+
+            return base.GetResourceStream(resourceName);
+        }
     }
 }

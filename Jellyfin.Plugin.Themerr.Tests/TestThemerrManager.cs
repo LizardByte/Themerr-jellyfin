@@ -70,6 +70,82 @@ public class TestThemerrManager
         new object[] { "https://www.youtube.com/watch?v=LVEWkghDh9A" },
     };
 
+    /// <summary>
+    /// Test static helper functions moved onto <see cref="ThemerrManager"/>.
+    /// </summary>
+    [Fact]
+    [Trait("Category", "Unit")]
+    public async Task TestThemerrManagerStaticHelpers()
+    {
+        var tempPath = CreateTempDirectory();
+        var movie = CreateMovie("static-helper");
+        movie.Name = "Static Helper: Movie";
+        movie.Path = Path.Combine(tempPath, "Static Helper Movie (1970).mp4");
+
+        var themePath = ThemerrManager.GetThemePath(movie);
+        Assert.Equal(Path.Combine(tempPath, "theme.mp3"), themePath);
+        Assert.Equal(Path.Combine(tempPath, "themerr.json"), ThemerrManager.GetThemerrDataPath(movie));
+        Assert.Equal("static-helper", ThemerrManager.GetTmdbId(movie));
+
+        var themerrDbLink = ThemerrManager.CreateThemerrDbLink("static-helper", "movies");
+        Assert.Equal("https://app.lizardbyte.dev/ThemerrDB/movies/themoviedb/static-helper.json", themerrDbLink);
+
+        var issueUrl = ThemerrManager.GetIssueUrl(movie);
+        Assert.Contains("Static%20Helper%3A%20Movie", issueUrl);
+        Assert.EndsWith("/static-helper", issueUrl);
+
+        var series = new Series
+        {
+            Name = "Static Helper Series",
+            ProductionYear = 1971,
+            ProviderIds = new Dictionary<string, string>
+            {
+                { MetadataProvider.Tmdb.ToString(), "static-series" },
+            },
+        };
+        Assert.EndsWith("/static-series", ThemerrManager.GetIssueUrl(series));
+        Assert.Null(ThemerrManager.GetIssueUrl(new Audio()));
+
+        File.Copy(Path.Combine(Directory.GetCurrentDirectory(), "data", "audio_stub.mp3"), themePath, true);
+        Assert.NotEmpty(ThemerrManager.GetMd5Hash(themePath));
+
+        var task = ThemerrManager.RunAsync();
+        Assert.True(task.IsCompletedSuccessfully);
+        await task;
+
+        var manager = CreateThemerrManager();
+        manager.Dispose();
+        manager.Dispose();
+    }
+
+    /// <summary>
+    /// Test existing theme files without saved Themerr data are treated as user supplied.
+    /// </summary>
+    [Fact]
+    [Trait("Category", "Unit")]
+    public void TestGetCurrentThemeProviderExistingThemeWithoutSavedData()
+    {
+        var result = InvokeGetCurrentThemeProvider("theme.mp3", null);
+        Assert.Equal(ThemerrThemeProvider.User, result);
+    }
+
+    /// <summary>
+    /// Test saved user supplied themes remain user supplied when a theme file exists.
+    /// </summary>
+    [Fact]
+    [Trait("Category", "Unit")]
+    public void TestGetCurrentThemeProviderSavedUserTheme()
+    {
+        var result = InvokeGetCurrentThemeProvider(
+            "theme.mp3",
+            new ThemerrMediaItem
+            {
+                ThemeMd5 = "known-md5",
+                ThemeProvider = ThemerrThemeProvider.User,
+            });
+        Assert.Equal(ThemerrThemeProvider.User, result);
+    }
+
     private static ThemerrManager CreateThemerrManager(
         ThemerrRepository? themerrRepository = null,
         IReadOnlyList<BaseItem>? libraryItems = null)
@@ -191,6 +267,16 @@ public class TestThemerrManager
             mockLogger.Object,
             mockYoutubeClient.Object,
             themerrRepository);
+    }
+
+    private static string InvokeGetCurrentThemeProvider(string existingThemePath, ThemerrMediaItem? existingData)
+    {
+        var method = typeof(ThemerrManager).GetMethod(
+            "GetCurrentThemeProvider",
+            BindingFlags.NonPublic | BindingFlags.Static);
+        Assert.NotNull(method);
+
+        return Assert.IsType<string>(method.Invoke(null, new object?[] { existingThemePath, existingData }));
     }
 
     [Theory]

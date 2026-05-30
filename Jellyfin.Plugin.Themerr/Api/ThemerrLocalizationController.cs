@@ -55,9 +55,6 @@ namespace Jellyfin.Plugin.Themerr.Api
             // get file paths from LocalizationManager
             var filePaths = ThemerrLocalizationManager.GetCultureResource(culture);
 
-            // Get the current assembly
-            var assembly = Assembly.GetExecutingAssembly();
-
             // Initialize the result dictionary
             var result = new Dictionary<string, object>();
 
@@ -67,7 +64,7 @@ namespace Jellyfin.Plugin.Themerr.Api
                 var resourceName = $"Jellyfin.Plugin.Themerr.Locale.{filePaths[i]}";
 
                 // Get the resource stream
-                using var stream = assembly.GetManifestResourceStream(resourceName);
+                using var stream = GetResourceStream(resourceName);
 
                 if (stream == null)
                 {
@@ -95,7 +92,7 @@ namespace Jellyfin.Plugin.Themerr.Api
 
             // Now get the fallback resource
             var fallbackResourceName = "Jellyfin.Plugin.Themerr.Locale.en.json";
-            using var fallbackStream = assembly.GetManifestResourceStream(fallbackResourceName);
+            using var fallbackStream = GetResourceStream(fallbackResourceName);
 
             if (fallbackStream != null)
             {
@@ -118,6 +115,16 @@ namespace Jellyfin.Plugin.Themerr.Api
 
             // return the result as a JSON object
             return Ok(result);
+        }
+
+        /// <summary>
+        /// Get an embedded locale resource stream.
+        /// </summary>
+        /// <param name="resourceName">The resource name.</param>
+        /// <returns>The resource stream.</returns>
+        protected virtual Stream GetResourceStream(string resourceName)
+        {
+            return Assembly.GetExecutingAssembly().GetManifestResourceStream(resourceName);
         }
     }
 }
