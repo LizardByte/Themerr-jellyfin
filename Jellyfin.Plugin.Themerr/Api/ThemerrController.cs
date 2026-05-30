@@ -153,7 +153,7 @@ namespace Jellyfin.Plugin.Themerr.Api
             _logger.LogInformation("Server culture: {ServerCulture}", culture);
 
             // get file paths from LocalizationManager
-            var filePaths = _themerrManager.GetCultureResource(culture);
+            var filePaths = ThemerrManager.GetCultureResource(culture);
 
             // Get the current assembly
             var assembly = Assembly.GetExecutingAssembly();

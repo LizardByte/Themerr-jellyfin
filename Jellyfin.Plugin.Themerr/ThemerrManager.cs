@@ -69,6 +69,142 @@ namespace Jellyfin.Plugin.Themerr
         }
 
         /// <summary>
+        /// Get TMDB id from an item.
+        /// </summary>
+        /// <param name="item">The Jellyfin media object.</param>
+        /// <returns>TMDB id.</returns>
+        public static string GetTmdbId(BaseItem item)
+        {
+            var tmdbId = item.GetProviderId(MetadataProvider.Tmdb);
+            return tmdbId;
+        }
+
+        /// <summary>
+        /// Get the path to the theme song.
+        /// </summary>
+        /// <param name="item">The Jellyfin media object.</param>
+        /// <returns>The path to the theme song.</returns>
+        public static string GetThemePath(BaseItem item)
+        {
+            return ThemerrMediaPath.GetThemePath(item);
+        }
+
+        /// <summary>
+        /// Get the path to the themerr data file.
+        /// </summary>
+        /// <param name="item">The Jellyfin media object.</param>
+        /// <returns>The path to the themerr data file.</returns>
+        public static string GetThemerrDataPath(BaseItem item)
+        {
+            return ThemerrMediaPath.GetThemerrDataPath(item);
+        }
+
+        /// <summary>
+        /// Create a link to the themerr database.
+        /// </summary>
+        /// <param name="tmdbId">The tmdb id.</param>
+        /// <param name="dbType">The database type.</param>
+        /// <returns>The themerr database link.</returns>
+        public static string CreateThemerrDbLink(string tmdbId, string dbType)
+        {
+            return $"https://app.lizardbyte.dev/ThemerrDB/{dbType}/themoviedb/{tmdbId}.json";
+        }
+
+        /// <summary>
+        /// Get ThemerrDB issue url.
+        ///
+        /// This url can be used to easily add/edit theme songs in ThemerrDB.
+        /// </summary>
+        /// <param name="item">The Jellyfin media object.</param>
+        /// <returns>The ThemerrDB issue url.</returns>
+        public static string GetIssueUrl(BaseItem item)
+        {
+            string issueBaseTitle = item switch
+            {
+                Movie _ => "MOVIE",
+                Series _ => "TV SHOW",
+                _ => null,
+            };
+
+            string tmdbEndpoint = item switch
+            {
+                Movie _ => "movie",
+                Series _ => "tv",
+                _ => null,
+            };
+
+            // return if either is null
+            if (string.IsNullOrEmpty(issueBaseTitle) || string.IsNullOrEmpty(tmdbEndpoint))
+            {
+                return null;
+            }
+
+            // url components
+            string issueBase = $"https://github.com/LizardByte/ThemerrDB/issues/new?assignees=&labels=request-theme&template=theme.yml&title=[{issueBaseTitle}]:%20";
+            string databaseBase = $"https://www.themoviedb.org/{tmdbEndpoint}/";
+
+            var urlEncodedName = Uri.EscapeDataString(item.Name);
+            var year = item.ProductionYear;
+            var tmdbId = GetTmdbId(item);
+
+            var issueUrl = $"{issueBase}{urlEncodedName}%20({year})&database_url={databaseBase}{tmdbId}";
+            return issueUrl;
+        }
+
+        /// <summary>
+        /// Get the MD5 hash of a file.
+        /// </summary>
+        /// <param name="filePath">The file path.</param>
+        /// <returns>The MD5 hash of the file.</returns>
+        public static string GetMd5Hash(string filePath)
+        {
+            using (var md5 = System.Security.Cryptography.MD5.Create())
+            {
+                using (var stream = System.IO.File.OpenRead(filePath))
+                {
+                    var hash = md5.ComputeHash(stream);
+                    return BitConverter.ToString(hash).Replace("-", string.Empty).ToLowerInvariant();
+                }
+            }
+        }
+
+        /// <summary>
+        /// Get the resources of the given culture.
+        /// </summary>
+        ///
+        /// <param name="culture">The culture to get the resource for.</param>
+        /// <returns>A list of file names.</returns>
+        public static List<string> GetCultureResource(string culture)
+        {
+            string tmp;
+            var fileNames = new List<string>();
+            var parts = culture.Split('-');
+
+            if (parts.Length == 2)
+            {
+                tmp = parts[0].ToLowerInvariant() + "_" + parts[1].ToUpperInvariant();
+                fileNames.Add(tmp + ".json");
+            }
+
+            tmp = parts[0].ToLowerInvariant();
+            if (tmp != "en")
+            {
+                fileNames.Add(tmp + ".json");
+            }
+
+            return fileNames;
+        }
+
+        /// <summary>
+        /// Run the task, asynchronously.
+        /// </summary>
+        /// <returns>A <see cref="Task"/> representing the asynchronous operation.</returns>
+        public static Task RunAsync()
+        {
+            return Task.CompletedTask;
+        }
+
+        /// <summary>
         /// Save a mp3 file from a YouTube video url.
         /// </summary>
         /// <param name="destination">The destination path.</param>
@@ -273,17 +409,6 @@ namespace Jellyfin.Plugin.Themerr
         }
 
         /// <summary>
-        /// Get TMDB id from an item.
-        /// </summary>
-        /// <param name="item">The Jellyfin media object.</param>
-        /// <returns>TMDB id.</returns>
-        public string GetTmdbId(BaseItem item)
-        {
-            var tmdbId = item.GetProviderId(MetadataProvider.Tmdb);
-            return tmdbId;
-        }
-
-        /// <summary>
         /// Get the theme provider.
         /// </summary>
         /// <param name="item">The Jellyfin media object.</param>
@@ -342,16 +467,6 @@ namespace Jellyfin.Plugin.Themerr
 
             // if hashes match, theme is supplied by themerr, otherwise it is user supplied
             return themeMd5 == existingThemeMd5;
-        }
-
-        /// <summary>
-        /// Get the path to the theme song.
-        /// </summary>
-        /// <param name="item">The Jellyfin media object.</param>
-        /// <returns>The path to the theme song.</returns>
-        public string GetThemePath(BaseItem item)
-        {
-            return ThemerrMediaPath.GetThemePath(item);
         }
 
         /// <summary>
@@ -435,16 +550,6 @@ namespace Jellyfin.Plugin.Themerr
         }
 
         /// <summary>
-        /// Get the path to the themerr data file.
-        /// </summary>
-        /// <param name="item">The Jellyfin media object.</param>
-        /// <returns>The path to the themerr data file.</returns>
-        public string GetThemerrDataPath(BaseItem item)
-        {
-            return ThemerrMediaPath.GetThemerrDataPath(item);
-        }
-
-        /// <summary>
         /// Migrate a legacy themerr.json file to sqlite.
         /// </summary>
         /// <param name="item">The Jellyfin media object.</param>
@@ -454,17 +559,6 @@ namespace Jellyfin.Plugin.Themerr
             var themePath = GetThemePath(item);
             var existingData = _themerrRepository.Get(item, themePath);
             return MigrateLegacyThemerrData(item, themePath, existingData);
-        }
-
-        /// <summary>
-        /// Create a link to the themerr database.
-        /// </summary>
-        /// <param name="tmdbId">The tmdb id.</param>
-        /// <param name="dbType">The database type.</param>
-        /// <returns>The themerr database link.</returns>
-        public string CreateThemerrDbLink(string tmdbId, string dbType)
-        {
-            return $"https://app.lizardbyte.dev/ThemerrDB/{dbType}/themoviedb/{tmdbId}.json";
         }
 
         /// <summary>
@@ -502,47 +596,6 @@ namespace Jellyfin.Plugin.Themerr
         }
 
         /// <summary>
-        /// Get ThemerrDB issue url.
-        ///
-        /// This url can be used to easily add/edit theme songs in ThemerrDB.
-        /// </summary>
-        /// <param name="item">The Jellyfin media object.</param>
-        /// <returns>The ThemerrDB issue url.</returns>
-        public string GetIssueUrl(BaseItem item)
-        {
-            string issueBaseTitle = item switch
-            {
-                Movie _ => "MOVIE",
-                Series _ => "TV SHOW",
-                _ => null,
-            };
-
-            string tmdbEndpoint = item switch
-            {
-                Movie _ => "movie",
-                Series _ => "tv",
-                _ => null,
-            };
-
-            // return if either is null
-            if (string.IsNullOrEmpty(issueBaseTitle) || string.IsNullOrEmpty(tmdbEndpoint))
-            {
-                return null;
-            }
-
-            // url components
-            string issueBase = $"https://github.com/LizardByte/ThemerrDB/issues/new?assignees=&labels=request-theme&template=theme.yml&title=[{issueBaseTitle}]:%20";
-            string databaseBase = $"https://www.themoviedb.org/{tmdbEndpoint}/";
-
-            var urlEncodedName = Uri.EscapeDataString(item.Name);
-            var year = item.ProductionYear;
-            var tmdbId = GetTmdbId(item);
-
-            var issueUrl = $"{issueBase}{urlEncodedName}%20({year})&database_url={databaseBase}{tmdbId}";
-            return issueUrl;
-        }
-
-        /// <summary>
         /// Save the themerr data for an item.
         /// </summary>
         /// <param name="item">The Jellyfin media object.</param>
@@ -577,59 +630,6 @@ namespace Jellyfin.Plugin.Themerr
         }
 
         /// <summary>
-        /// Get the MD5 hash of a file.
-        /// </summary>
-        /// <param name="filePath">The file path.</param>
-        /// <returns>The MD5 hash of the file.</returns>
-        public string GetMd5Hash(string filePath)
-        {
-            using (var md5 = System.Security.Cryptography.MD5.Create())
-            {
-                using (var stream = System.IO.File.OpenRead(filePath))
-                {
-                    var hash = md5.ComputeHash(stream);
-                    return BitConverter.ToString(hash).Replace("-", string.Empty).ToLowerInvariant();
-                }
-            }
-        }
-
-        /// <summary>
-        /// Get the resources of the given culture.
-        /// </summary>
-        ///
-        /// <param name="culture">The culture to get the resource for.</param>
-        /// <returns>A list of file names.</returns>
-        public List<string> GetCultureResource(string culture)
-        {
-            string tmp;
-            var fileNames = new List<string>();
-            var parts = culture.Split('-');
-
-            if (parts.Length == 2)
-            {
-                tmp = parts[0].ToLowerInvariant() + "_" + parts[1].ToUpperInvariant();
-                fileNames.Add(tmp + ".json");
-            }
-
-            tmp = parts[0].ToLowerInvariant();
-            if (tmp != "en")
-            {
-                fileNames.Add(tmp + ".json");
-            }
-
-            return fileNames;
-        }
-
-        /// <summary>
-        /// Run the task, asynchronously.
-        /// </summary>
-        /// <returns>A <see cref="Task"/> representing the asynchronous operation.</returns>
-        public Task RunAsync()
-        {
-            return Task.CompletedTask;
-        }
-
-        /// <summary>
         /// Cleanup.
         /// </summary>
         public void Dispose()
@@ -648,6 +648,53 @@ namespace Jellyfin.Plugin.Themerr
             {
                 _timer?.Dispose();
             }
+        }
+
+        private static string GetCurrentThemeProvider(string existingThemePath, ThemerrMediaItem existingData)
+        {
+            if (string.IsNullOrEmpty(existingThemePath))
+            {
+                return existingData?.ThemeProvider == ThemerrThemeProvider.Themerr
+                    ? ThemerrThemeProvider.Themerr
+                    : null;
+            }
+
+            if (existingData == null)
+            {
+                return ThemerrThemeProvider.User;
+            }
+
+            if (existingData.ThemeProvider == ThemerrThemeProvider.User)
+            {
+                return ThemerrThemeProvider.User;
+            }
+
+            if (string.IsNullOrEmpty(existingData.ThemeMd5))
+            {
+                return existingData.ThemeProvider == ThemerrThemeProvider.Themerr
+                    ? ThemerrThemeProvider.Themerr
+                    : ThemerrThemeProvider.User;
+            }
+
+            var themeMd5 = GetMd5Hash(existingThemePath);
+            return string.Equals(themeMd5, existingData.ThemeMd5, StringComparison.OrdinalIgnoreCase)
+                ? ThemerrThemeProvider.Themerr
+                : ThemerrThemeProvider.User;
+        }
+
+        private static string GetCurrentThemeMd5(
+            string themeProvider,
+            string existingThemePath,
+            ThemerrMediaItem existingData)
+        {
+            if (themeProvider != ThemerrThemeProvider.Themerr)
+            {
+                return null;
+            }
+
+            return !string.IsNullOrEmpty(existingThemePath)
+                ? GetMd5Hash(existingThemePath)
+                : existingData?.ThemeMd5;
         }
 
         /// <summary>
@@ -789,53 +836,6 @@ namespace Jellyfin.Plugin.Themerr
                 YoutubeThemeUrl = string.IsNullOrEmpty(youtubeThemeUrl) ? null : youtubeThemeUrl,
                 CheckedUtc = refreshedUtc,
             };
-        }
-
-        private string GetCurrentThemeProvider(string existingThemePath, ThemerrMediaItem existingData)
-        {
-            if (string.IsNullOrEmpty(existingThemePath))
-            {
-                return existingData?.ThemeProvider == ThemerrThemeProvider.Themerr
-                    ? ThemerrThemeProvider.Themerr
-                    : null;
-            }
-
-            if (existingData == null)
-            {
-                return ThemerrThemeProvider.User;
-            }
-
-            if (existingData.ThemeProvider == ThemerrThemeProvider.User)
-            {
-                return ThemerrThemeProvider.User;
-            }
-
-            if (string.IsNullOrEmpty(existingData.ThemeMd5))
-            {
-                return existingData.ThemeProvider == ThemerrThemeProvider.Themerr
-                    ? ThemerrThemeProvider.Themerr
-                    : ThemerrThemeProvider.User;
-            }
-
-            var themeMd5 = GetMd5Hash(existingThemePath);
-            return string.Equals(themeMd5, existingData.ThemeMd5, StringComparison.OrdinalIgnoreCase)
-                ? ThemerrThemeProvider.Themerr
-                : ThemerrThemeProvider.User;
-        }
-
-        private string GetCurrentThemeMd5(
-            string themeProvider,
-            string existingThemePath,
-            ThemerrMediaItem existingData)
-        {
-            if (themeProvider != ThemerrThemeProvider.Themerr)
-            {
-                return null;
-            }
-
-            return !string.IsNullOrEmpty(existingThemePath)
-                ? GetMd5Hash(existingThemePath)
-                : existingData?.ThemeMd5;
         }
 
         private string GetExistingThemePath(BaseItem item, string themePath)
