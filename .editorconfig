@@ -164,6 +164,9 @@ dotnet_diagnostic.SA1028.severity = error
 # Using directive should appear within a namespace declaration
 dotnet_diagnostic.sa1200.severity = None
 
+# A member should not follow a nested type
+dotnet_diagnostic.SA1201.severity = error
+
 # Public members should come before private members
 dotnet_diagnostic.SA1202.severity = error
 
@@ -175,6 +178,9 @@ dotnet_diagnostic.sa1413.severity = error
 
 # Single-line comments should not be followed by blank line
 dotnet_diagnostic.sa1512.severity = error
+
+# A closing brace should not be preceded by a blank line
+dotnet_diagnostic.SA1508.severity = error
 
 # The file header is missing or not located at the top of the file
 dotnet_diagnostic.sa1633.severity = None

@@ -17,6 +17,7 @@ using MediaBrowser.Controller.Library;
 using MediaBrowser.Model.Entities;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
 
 namespace Jellyfin.Plugin.Themerr
 {
@@ -564,8 +565,7 @@ namespace Jellyfin.Plugin.Themerr
             }
 
             var jsonString = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
-            var jsonData = JsonConvert.DeserializeObject<Dictionary<string, string>>(jsonString);
-            return jsonData.GetValueOrDefault("youtube_theme_url");
+            return GetYoutubeThemeUrlFromJson(jsonString);
         }
 
         /// <summary>
@@ -621,6 +621,12 @@ namespace Jellyfin.Plugin.Themerr
             {
                 _timer.Dispose();
             }
+        }
+
+        private static string GetYoutubeThemeUrlFromJson(string jsonString)
+        {
+            var jsonData = JObject.Parse(jsonString);
+            return jsonData.Value<string>("youtube_theme_url");
         }
 
         private static string GetCurrentThemeProvider(string existingThemePath, ThemerrMediaItem existingData)

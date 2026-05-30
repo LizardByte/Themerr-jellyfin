@@ -232,6 +232,38 @@ public class TestThemerrManager
         Assert.Null(result);
     }
 
+    /// <summary>
+    /// Test ThemerrDB payloads with array properties still return the YouTube URL.
+    /// </summary>
+    [Fact]
+    [Trait("Category", "Unit")]
+    public void TestGetYoutubeThemeUrlFromJsonWithArrayProperties()
+    {
+        var youtubeThemeUrl = InvokeGetYoutubeThemeUrlFromJson(
+            JsonConvert.SerializeObject(new
+            {
+                genres = new[]
+                {
+                    new
+                    {
+                        id = 27,
+                        name = "Horror",
+                    },
+                },
+                production_companies = new[]
+                {
+                    new
+                    {
+                        id = 12,
+                        name = "New Line Cinema",
+                    },
+                },
+                youtube_theme_url = "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
+            }));
+
+        Assert.Equal("https://www.youtube.com/watch?v=dQw4w9WgXcQ", youtubeThemeUrl);
+    }
+
     private static ThemerrManager CreateThemerrManager(
         ThemerrRepository? themerrRepository = null,
         IReadOnlyList<BaseItem>? libraryItems = null)
@@ -375,6 +407,16 @@ public class TestThemerrManager
         Assert.NotNull(method);
 
         return method.Invoke(null, new object?[] { themeProvider, existingThemePath, existingData }) as string;
+    }
+
+    private static string? InvokeGetYoutubeThemeUrlFromJson(string jsonString)
+    {
+        var method = typeof(ThemerrManager).GetMethod(
+            "GetYoutubeThemeUrlFromJson",
+            BindingFlags.NonPublic | BindingFlags.Static);
+        Assert.NotNull(method);
+
+        return method.Invoke(null, new object[] { jsonString }) as string;
     }
 
     private static void InvokeDispose(ThemerrManager manager, bool disposing)
