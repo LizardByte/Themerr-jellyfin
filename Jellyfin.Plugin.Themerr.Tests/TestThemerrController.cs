@@ -65,7 +65,7 @@ public class TestThemerrController
 
         var items = value?.GetType().GetProperty("items")?.GetValue(value, null) as ICollection;
         Assert.NotNull(items);
-        Assert.Equal(0, items.Count);
+        Assert.Empty(items);
     }
 
     /// <summary>

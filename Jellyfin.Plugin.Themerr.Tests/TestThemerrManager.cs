@@ -285,7 +285,7 @@ public class TestThemerrManager
         return path;
     }
 
-    private static ThemerrPlugin CreateThemerrPluginInstance(bool backupUserSuppliedTheme = true)
+    private static void CreateThemerrPluginInstance(bool backupUserSuppliedTheme = true)
     {
         var config = new Configuration.PluginConfiguration();
         var mockXmlSerializer = new Mock<IXmlSerializer>();
@@ -296,7 +296,6 @@ public class TestThemerrManager
             TestHelper.GetMockApplicationPaths().Object,
             mockXmlSerializer.Object);
         plugin.Configuration.BackupUserSuppliedTheme = backupUserSuppliedTheme;
-        return plugin;
     }
 
     private static ThemerrManager CreateThemerrManagerWithFailingYoutubeAndItemById(
@@ -412,7 +411,7 @@ public class TestThemerrManager
 
         // check if the file is an actual mp3
         // https://en.wikipedia.org/wiki/List_of_file_signatures
-        var fileBytes = File.ReadAllBytes(destinationFile);
+        var fileBytes = await File.ReadAllBytesAsync(destinationFile);
         var fileBytesHex = BitConverter.ToString(fileBytes);
 
         // make sure the file is not WebM, starts with `1A 45 DF A3`
@@ -540,22 +539,41 @@ public class TestThemerrManager
         Assert.Equal(item.ProviderIds[MetadataProvider.Tmdb.ToString()], tmdbId);
     }
 
-    /*
-    // todo: fix this test
     [Theory]
     [Trait("Category", "Unit")]
     [MemberData(nameof(FixtureJellyfinServer.MockItemsData), MemberType = typeof(FixtureJellyfinServer))]
-    private void TestGetThemeProvider(BaseItem item)
+    private async Task TestGetThemeProvider(BaseItem item)
     {
-        // get the item theme
-        var themeProvider = _themerrManager.GetThemeProvider(item);
+        var repository = CreateThemerrRepository();
+        var manager = CreateThemerrManager(repository);
+        var themePath = ThemerrManager.GetThemePath(item);
 
-        // ensure themeProvider null
+        repository.Save(
+            item,
+            new ThemerrMediaItemSaveOptions
+            {
+                ThemePath = themePath,
+                InThemerrDb = false,
+                InThemerrDbCheckedUtc = DateTime.UtcNow,
+            });
+
+        var themeProvider = await manager.GetThemeProvider(item);
         Assert.Null(themeProvider);
 
-        // todo: test with actual items
+        repository.Save(
+            item,
+            new ThemerrMediaItemSaveOptions
+            {
+                ThemePath = themePath,
+                ThemeProvider = ThemerrThemeProvider.Themerr,
+                InThemerrDb = true,
+                InThemerrDbCheckedUtc = DateTime.UtcNow,
+                YoutubeThemeUrl = "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
+            });
+
+        themeProvider = await manager.GetThemeProvider(item);
+        Assert.Equal(ThemerrThemeProvider.Themerr, themeProvider);
     }
-    */
 
     [Fact]
     [Trait("Category", "Unit")]
@@ -647,7 +665,7 @@ public class TestThemerrManager
 
     [Fact]
     [Trait("Category", "Unit")]
-    private void TestMigrateLegacyThemerrDataDeletesLegacyFile()
+    private async Task TestMigrateLegacyThemerrDataDeletesLegacyFile()
     {
         var repository = CreateThemerrRepository();
         var manager = CreateThemerrManager(repository);
@@ -661,7 +679,7 @@ public class TestThemerrManager
         Assert.Equal(Path.Combine(tempPath, "themerr.json"), legacyDataPath);
         Assert.Equal(Path.Combine(tempPath, "theme.mp3"), themePath);
 
-        File.WriteAllText(
+        await File.WriteAllTextAsync(
             legacyDataPath,
             JsonConvert.SerializeObject(new
             {
@@ -700,7 +718,7 @@ public class TestThemerrManager
             true);
 
         var themeMd5 = ThemerrManager.GetMd5Hash(themePath);
-        File.WriteAllText(
+        await File.WriteAllTextAsync(
             legacyDataPath,
             JsonConvert.SerializeObject(new
             {
@@ -750,7 +768,7 @@ public class TestThemerrManager
             true);
 
         var themeMd5 = ThemerrManager.GetMd5Hash(actualThemePath);
-        File.WriteAllText(
+        await File.WriteAllTextAsync(
             legacyDataPath,
             JsonConvert.SerializeObject(new
             {
@@ -833,7 +851,7 @@ public class TestThemerrManager
         File.Copy(currentThemePath, legacyThemePath, true);
 
         var themeMd5 = ThemerrManager.GetMd5Hash(currentThemePath);
-        File.WriteAllText(
+        await File.WriteAllTextAsync(
             legacyDataPath,
             JsonConvert.SerializeObject(new
             {
@@ -858,7 +876,7 @@ public class TestThemerrManager
             var mediaItem = Assert.Single(context.MediaItems);
             mediaItem.ItemPath = legacyMediaPath;
             mediaItem.ThemePath = legacyThemePath;
-            context.SaveChanges();
+            await context.SaveChangesAsync();
         }
 
         var syncedItem = await manager.SyncLibraryItem(item);
@@ -1214,7 +1232,7 @@ public class TestThemerrManager
     /// </summary>
     [Fact]
     [Trait("Category", "Unit")]
-    public async Task TestReplaceWithThemerThemeItemNotFound()
+    private async Task TestReplaceWithThemerThemeItemNotFound()
     {
         var result = await _themerrManager.ReplaceWithThemerTheme(Guid.Empty);
         Assert.False(result);
@@ -1225,7 +1243,7 @@ public class TestThemerrManager
     /// </summary>
     [Fact]
     [Trait("Category", "Unit")]
-    public async Task TestReplaceWithThemerThemeNoStoredUrl()
+    private async Task TestReplaceWithThemerThemeNoStoredUrl()
     {
         // TMDB ID "0" is a known-absent sentinel that returns 404 from ThemerrDB,
         // so neither ThemerrDB nor the stored URL will have a value.
@@ -1251,7 +1269,7 @@ public class TestThemerrManager
     /// </summary>
     [Fact]
     [Trait("Category", "Unit")]
-    public async Task TestReplaceWithThemerThemeNoRepositoryRow()
+    private async Task TestReplaceWithThemerThemeNoRepositoryRow()
     {
         // TMDB ID "0" returns 404 from ThemerrDB; no row saved to the repository,
         // so the null-conditional fallback (existingData?.YoutubeThemeUrl) returns null.
@@ -1268,7 +1286,7 @@ public class TestThemerrManager
     /// </summary>
     [Fact]
     [Trait("Category", "Unit")]
-    public async Task TestReplaceWithThemerTheme()
+    private async Task TestReplaceWithThemerTheme()
     {
         var movie = CreateMovie("1");
         var repository = CreateThemerrRepository();
@@ -1308,7 +1326,7 @@ public class TestThemerrManager
     /// </summary>
     [Fact]
     [Trait("Category", "Unit")]
-    public async Task TestReplaceWithThemerThemeCreatesBackup()
+    private async Task TestReplaceWithThemerThemeCreatesBackup()
     {
         CreateThemerrPluginInstance(backupUserSuppliedTheme: true);
 
@@ -1358,7 +1376,7 @@ public class TestThemerrManager
     /// </summary>
     [Fact]
     [Trait("Category", "Unit")]
-    public async Task TestReplaceWithThemerThemeNoBackupWhenSettingDisabled()
+    private async Task TestReplaceWithThemerThemeNoBackupWhenSettingDisabled()
     {
         CreateThemerrPluginInstance(backupUserSuppliedTheme: false);
 
@@ -1403,7 +1421,7 @@ public class TestThemerrManager
     /// </summary>
     [Fact]
     [Trait("Category", "Unit")]
-    public async Task TestReplaceWithThemerThemeNoBackupWhenNoExistingTheme()
+    private async Task TestReplaceWithThemerThemeNoBackupWhenNoExistingTheme()
     {
         CreateThemerrPluginInstance(backupUserSuppliedTheme: true);
 
@@ -1446,7 +1464,7 @@ public class TestThemerrManager
     /// </summary>
     [Fact]
     [Trait("Category", "Unit")]
-    public async Task TestReplaceWithThemerThemeRestoresBackupOnDownloadFailure()
+    private async Task TestReplaceWithThemerThemeRestoresBackupOnDownloadFailure()
     {
         CreateThemerrPluginInstance(backupUserSuppliedTheme: true);
 

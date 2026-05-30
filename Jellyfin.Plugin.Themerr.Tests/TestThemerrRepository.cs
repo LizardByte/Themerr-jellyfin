@@ -163,36 +163,6 @@ public class TestThemerrRepository
         Assert.Null(repository.Get(item, themePath));
     }
 
-    private static ThemerrRepository CreateRepository()
-    {
-        return new ThemerrRepository(CreateDatabasePath(), new Mock<ILogger>().Object);
-    }
-
-    private static string CreateDatabasePath()
-    {
-        return Path.Combine(CreateTempDirectory(), "themerr.db");
-    }
-
-    private static string CreateTempDirectory()
-    {
-        var path = Path.Combine(Path.GetTempPath(), "ThemerrJellyfinTests", Guid.NewGuid().ToString("N"));
-        Directory.CreateDirectory(path);
-        return path;
-    }
-
-    private static Movie CreateMovie(string tmdbId)
-    {
-        return new Movie
-        {
-            Name = $"Test Movie {tmdbId}",
-            ProductionYear = 1970,
-            ProviderIds = new Dictionary<string, string>
-            {
-                { MetadataProvider.Tmdb.ToString(), tmdbId },
-            },
-        };
-    }
-
     [Fact]
     [Trait("Category", "Unit")]
     public void TestDeleteFound()
@@ -416,5 +386,35 @@ public class TestThemerrRepository
 
         var result = ThemerrMediaPath.GetItemDirectory(item);
         Assert.Equal("/nonexistent/bare/noexit", result);
+    }
+
+    private static ThemerrRepository CreateRepository()
+    {
+        return new ThemerrRepository(CreateDatabasePath(), new Mock<ILogger>().Object);
+    }
+
+    private static string CreateDatabasePath()
+    {
+        return Path.Combine(CreateTempDirectory(), "themerr.db");
+    }
+
+    private static string CreateTempDirectory()
+    {
+        var path = Path.Combine(Path.GetTempPath(), "ThemerrJellyfinTests", Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(path);
+        return path;
+    }
+
+    private static Movie CreateMovie(string tmdbId)
+    {
+        return new Movie
+        {
+            Name = $"Test Movie {tmdbId}",
+            ProductionYear = 1970,
+            ProviderIds = new Dictionary<string, string>
+            {
+                { MetadataProvider.Tmdb.ToString(), tmdbId },
+            },
+        };
     }
 }
