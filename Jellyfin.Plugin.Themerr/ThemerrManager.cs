@@ -564,8 +564,8 @@ namespace Jellyfin.Plugin.Themerr
             }
 
             var jsonString = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
-            dynamic jsonData = JsonConvert.DeserializeObject(jsonString);
-            return jsonData?.youtube_theme_url;
+            var jsonData = JsonConvert.DeserializeObject<Dictionary<string, string>>(jsonString);
+            return jsonData.GetValueOrDefault("youtube_theme_url");
         }
 
         /// <summary>
@@ -619,7 +619,7 @@ namespace Jellyfin.Plugin.Themerr
         {
             if (disposing)
             {
-                _timer?.Dispose();
+                _timer.Dispose();
             }
         }
 

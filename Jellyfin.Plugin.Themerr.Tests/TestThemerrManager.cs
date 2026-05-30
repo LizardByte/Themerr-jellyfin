@@ -114,6 +114,7 @@ public class TestThemerrManager
         await task;
 
         var manager = CreateThemerrManager();
+        InvokeDispose(manager, false);
         manager.Dispose();
         manager.Dispose();
     }
@@ -127,6 +128,9 @@ public class TestThemerrManager
     {
         var result = InvokeGetCurrentThemeProvider("theme.mp3", null);
         Assert.Equal(ThemerrThemeProvider.User, result);
+
+        result = InvokeGetCurrentThemeProvider(string.Empty, null);
+        Assert.Null(result);
     }
 
     /// <summary>
@@ -144,6 +148,88 @@ public class TestThemerrManager
                 ThemeProvider = ThemerrThemeProvider.User,
             });
         Assert.Equal(ThemerrThemeProvider.User, result);
+    }
+
+    /// <summary>
+    /// Test saved theme classification when Themerr data exists without an MD5 hash.
+    /// </summary>
+    [Fact]
+    [Trait("Category", "Unit")]
+    public void TestGetCurrentThemeProviderEmptyMd5WithoutThemerrProvider()
+    {
+        var result = InvokeGetCurrentThemeProvider(
+            "theme.mp3",
+            new ThemerrMediaItem());
+        Assert.Equal(ThemerrThemeProvider.User, result);
+
+        result = InvokeGetCurrentThemeProvider(
+            "theme.mp3",
+            new ThemerrMediaItem
+            {
+                ThemeProvider = "custom-provider",
+            });
+        Assert.Equal(ThemerrThemeProvider.User, result);
+
+        result = InvokeGetCurrentThemeProvider(
+            "theme.mp3",
+            new ThemerrMediaItem
+            {
+                ThemeProvider = ThemerrThemeProvider.Themerr,
+            });
+        Assert.Equal(ThemerrThemeProvider.Themerr, result);
+    }
+
+    /// <summary>
+    /// Test saved theme classification when the current theme MD5 matches Themerr data.
+    /// </summary>
+    [Fact]
+    [Trait("Category", "Unit")]
+    public void TestGetCurrentThemeProviderMatchingMd5()
+    {
+        var themePath = Path.Combine(CreateTempDirectory(), "theme.mp3");
+        File.Copy(Path.Combine(Directory.GetCurrentDirectory(), "data", "audio_stub.mp3"), themePath, true);
+        var themeMd5 = ThemerrManager.GetMd5Hash(themePath);
+
+        var result = InvokeGetCurrentThemeProvider(
+            themePath,
+            new ThemerrMediaItem
+            {
+                ThemeMd5 = themeMd5,
+                ThemeProvider = ThemerrThemeProvider.Themerr,
+            });
+        Assert.Equal(ThemerrThemeProvider.Themerr, result);
+
+        result = InvokeGetCurrentThemeProvider(
+            themePath,
+            new ThemerrMediaItem
+            {
+                ThemeMd5 = "different-md5",
+                ThemeProvider = ThemerrThemeProvider.Themerr,
+            });
+        Assert.Equal(ThemerrThemeProvider.User, result);
+    }
+
+    /// <summary>
+    /// Test saved Themerr MD5 is reused when no current theme file exists.
+    /// </summary>
+    [Fact]
+    [Trait("Category", "Unit")]
+    public void TestGetCurrentThemeMd5WithoutExistingThemePath()
+    {
+        var result = InvokeGetCurrentThemeMd5(
+            ThemerrThemeProvider.Themerr,
+            string.Empty,
+            new ThemerrMediaItem
+            {
+                ThemeMd5 = "stored-md5",
+            });
+        Assert.Equal("stored-md5", result);
+
+        result = InvokeGetCurrentThemeMd5(
+            ThemerrThemeProvider.Themerr,
+            string.Empty,
+            null);
+        Assert.Null(result);
     }
 
     private static ThemerrManager CreateThemerrManager(
@@ -269,14 +355,40 @@ public class TestThemerrManager
             themerrRepository);
     }
 
-    private static string InvokeGetCurrentThemeProvider(string existingThemePath, ThemerrMediaItem? existingData)
+    private static string? InvokeGetCurrentThemeProvider(string existingThemePath, ThemerrMediaItem? existingData)
     {
         var method = typeof(ThemerrManager).GetMethod(
             "GetCurrentThemeProvider",
             BindingFlags.NonPublic | BindingFlags.Static);
         Assert.NotNull(method);
 
-        return Assert.IsType<string>(method.Invoke(null, new object?[] { existingThemePath, existingData }));
+        return method.Invoke(null, new object?[] { existingThemePath, existingData }) as string;
+    }
+
+    private static string? InvokeGetCurrentThemeMd5(
+        string themeProvider,
+        string existingThemePath,
+        ThemerrMediaItem? existingData)
+    {
+        var method = typeof(ThemerrManager).GetMethod(
+            "GetCurrentThemeMd5",
+            BindingFlags.NonPublic | BindingFlags.Static);
+        Assert.NotNull(method);
+
+        return method.Invoke(null, new object?[] { themeProvider, existingThemePath, existingData }) as string;
+    }
+
+    private static void InvokeDispose(ThemerrManager manager, bool disposing)
+    {
+        var method = typeof(ThemerrManager).GetMethod(
+            "Dispose",
+            BindingFlags.NonPublic | BindingFlags.Instance,
+            null,
+            new[] { typeof(bool) },
+            null);
+        Assert.NotNull(method);
+
+        method.Invoke(manager, new object[] { disposing });
     }
 
     [Theory]
