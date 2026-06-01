@@ -83,7 +83,11 @@ namespace Jellyfin.Plugin.Themerr
             var task = _taskManager.ScheduledTasks.FirstOrDefault(task => task.ScheduledTask is ThemerrTasks);
             if (task != null)
             {
-                task.Triggers = ThemerrTasks.GetTriggers(configuration.UpdateInterval);
+                // Jellyfin stores one trigger list for the task. Keep the first trigger Themerr-managed,
+                // and preserve any additional triggers the user added in the scheduled tasks UI.
+                task.Triggers = ThemerrTasks.GetTriggers(configuration.UpdateInterval)
+                    .Concat(task.Triggers.Skip(1))
+                    .ToArray();
                 task.ReloadTriggerEvents();
             }
         }
