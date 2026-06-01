@@ -67,11 +67,15 @@ _UV
 # add dotnet, uv, and the project environment to path
 ENV PATH="/root/.dotnet:/root/.local/bin:${VIRTUAL_ENV}/bin:${PATH}"
 
-# create build dir and copy GitHub repo there
-COPY --link . /build
-
-# set build dir
+# create build dir and copy the files required to restore dependencies and build the plugin
 WORKDIR /build
+COPY --link pyproject.toml uv.lock README.rst LICENSE Directory.Build.props Jellyfin.Plugin.Themerr.sln ./
+COPY --link themerr-jellyfin.png ./
+COPY --link scripts/ scripts/
+COPY --link Jellyfin.Plugin.Themerr/ Jellyfin.Plugin.Themerr/
+COPY --link Jellyfin.Plugin.Themerr.Tests/ Jellyfin.Plugin.Themerr.Tests/
+COPY --link Locale/ Locale/
+COPY --link dockermod_root/ dockermod_root/
 
 # install Python dependencies
 RUN <<_UV_SYNC
@@ -118,3 +122,6 @@ FROM scratch AS deploy
 
 # copy s6 initialization files
 COPY --link --from=layer_stage /root-layer/ /
+
+# The docker mod is consumed as a filesystem layer, not run as a standalone root container.
+USER 65532:65532

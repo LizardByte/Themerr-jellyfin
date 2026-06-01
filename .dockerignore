@@ -6,3 +6,7 @@
 
 # ignore directories
 docs/
+build/
+TestResults/
+**/bin/
+**/obj/
