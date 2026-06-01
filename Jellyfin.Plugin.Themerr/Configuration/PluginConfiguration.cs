@@ -7,6 +7,11 @@ namespace Jellyfin.Plugin.Themerr.Configuration
     /// </summary>
     public class PluginConfiguration : BasePluginConfiguration
     {
+        /// <summary>
+        /// The minimum interval between scheduled updates, in minutes.
+        /// </summary>
+        public const int MinimumUpdateIntervalMinutes = 15;
+
         private int _updateInterval;
 
         /// <summary>
@@ -32,8 +37,7 @@ namespace Jellyfin.Plugin.Themerr.Configuration
         {
             get => _updateInterval;
 
-            // todo - modify the existing scheduled task
-            set => _updateInterval = value < 15 ? 15 : value;
+            set => _updateInterval = value < MinimumUpdateIntervalMinutes ? MinimumUpdateIntervalMinutes : value;
         }
     }
 }

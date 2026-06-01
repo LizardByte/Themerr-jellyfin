@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
+using Jellyfin.Plugin.Themerr.Configuration;
 using MediaBrowser.Common.Configuration;
 using MediaBrowser.Controller.Library;
 using MediaBrowser.Model.Tasks;
@@ -58,6 +59,25 @@ namespace Jellyfin.Plugin.Themerr.ScheduledTasks
         public string Category => "Themerr";
 
         /// <summary>
+        /// Gets triggers for the configured update interval.
+        /// </summary>
+        /// <param name="updateInterval">The update interval, in minutes.</param>
+        /// <returns>A list of <see cref="TaskTriggerInfo"/>.</returns>
+        public static IReadOnlyList<TaskTriggerInfo> GetTriggers(int updateInterval)
+        {
+            var intervalMinutes = Math.Max(updateInterval, PluginConfiguration.MinimumUpdateIntervalMinutes);
+
+            return new[]
+            {
+                new TaskTriggerInfo
+                {
+                    Type = TaskTriggerInfoType.IntervalTrigger,
+                    IntervalTicks = TimeSpan.FromMinutes(intervalMinutes).Ticks,
+                },
+            };
+        }
+
+        /// <summary>
         /// Execute the task, asynchronously.
         /// </summary>
         /// <param name="progress">The progress reporter.</param>
@@ -76,12 +96,7 @@ namespace Jellyfin.Plugin.Themerr.ScheduledTasks
         /// <returns>A list of <see cref="TaskTriggerInfo"/>.</returns>
         public IEnumerable<TaskTriggerInfo> GetDefaultTriggers()
         {
-            // Run this task according to the configured interval
-            yield return new TaskTriggerInfo
-            {
-                Type = TaskTriggerInfoType.IntervalTrigger,
-                IntervalTicks = TimeSpan.FromMinutes(ThemerrPlugin.Instance.Configuration.UpdateInterval).Ticks,
-            };
+            return GetTriggers(ThemerrPlugin.Instance.Configuration.UpdateInterval);
         }
     }
 }

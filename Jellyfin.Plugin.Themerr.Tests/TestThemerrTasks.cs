@@ -1,6 +1,7 @@
 using Jellyfin.Plugin.Themerr.ScheduledTasks;
 using MediaBrowser.Common.Configuration;
 using MediaBrowser.Controller.Library;
+using MediaBrowser.Model.Tasks;
 using Microsoft.Extensions.Logging;
 using Moq;
 
@@ -31,5 +32,15 @@ public class TestThemerrTasks
         Assert.Equal("Update ThemeSongs", tasks.Key);
         Assert.Equal("Scans all libraries to download supported Theme Songs", tasks.Description);
         Assert.Equal("Themerr", tasks.Category);
+    }
+
+    [Fact]
+    [Trait("Category", "Unit")]
+    public void TestGetTriggersUsesConfiguredInterval()
+    {
+        var trigger = Assert.Single(ThemerrTasks.GetTriggers(30));
+
+        Assert.Equal(TaskTriggerInfoType.IntervalTrigger, trigger.Type);
+        Assert.Equal(TimeSpan.FromMinutes(30).Ticks, trigger.IntervalTicks);
     }
 }
