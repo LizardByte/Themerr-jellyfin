@@ -1,3 +1,4 @@
+using System.Reflection;
 using Jellyfin.Plugin.Themerr.Storage;
 using MediaBrowser.Common.Configuration;
 using MediaBrowser.Controller.Entities;
@@ -195,6 +196,33 @@ VALUES (
 
     [Fact]
     [Trait("Category", "Unit")]
+    public void TestSaveWithJellyfinIdAndNullName()
+    {
+        var repository = CreateRepository();
+        var itemId = Guid.NewGuid();
+        var item = new Movie
+        {
+            Id = itemId,
+            ProviderIds = new Dictionary<string, string>(),
+        };
+        var themePath = Path.Combine(CreateTempDirectory(), "theme.mp3");
+
+        repository.Save(
+            item,
+            new ThemerrMediaItemSaveOptions
+            {
+                ThemePath = themePath,
+                ThemeProvider = ThemerrThemeProvider.User,
+            });
+
+        var savedThemerrData = repository.Get(item, themePath);
+        Assert.NotNull(savedThemerrData);
+        Assert.Equal(itemId.ToString("N"), savedThemerrData.ItemId);
+        Assert.Empty(savedThemerrData.ItemName);
+    }
+
+    [Fact]
+    [Trait("Category", "Unit")]
     public void TestMigrateLegacyData()
     {
         var repository = CreateRepository();
@@ -226,6 +254,91 @@ VALUES (
         Assert.NotNull(savedThemerrData.InThemerrDbCheckedUtc);
         Assert.Equal("https://www.youtube.com/watch?v=legacy", savedThemerrData.YoutubeThemeUrl);
         Assert.Equal(downloadedTimestampUtc, savedThemerrData.DownloadedTimestampUtc);
+    }
+
+    [Fact]
+    [Trait("Category", "Unit")]
+    public void TestMigrateLegacyDataHashesThemeBesideLegacyFile()
+    {
+        var repository = CreateRepository();
+        var item = CreateMovie("legacy-neighbor-theme");
+        var themePath = Path.Combine(CreateTempDirectory(), "missing-theme.mp3");
+        var legacyDirectory = CreateTempDirectory();
+        var legacyThemePath = Path.Combine(legacyDirectory, "theme.mp3");
+        var legacyDataPath = Path.Combine(legacyDirectory, "themerr.json");
+
+        File.Copy(Path.Combine(Directory.GetCurrentDirectory(), "data", "audio_stub.mp3"), legacyThemePath, true);
+        var expectedThemeHash = ThemerrThemeHasher.ComputeHash(legacyThemePath);
+
+        File.WriteAllText(
+            legacyDataPath,
+            JsonConvert.SerializeObject(new
+            {
+                downloaded_timestamp = DateTime.UtcNow,
+                theme_md5 = "legacy-md5",
+                youtube_theme_url = "https://www.youtube.com/watch?v=legacy-neighbor",
+            }));
+
+        Assert.True(repository.MigrateLegacyData(item, themePath, legacyDataPath));
+
+        var savedThemerrData = repository.Get(item, themePath);
+        Assert.NotNull(savedThemerrData);
+        Assert.Equal(expectedThemeHash, savedThemerrData.ThemeHash);
+        Assert.Equal(ThemerrThemeHasher.CurrentAlgorithm, savedThemerrData.ThemeHashAlgorithm);
+    }
+
+    [Fact]
+    [Trait("Category", "Unit")]
+    public void TestMigrateLegacyDataWithoutThemePathOrLegacyDirectory()
+    {
+        var repository = CreateRepository();
+        var item = CreateMovie("legacy-without-paths");
+        var legacyDataPath = $"themerr-{Guid.NewGuid():N}.json";
+
+        File.WriteAllText(
+            legacyDataPath,
+            JsonConvert.SerializeObject(new
+            {
+                downloaded_timestamp = DateTime.UtcNow,
+                theme_md5 = "legacy-md5",
+                youtube_theme_url = "https://www.youtube.com/watch?v=legacy-without-paths",
+            }));
+
+        try
+        {
+            Assert.True(repository.MigrateLegacyData(item, string.Empty, legacyDataPath));
+
+            var savedThemerrData = repository.Get(item, string.Empty);
+            Assert.NotNull(savedThemerrData);
+            Assert.Null(savedThemerrData.ThemeHash);
+            Assert.Null(savedThemerrData.ThemeHashAlgorithm);
+        }
+        finally
+        {
+            if (File.Exists(legacyDataPath))
+            {
+                File.Delete(legacyDataPath);
+            }
+        }
+    }
+
+    [Fact]
+    [Trait("Category", "Unit")]
+    public void TestMigrateLegacyDataSaveFailureKeepsLegacyFile()
+    {
+        var repository = CreateRepository();
+        var legacyDataPath = Path.Combine(CreateTempDirectory(), "themerr.json");
+        File.WriteAllText(
+            legacyDataPath,
+            JsonConvert.SerializeObject(new
+            {
+                downloaded_timestamp = DateTime.UtcNow,
+                theme_md5 = "legacy-md5",
+                youtube_theme_url = "https://www.youtube.com/watch?v=legacy-save-failure",
+            }));
+
+        Assert.False(repository.MigrateLegacyData(null!, "theme.mp3", legacyDataPath));
+        Assert.True(File.Exists(legacyDataPath));
     }
 
     [Fact]
@@ -412,6 +525,52 @@ VALUES (
         var repository = new ThemerrRepository(databasePath, new Mock<ILogger>().Object);
 
         Assert.True(repository.DatabaseCreatedDuringMigration);
+    }
+
+    [Fact]
+    [Trait("Category", "Unit")]
+    public void TestEnsureMigratedReturnsWhenMigrationCompletedBeforeLock()
+    {
+        var repository = CreateRepository();
+        var repositoryType = typeof(ThemerrRepository);
+        var migrationLock = repositoryType
+            .GetField("_migrationLock", BindingFlags.NonPublic | BindingFlags.Instance)!
+            .GetValue(repository)!;
+        var migrationsApplied = repositoryType
+            .GetField("_migrationsApplied", BindingFlags.NonPublic | BindingFlags.Instance)!;
+        var ensureMigrated = repositoryType.GetMethod(
+            "EnsureMigrated",
+            BindingFlags.NonPublic | BindingFlags.Instance)!;
+
+        Exception? threadException = null;
+        var thread = new Thread(() =>
+        {
+            try
+            {
+                ensureMigrated.Invoke(repository, null);
+            }
+            catch (TargetInvocationException e)
+            {
+                threadException = e.InnerException ?? e;
+            }
+            catch (Exception e)
+            {
+                threadException = e;
+            }
+        });
+
+        lock (migrationLock)
+        {
+            thread.Start();
+            Assert.True(SpinWait.SpinUntil(
+                () => thread.ThreadState.HasFlag(ThreadState.WaitSleepJoin),
+                TimeSpan.FromSeconds(5)));
+            migrationsApplied.SetValue(repository, true);
+        }
+
+        thread.Join();
+        Assert.Null(threadException);
+        Assert.False(File.Exists(repository.DatabasePath));
     }
 
     [Fact]
