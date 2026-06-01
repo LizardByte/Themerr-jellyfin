@@ -1,6 +1,9 @@
+using System.Reflection;
 using System.Threading;
+using Jellyfin.Plugin.Themerr.Configuration;
 using MediaBrowser.Common.Configuration;
 using MediaBrowser.Controller.Library;
+using MediaBrowser.Model.Plugins;
 using MediaBrowser.Model.Serialization;
 using MediaBrowser.Model.Tasks;
 using Microsoft.Extensions.Logging;
@@ -15,6 +18,8 @@ public class TestThemerrStartupService
     [Trait("Category", "Unit")]
     public async Task TestStartAndStop()
     {
+        ClearThemerrPluginInstance();
+
         Mock<IApplicationPaths> mockApplicationPaths = TestHelper.GetMockApplicationPaths();
         Mock<ILibraryManager> mockLibraryManager = new();
         Mock<ILoggerFactory> mockLoggerFactory = new();
@@ -23,6 +28,7 @@ public class TestThemerrStartupService
         mockLoggerFactory
             .Setup(x => x.CreateLogger(It.IsAny<string>()))
             .Returns(new Mock<ILogger>().Object);
+        mockTaskManager.Setup(x => x.ScheduledTasks).Returns(Array.Empty<IScheduledTaskWorker>());
 
         var service = new ThemerrStartupService(
             mockApplicationPaths.Object,
@@ -94,5 +100,114 @@ public class TestThemerrStartupService
         ThemerrPlugin.Instance.UpdateConfiguration(configuration);
 
         mockTaskWorker.Verify(x => x.ReloadTriggerEvents(), Times.Exactly(2));
+    }
+
+    [Fact]
+    [Trait("Category", "Unit")]
+    public async Task TestStartWithPluginWithoutConfigurationDoesNotUpdateScheduledTaskTrigger()
+    {
+        Mock<IApplicationPaths> mockApplicationPaths = TestHelper.GetMockApplicationPaths();
+        Mock<ILibraryManager> mockLibraryManager = new();
+        Mock<ILoggerFactory> mockLoggerFactory = new();
+        Mock<IXmlSerializer> mockXmlSerializer = new();
+        Mock<ITaskManager> mockTaskManager = new();
+        Mock<IScheduledTaskWorker> mockTaskWorker = new();
+
+        mockLoggerFactory
+            .Setup(x => x.CreateLogger(It.IsAny<string>()))
+            .Returns(new Mock<ILogger>().Object);
+
+        _ = new ThemerrPlugin(mockApplicationPaths.Object, mockXmlSerializer.Object);
+        mockTaskManager.Setup(x => x.ScheduledTasks).Returns(new[] { mockTaskWorker.Object });
+
+        var service = new ThemerrStartupService(
+            mockApplicationPaths.Object,
+            mockLibraryManager.Object,
+            mockLoggerFactory.Object,
+            mockTaskManager.Object);
+
+        await service.StartAsync(CancellationToken.None);
+
+        mockTaskWorker.VerifySet(x => x.Triggers = It.IsAny<IReadOnlyList<TaskTriggerInfo>>(), Times.Never);
+        mockTaskWorker.Verify(x => x.ReloadTriggerEvents(), Times.Never);
+
+        await service.StopAsync(CancellationToken.None);
+    }
+
+    [Fact]
+    [Trait("Category", "Unit")]
+    public async Task TestConfigurationChangeIgnoresNonPluginConfiguration()
+    {
+        Mock<IApplicationPaths> mockApplicationPaths = TestHelper.GetMockApplicationPaths();
+        Mock<ILibraryManager> mockLibraryManager = new();
+        Mock<ILoggerFactory> mockLoggerFactory = new();
+        Mock<IXmlSerializer> mockXmlSerializer = new();
+        Mock<ITaskManager> mockTaskManager = new();
+        Mock<IScheduledTaskWorker> mockTaskWorker = new();
+
+        mockLoggerFactory
+            .Setup(x => x.CreateLogger(It.IsAny<string>()))
+            .Returns(new Mock<ILogger>().Object);
+
+        _ = new ThemerrPlugin(mockApplicationPaths.Object, mockXmlSerializer.Object);
+        ThemerrPlugin.Instance.UpdateConfiguration(new PluginConfiguration());
+        mockTaskManager.Setup(x => x.ScheduledTasks).Returns(Array.Empty<IScheduledTaskWorker>());
+
+        var service = new ThemerrStartupService(
+            mockApplicationPaths.Object,
+            mockLibraryManager.Object,
+            mockLoggerFactory.Object,
+            mockTaskManager.Object);
+
+        await service.StartAsync(CancellationToken.None);
+
+        ThemerrPlugin.Instance.ConfigurationChanged?.Invoke(this, new BasePluginConfiguration());
+
+        mockTaskWorker.VerifySet(x => x.Triggers = It.IsAny<IReadOnlyList<TaskTriggerInfo>>(), Times.Never);
+        mockTaskWorker.Verify(x => x.ReloadTriggerEvents(), Times.Never);
+
+        await service.StopAsync(CancellationToken.None);
+    }
+
+    [Fact]
+    [Trait("Category", "Unit")]
+    public async Task TestConfigurationChangeWithoutThemerrTaskDoesNotUpdateScheduledTaskTrigger()
+    {
+        Mock<IApplicationPaths> mockApplicationPaths = TestHelper.GetMockApplicationPaths();
+        Mock<ILibraryManager> mockLibraryManager = new();
+        Mock<ILoggerFactory> mockLoggerFactory = new();
+        Mock<IXmlSerializer> mockXmlSerializer = new();
+        Mock<ITaskManager> mockTaskManager = new();
+        Mock<IScheduledTaskWorker> mockTaskWorker = new();
+
+        mockLoggerFactory
+            .Setup(x => x.CreateLogger(It.IsAny<string>()))
+            .Returns(new Mock<ILogger>().Object);
+
+        _ = new ThemerrPlugin(mockApplicationPaths.Object, mockXmlSerializer.Object);
+        ThemerrPlugin.Instance.UpdateConfiguration(new PluginConfiguration());
+        mockTaskManager.Setup(x => x.ScheduledTasks).Returns(new[] { mockTaskWorker.Object });
+
+        var service = new ThemerrStartupService(
+            mockApplicationPaths.Object,
+            mockLibraryManager.Object,
+            mockLoggerFactory.Object,
+            mockTaskManager.Object);
+
+        await service.StartAsync(CancellationToken.None);
+        ThemerrPlugin.Instance.UpdateConfiguration(new PluginConfiguration { UpdateInterval = 30 });
+
+        mockTaskWorker.VerifySet(x => x.Triggers = It.IsAny<IReadOnlyList<TaskTriggerInfo>>(), Times.Never);
+        mockTaskWorker.Verify(x => x.ReloadTriggerEvents(), Times.Never);
+
+        await service.StopAsync(CancellationToken.None);
+    }
+
+    private static void ClearThemerrPluginInstance()
+    {
+        typeof(ThemerrPlugin)
+            .GetProperty(nameof(ThemerrPlugin.Instance), BindingFlags.Public | BindingFlags.Static)
+            ?.GetSetMethod(nonPublic: true)
+            ?.Invoke(null, new object?[] { null });
     }
 }
