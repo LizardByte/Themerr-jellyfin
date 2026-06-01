@@ -15,10 +15,10 @@ namespace Jellyfin.Plugin.Themerr.Storage
         public DateTime? DownloadedTimestampUtc { get; set; }
 
         /// <summary>
-        /// Gets or sets the hash of the downloaded theme file.
+        /// Gets or sets the legacy MD5 hash of the downloaded theme file.
         /// </summary>
         [JsonProperty("theme_md5")]
-        public string ThemeMd5 { get; set; }
+        public string LegacyThemeMd5 { get; set; }
 
         /// <summary>
         /// Gets or sets the source YouTube theme url.

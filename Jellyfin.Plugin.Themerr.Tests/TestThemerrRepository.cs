@@ -4,6 +4,7 @@ using MediaBrowser.Controller.Entities;
 using MediaBrowser.Controller.Entities.Audio;
 using MediaBrowser.Controller.Entities.Movies;
 using MediaBrowser.Model.Entities;
+using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using Moq;
@@ -40,6 +41,7 @@ public class TestThemerrRepository
         using (var context = new ThemerrDbContext(databasePath))
         {
             Assert.Contains("20260512230000_InitialCreate", context.Database.GetAppliedMigrations());
+            Assert.Contains("20260601180000_MigrateThemeHashToSha256", context.Database.GetAppliedMigrations());
         }
 
         migrator.MigrateDown();
@@ -47,6 +49,80 @@ public class TestThemerrRepository
         using (var context = new ThemerrDbContext(databasePath))
         {
             Assert.Empty(context.Database.GetAppliedMigrations());
+        }
+    }
+
+    [Fact]
+    [Trait("Category", "Unit")]
+    public void TestHashMigrationClearsLegacyHash()
+    {
+        var databasePath = CreateDatabasePath();
+        using (var connection = new SqliteConnection($"Data Source={databasePath}"))
+        {
+            connection.Open();
+            using (var command = connection.CreateCommand())
+            {
+                command.CommandText = @"
+CREATE TABLE ""__EFMigrationsHistory"" (
+    ""MigrationId"" TEXT NOT NULL CONSTRAINT ""PK___EFMigrationsHistory"" PRIMARY KEY,
+    ""ProductVersion"" TEXT NOT NULL
+);
+CREATE TABLE ""ThemerrMediaItems"" (
+    ""Id"" INTEGER NOT NULL CONSTRAINT ""PK_ThemerrMediaItems"" PRIMARY KEY AUTOINCREMENT,
+    ""ItemKey"" TEXT NOT NULL,
+    ""ItemId"" TEXT NULL,
+    ""ItemType"" TEXT NOT NULL,
+    ""ItemName"" TEXT NOT NULL,
+    ""ProductionYear"" INTEGER NULL,
+    ""ItemPath"" TEXT NULL,
+    ""ThemePath"" TEXT NULL,
+    ""TmdbId"" TEXT NULL,
+    ""ThemeMd5"" TEXT NULL,
+    ""ThemeProvider"" TEXT NULL,
+    ""InThemerrDb"" INTEGER NOT NULL,
+    ""InThemerrDbCheckedUtc"" TEXT NULL,
+    ""IssueUrl"" TEXT NULL,
+    ""YoutubeThemeUrl"" TEXT NULL,
+    ""DownloadedTimestampUtc"" TEXT NULL,
+    ""CreatedUtc"" TEXT NOT NULL,
+    ""UpdatedUtc"" TEXT NOT NULL
+);
+CREATE UNIQUE INDEX ""IX_ThemerrMediaItems_ItemKey"" ON ""ThemerrMediaItems"" (""ItemKey"");
+INSERT INTO ""__EFMigrationsHistory"" (""MigrationId"", ""ProductVersion"")
+VALUES ('20260512230000_InitialCreate', '9.0.11');
+INSERT INTO ""ThemerrMediaItems"" (
+    ""ItemKey"",
+    ""ItemType"",
+    ""ItemName"",
+    ""ThemeMd5"",
+    ""ThemeProvider"",
+    ""InThemerrDb"",
+    ""CreatedUtc"",
+    ""UpdatedUtc""
+)
+VALUES (
+    'Movie:tmdb:legacy',
+    'Movie',
+    'Legacy Movie',
+    'legacy-md5',
+    'themerr',
+    1,
+    '2026-01-01T00:00:00Z',
+    '2026-01-01T00:00:00Z'
+);";
+                command.ExecuteNonQuery();
+            }
+        }
+
+        var migrator = new ThemerrDatabaseMigrator(databasePath);
+        migrator.MigrateUp();
+
+        using (var context = new ThemerrDbContext(databasePath))
+        {
+            var mediaItem = Assert.Single(context.MediaItems);
+            Assert.Null(mediaItem.ThemeHash);
+            Assert.Null(mediaItem.ThemeHashAlgorithm);
+            Assert.Contains("20260601180000_MigrateThemeHashToSha256", context.Database.GetAppliedMigrations());
         }
     }
 
@@ -66,7 +142,7 @@ public class TestThemerrRepository
             new ThemerrMediaItemSaveOptions
             {
                 ThemePath = themePath,
-                ThemeMd5 = "original-md5",
+                ThemeHash = "original-hash",
                 YoutubeThemeUrl = "https://www.youtube.com/watch?v=original",
                 DownloadedTimestampUtc = downloadedTimestampUtc,
                 ThemeProvider = ThemerrThemeProvider.Themerr,
@@ -80,7 +156,8 @@ public class TestThemerrRepository
         Assert.Equal("Movie:tmdb:12345", savedThemerrData.ItemKey);
         Assert.Equal("Test Movie 12345", savedThemerrData.ItemName);
         Assert.Equal(1970, savedThemerrData.ProductionYear);
-        Assert.Equal("original-md5", savedThemerrData.ThemeMd5);
+        Assert.Equal("original-hash", savedThemerrData.ThemeHash);
+        Assert.Equal(ThemerrThemeHasher.CurrentAlgorithm, savedThemerrData.ThemeHashAlgorithm);
         Assert.Equal(ThemerrThemeProvider.Themerr, savedThemerrData.ThemeProvider);
         Assert.True(savedThemerrData.InThemerrDb);
         Assert.Equal(inThemerrDbCheckedUtc, savedThemerrData.InThemerrDbCheckedUtc);
@@ -93,7 +170,7 @@ public class TestThemerrRepository
             new ThemerrMediaItemSaveOptions
             {
                 ThemePath = themePath,
-                ThemeMd5 = "updated-md5",
+                ThemeHash = "updated-hash",
                 YoutubeThemeUrl = "https://www.youtube.com/watch?v=updated",
                 ThemeProvider = ThemerrThemeProvider.Themerr,
                 InThemerrDb = true,
@@ -107,7 +184,8 @@ public class TestThemerrRepository
 
         savedThemerrData = repository.Get(item, themePath);
         Assert.NotNull(savedThemerrData);
-        Assert.Equal("updated-md5", savedThemerrData.ThemeMd5);
+        Assert.Equal("updated-hash", savedThemerrData.ThemeHash);
+        Assert.Equal(ThemerrThemeHasher.CurrentAlgorithm, savedThemerrData.ThemeHashAlgorithm);
         Assert.Equal("https://www.youtube.com/watch?v=updated", savedThemerrData.YoutubeThemeUrl);
 
         var allItems = repository.GetAll();
@@ -124,6 +202,8 @@ public class TestThemerrRepository
         var themePath = Path.Combine(CreateTempDirectory(), "theme.mp3");
         var legacyDataPath = Path.Combine(CreateTempDirectory(), "themerr.json");
         var downloadedTimestampUtc = DateTime.UtcNow.AddDays(-1);
+        File.Copy(Path.Combine(Directory.GetCurrentDirectory(), "data", "audio_stub.mp3"), themePath, true);
+        var expectedThemeHash = ThemerrThemeHasher.ComputeHash(themePath);
 
         File.WriteAllText(
             legacyDataPath,
@@ -139,7 +219,8 @@ public class TestThemerrRepository
 
         var savedThemerrData = repository.Get(item, themePath);
         Assert.NotNull(savedThemerrData);
-        Assert.Equal("legacy-md5", savedThemerrData.ThemeMd5);
+        Assert.Equal(expectedThemeHash, savedThemerrData.ThemeHash);
+        Assert.Equal(ThemerrThemeHasher.CurrentAlgorithm, savedThemerrData.ThemeHashAlgorithm);
         Assert.Equal(ThemerrThemeProvider.Themerr, savedThemerrData.ThemeProvider);
         Assert.True(savedThemerrData.InThemerrDb);
         Assert.NotNull(savedThemerrData.InThemerrDbCheckedUtc);
@@ -386,6 +467,37 @@ public class TestThemerrRepository
 
         var result = ThemerrMediaPath.GetItemDirectory(item);
         Assert.Equal("/nonexistent/bare/noexit", result);
+    }
+
+    [Fact]
+    [Trait("Category", "Unit")]
+    public void TestThemeHashMigrationRequired()
+    {
+        var repository = CreateRepository();
+        var item = CreateMovie("hash-migration-required");
+        var themePath = Path.Combine(CreateTempDirectory(), "theme.mp3");
+
+        repository.Save(item, new ThemerrMediaItemSaveOptions
+        {
+            ThemePath = themePath,
+            ThemeProvider = ThemerrThemeProvider.Themerr,
+            InThemerrDb = true,
+            InThemerrDbCheckedUtc = DateTime.UtcNow,
+        });
+
+        Assert.True(repository.ThemeHashMigrationRequired);
+
+        repository.Save(item, new ThemerrMediaItemSaveOptions
+        {
+            ThemePath = themePath,
+            ThemeHash = "current-hash",
+            ThemeHashAlgorithm = ThemerrThemeHasher.CurrentAlgorithm,
+            ThemeProvider = ThemerrThemeProvider.Themerr,
+            InThemerrDb = true,
+            InThemerrDbCheckedUtc = DateTime.UtcNow,
+        });
+
+        Assert.False(repository.ThemeHashMigrationRequired);
     }
 
     private static ThemerrRepository CreateRepository()

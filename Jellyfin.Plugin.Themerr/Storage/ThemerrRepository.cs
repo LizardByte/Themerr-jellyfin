@@ -53,6 +53,26 @@ namespace Jellyfin.Plugin.Themerr.Storage
         }
 
         /// <summary>
+        /// Gets a value indicating whether stored Themerr theme rows still need SHA-256 hashes.
+        /// </summary>
+        public bool ThemeHashMigrationRequired
+        {
+            get
+            {
+                EnsureMigrated();
+                using (var context = new ThemerrDbContext(_databasePath))
+                {
+                    return context.MediaItems.Any(mediaItem =>
+                        mediaItem.ThemeProvider == ThemerrThemeProvider.Themerr &&
+                        (mediaItem.ThemeHash == null ||
+                         mediaItem.ThemeHash == string.Empty ||
+                         mediaItem.ThemeHashAlgorithm == null ||
+                         mediaItem.ThemeHashAlgorithm != ThemerrThemeHasher.CurrentAlgorithm));
+                }
+            }
+        }
+
+        /// <summary>
         /// Gets the stable key for a Jellyfin media item.
         /// </summary>
         /// <param name="item">The Jellyfin media item.</param>
@@ -189,7 +209,10 @@ namespace Jellyfin.Plugin.Themerr.Storage
                 mediaItem.ItemPath = GetItemPath(item);
                 mediaItem.ThemePath = saveOptions.ThemePath;
                 mediaItem.TmdbId = item.GetProviderId(MetadataProvider.Tmdb);
-                mediaItem.ThemeMd5 = saveOptions.ThemeMd5;
+                mediaItem.ThemeHash = saveOptions.ThemeHash;
+                mediaItem.ThemeHashAlgorithm = string.IsNullOrEmpty(saveOptions.ThemeHash)
+                    ? null
+                    : saveOptions.ThemeHashAlgorithm ?? ThemerrThemeHasher.CurrentAlgorithm;
                 mediaItem.ThemeProvider = saveOptions.ThemeProvider;
                 mediaItem.YoutubeThemeUrl = saveOptions.YoutubeThemeUrl;
                 mediaItem.IssueUrl = saveOptions.IssueUrl ?? mediaItem.IssueUrl;
@@ -284,12 +307,16 @@ namespace Jellyfin.Plugin.Themerr.Storage
 
             try
             {
+                var themeHash = GetMigratedThemeHash(themePath, legacyDataPath);
                 Save(
                     item,
                     new ThemerrMediaItemSaveOptions
                     {
                         ThemePath = themePath,
-                        ThemeMd5 = legacyData.ThemeMd5,
+                        ThemeHash = themeHash,
+                        ThemeHashAlgorithm = themeHash == null
+                            ? null
+                            : ThemerrThemeHasher.CurrentAlgorithm,
                         YoutubeThemeUrl = legacyData.YoutubeThemeUrl,
                         DownloadedTimestampUtc = legacyData.DownloadedTimestampUtc,
                         ThemeProvider = ThemerrThemeProvider.Themerr,
@@ -304,6 +331,28 @@ namespace Jellyfin.Plugin.Themerr.Storage
             {
                 _logger.LogError(e, "Unable to save legacy themerr data file to sqlite: {ThemerrDataPath}", legacyDataPath);
                 return false;
+            }
+        }
+
+        private static string GetMigratedThemeHash(string themePath, string legacyDataPath)
+        {
+            return GetMigratedThemeHashPathCandidates(themePath, legacyDataPath)
+                .Where(File.Exists)
+                .Select(ThemerrThemeHasher.ComputeHash)
+                .FirstOrDefault();
+        }
+
+        private static IEnumerable<string> GetMigratedThemeHashPathCandidates(string themePath, string legacyDataPath)
+        {
+            if (!string.IsNullOrEmpty(themePath))
+            {
+                yield return themePath;
+            }
+
+            var legacyDirectory = Path.GetDirectoryName(legacyDataPath);
+            if (!string.IsNullOrEmpty(legacyDirectory))
+            {
+                yield return Path.Combine(legacyDirectory, "theme.mp3");
             }
         }
 
