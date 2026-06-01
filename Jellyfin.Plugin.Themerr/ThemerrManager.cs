@@ -153,20 +153,13 @@ namespace Jellyfin.Plugin.Themerr
         }
 
         /// <summary>
-        /// Get the MD5 hash of a file.
+        /// Get the current theme hash of a file.
         /// </summary>
         /// <param name="filePath">The file path.</param>
-        /// <returns>The MD5 hash of the file.</returns>
-        public static string GetMd5Hash(string filePath)
+        /// <returns>The SHA-256 hash of the file.</returns>
+        public static string GetThemeHash(string filePath)
         {
-            using (var md5 = System.Security.Cryptography.MD5.Create())
-            {
-                using (var stream = System.IO.File.OpenRead(filePath))
-                {
-                    var hash = md5.ComputeHash(stream);
-                    return BitConverter.ToString(hash).Replace("-", string.Empty).ToLowerInvariant();
-                }
-            }
+            return ThemerrThemeHasher.ComputeHash(filePath);
         }
 
         /// <summary>
@@ -342,17 +335,17 @@ namespace Jellyfin.Plugin.Themerr
             }
 
             var existingYoutubeThemeUrl = existingThemerrData?.YoutubeThemeUrl;
-            var existingThemeMd5 = existingThemerrData?.ThemeMd5;
+            var hasCurrentThemeHash = HasCurrentThemeHash(existingThemerrData);
 
             var availability = await GetThemerrDbAvailability(item, dbType, existingThemerrData).ConfigureAwait(false);
             var youtubeThemeUrl = availability.YoutubeThemeUrl;
             var existingThemePath = GetExistingThemePath(item, themePath);
 
             // skip if no YouTube theme url in ThemerrDB or
-            // if the YouTube themes match AND the theme_md5 is known
+            // if the YouTube themes match AND the current theme hash is known
             if (string.IsNullOrEmpty(youtubeThemeUrl) ||
                 (youtubeThemeUrl == existingYoutubeThemeUrl &&
-                 !string.IsNullOrEmpty(existingThemeMd5) &&
+                 hasCurrentThemeHash &&
                  !string.IsNullOrEmpty(existingThemePath)))
             {
                 SaveTrackedItem(
@@ -428,19 +421,16 @@ namespace Jellyfin.Plugin.Themerr
                 return false;
             }
 
-            var existingThemeMd5 = themerrData.ThemeMd5;
-
-            // if existing theme md5 is empty, don't skip
-            if (string.IsNullOrEmpty(existingThemeMd5))
+            if (!HasCurrentThemeHash(themerrData))
             {
-                return true;
+                return false;
             }
 
             // check if the theme hash matches what is in the themerr data file
-            var themeMd5 = GetMd5Hash(existingThemePath);
+            var themeHash = GetThemeHash(existingThemePath);
 
             // if hashes match, theme is supplied by themerr, otherwise it is user supplied
-            return themeMd5 == existingThemeMd5;
+            return string.Equals(themeHash, themerrData.ThemeHash, StringComparison.OrdinalIgnoreCase);
         }
 
         /// <summary>
@@ -585,7 +575,8 @@ namespace Jellyfin.Plugin.Themerr
                     new ThemerrMediaItemSaveOptions
                     {
                         ThemePath = themePath,
-                        ThemeMd5 = GetMd5Hash(themePath),
+                        ThemeHash = GetThemeHash(themePath),
+                        ThemeHashAlgorithm = ThemerrThemeHasher.CurrentAlgorithm,
                         YoutubeThemeUrl = youtubeThemeUrl,
                         DownloadedTimestampUtc = timestampUtc,
                         ThemeProvider = ThemerrThemeProvider.Themerr,
@@ -648,20 +639,20 @@ namespace Jellyfin.Plugin.Themerr
                 return ThemerrThemeProvider.User;
             }
 
-            if (string.IsNullOrEmpty(existingData.ThemeMd5))
+            if (!HasCurrentThemeHash(existingData))
             {
                 return existingData.ThemeProvider == ThemerrThemeProvider.Themerr
                     ? ThemerrThemeProvider.Themerr
                     : ThemerrThemeProvider.User;
             }
 
-            var themeMd5 = GetMd5Hash(existingThemePath);
-            return string.Equals(themeMd5, existingData.ThemeMd5, StringComparison.OrdinalIgnoreCase)
+            var themeHash = GetThemeHash(existingThemePath);
+            return string.Equals(themeHash, existingData.ThemeHash, StringComparison.OrdinalIgnoreCase)
                 ? ThemerrThemeProvider.Themerr
                 : ThemerrThemeProvider.User;
         }
 
-        private static string GetCurrentThemeMd5(
+        private static string GetCurrentThemeHash(
             string themeProvider,
             string existingThemePath,
             ThemerrMediaItem existingData)
@@ -671,9 +662,24 @@ namespace Jellyfin.Plugin.Themerr
                 return null;
             }
 
-            return !string.IsNullOrEmpty(existingThemePath)
-                ? GetMd5Hash(existingThemePath)
-                : existingData?.ThemeMd5;
+            if (!string.IsNullOrEmpty(existingThemePath))
+            {
+                return GetThemeHash(existingThemePath);
+            }
+
+            return HasCurrentThemeHash(existingData)
+                ? existingData.ThemeHash
+                : null;
+        }
+
+        private static bool HasCurrentThemeHash(ThemerrMediaItem existingData)
+        {
+            return existingData != null &&
+                !string.IsNullOrEmpty(existingData.ThemeHash) &&
+                string.Equals(
+                    existingData.ThemeHashAlgorithm,
+                    ThemerrThemeHasher.CurrentAlgorithm,
+                    StringComparison.OrdinalIgnoreCase);
         }
 
         /// <summary>
@@ -697,11 +703,12 @@ namespace Jellyfin.Plugin.Themerr
         {
             var databasePath = _themerrRepository.DatabasePath;
             var databaseCreatedDuringMigration = _themerrRepository.DatabaseCreatedDuringMigration;
+            var themeHashMigrationRequired = _themerrRepository.ThemeHashMigrationRequired;
             initialUpdateTask = null;
 
             lock (InitialUpdateLock)
             {
-                if (databaseCreatedDuringMigration)
+                if (databaseCreatedDuringMigration || themeHashMigrationRequired)
                 {
                     InitialUpdateRequiredDatabasePaths.Add(databasePath);
                 }
@@ -760,7 +767,7 @@ namespace Jellyfin.Plugin.Themerr
         {
             var existingThemePath = GetExistingThemePath(item, themePath);
             var themeProvider = GetCurrentThemeProvider(existingThemePath, existingData);
-            var themeMd5 = GetCurrentThemeMd5(themeProvider, existingThemePath, existingData);
+            var themeHash = GetCurrentThemeHash(themeProvider, existingThemePath, existingData);
             var downloadedTimestampUtc = themeProvider == ThemerrThemeProvider.Themerr
                 ? existingData?.DownloadedTimestampUtc
                 : null;
@@ -770,7 +777,8 @@ namespace Jellyfin.Plugin.Themerr
                 new ThemerrMediaItemSaveOptions
                 {
                     ThemePath = themePath,
-                    ThemeMd5 = themeMd5,
+                    ThemeHash = themeHash,
+                    ThemeHashAlgorithm = themeHash == null ? null : ThemerrThemeHasher.CurrentAlgorithm,
                     YoutubeThemeUrl = youtubeThemeUrl,
                     DownloadedTimestampUtc = downloadedTimestampUtc,
                     ThemeProvider = themeProvider,

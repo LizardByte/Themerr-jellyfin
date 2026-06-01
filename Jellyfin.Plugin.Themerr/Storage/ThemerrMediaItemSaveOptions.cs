@@ -13,9 +13,14 @@ namespace Jellyfin.Plugin.Themerr.Storage
         public string ThemePath { get; set; }
 
         /// <summary>
-        /// Gets or sets the theme md5 hash.
+        /// Gets or sets the theme file hash.
         /// </summary>
-        public string ThemeMd5 { get; set; }
+        public string ThemeHash { get; set; }
+
+        /// <summary>
+        /// Gets or sets the theme hash algorithm.
+        /// </summary>
+        public string ThemeHashAlgorithm { get; set; }
 
         /// <summary>
         /// Gets or sets the YouTube theme url.

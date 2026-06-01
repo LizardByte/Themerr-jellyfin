@@ -61,7 +61,10 @@ namespace Jellyfin.Plugin.Themerr.Storage.Migrations
                 b.Property<int?>("ProductionYear")
                     .HasColumnType("INTEGER");
 
-                b.Property<string>("ThemeMd5")
+                b.Property<string>("ThemeHash")
+                    .HasColumnType("TEXT");
+
+                b.Property<string>("ThemeHashAlgorithm")
                     .HasColumnType("TEXT");
 
                 b.Property<string>("ThemePath")

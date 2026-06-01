@@ -107,7 +107,7 @@ public class TestThemerrManager
         Assert.Null(ThemerrManager.GetIssueUrl(new Audio()));
 
         File.Copy(Path.Combine(Directory.GetCurrentDirectory(), "data", "audio_stub.mp3"), themePath, true);
-        Assert.NotEmpty(ThemerrManager.GetMd5Hash(themePath));
+        Assert.NotEmpty(ThemerrManager.GetThemeHash(themePath));
 
         var task = ThemerrManager.RunAsync();
         Assert.True(task.IsCompletedSuccessfully);
@@ -144,18 +144,18 @@ public class TestThemerrManager
             "theme.mp3",
             new ThemerrMediaItem
             {
-                ThemeMd5 = "known-md5",
+                ThemeHash = "known-hash",
                 ThemeProvider = ThemerrThemeProvider.User,
             });
         Assert.Equal(ThemerrThemeProvider.User, result);
     }
 
     /// <summary>
-    /// Test saved theme classification when Themerr data exists without an MD5 hash.
+    /// Test saved theme classification when Themerr data exists without a current hash.
     /// </summary>
     [Fact]
     [Trait("Category", "Unit")]
-    public void TestGetCurrentThemeProviderEmptyMd5WithoutThemerrProvider()
+    public void TestGetCurrentThemeProviderEmptyHashWithoutThemerrProvider()
     {
         var result = InvokeGetCurrentThemeProvider(
             "theme.mp3",
@@ -180,21 +180,22 @@ public class TestThemerrManager
     }
 
     /// <summary>
-    /// Test saved theme classification when the current theme MD5 matches Themerr data.
+    /// Test saved theme classification when the current theme hash matches Themerr data.
     /// </summary>
     [Fact]
     [Trait("Category", "Unit")]
-    public void TestGetCurrentThemeProviderMatchingMd5()
+    public void TestGetCurrentThemeProviderMatchingHash()
     {
         var themePath = Path.Combine(CreateTempDirectory(), "theme.mp3");
         File.Copy(Path.Combine(Directory.GetCurrentDirectory(), "data", "audio_stub.mp3"), themePath, true);
-        var themeMd5 = ThemerrManager.GetMd5Hash(themePath);
+        var themeHash = ThemerrManager.GetThemeHash(themePath);
 
         var result = InvokeGetCurrentThemeProvider(
             themePath,
             new ThemerrMediaItem
             {
-                ThemeMd5 = themeMd5,
+                ThemeHash = themeHash,
+                ThemeHashAlgorithm = ThemerrThemeHasher.CurrentAlgorithm,
                 ThemeProvider = ThemerrThemeProvider.Themerr,
             });
         Assert.Equal(ThemerrThemeProvider.Themerr, result);
@@ -203,29 +204,31 @@ public class TestThemerrManager
             themePath,
             new ThemerrMediaItem
             {
-                ThemeMd5 = "different-md5",
+                ThemeHash = "different-hash",
+                ThemeHashAlgorithm = ThemerrThemeHasher.CurrentAlgorithm,
                 ThemeProvider = ThemerrThemeProvider.Themerr,
             });
         Assert.Equal(ThemerrThemeProvider.User, result);
     }
 
     /// <summary>
-    /// Test saved Themerr MD5 is reused when no current theme file exists.
+    /// Test saved Themerr hash is reused when no current theme file exists.
     /// </summary>
     [Fact]
     [Trait("Category", "Unit")]
-    public void TestGetCurrentThemeMd5WithoutExistingThemePath()
+    public void TestGetCurrentThemeHashWithoutExistingThemePath()
     {
-        var result = InvokeGetCurrentThemeMd5(
+        var result = InvokeGetCurrentThemeHash(
             ThemerrThemeProvider.Themerr,
             string.Empty,
             new ThemerrMediaItem
             {
-                ThemeMd5 = "stored-md5",
+                ThemeHash = "stored-hash",
+                ThemeHashAlgorithm = ThemerrThemeHasher.CurrentAlgorithm,
             });
-        Assert.Equal("stored-md5", result);
+        Assert.Equal("stored-hash", result);
 
-        result = InvokeGetCurrentThemeMd5(
+        result = InvokeGetCurrentThemeHash(
             ThemerrThemeProvider.Themerr,
             string.Empty,
             null);
@@ -396,13 +399,13 @@ public class TestThemerrManager
         return method.Invoke(null, new object?[] { existingThemePath, existingData }) as string;
     }
 
-    private static string? InvokeGetCurrentThemeMd5(
+    private static string? InvokeGetCurrentThemeHash(
         string themeProvider,
         string existingThemePath,
         ThemerrMediaItem? existingData)
     {
         var method = typeof(ThemerrManager).GetMethod(
-            "GetCurrentThemeMd5",
+            "GetCurrentThemeHash",
             BindingFlags.NonPublic | BindingFlags.Static);
         Assert.NotNull(method);
 
@@ -638,7 +641,7 @@ public class TestThemerrManager
             new ThemerrMediaItemSaveOptions
             {
                 ThemePath = themePath,
-                ThemeMd5 = "missing-md5",
+                ThemeHash = "missing-hash",
                 YoutubeThemeUrl = "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
                 ThemeProvider = ThemerrThemeProvider.Themerr,
             });
@@ -653,40 +656,40 @@ public class TestThemerrManager
             "audio_stub.mp3");
         Assert.False(manager.ContinueDownload(item, themePath), "ContinueDownload returned True");
 
-        // test when both theme and data row exist, but hash is empty in data row
+        // test when both theme and data row exist, but hash needs migration in data row
         item = CreateMovie("continue-4");
         repository.Save(
             item,
             new ThemerrMediaItemSaveOptions
             {
                 ThemePath = themePath,
-                ThemeMd5 = string.Empty,
+                ThemeHash = string.Empty,
                 YoutubeThemeUrl = "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
                 ThemeProvider = ThemerrThemeProvider.Themerr,
             });
-        Assert.True(manager.ContinueDownload(item, themePath), "ContinueDownload returned False");
+        Assert.False(manager.ContinueDownload(item, themePath), "ContinueDownload returned True");
 
-        // test when both theme and data row exist, and md5 hashes match
+        // test when both theme and data row exist, and hashes match
         item = CreateMovie("continue-5");
         repository.Save(
             item,
             new ThemerrMediaItemSaveOptions
             {
                 ThemePath = themePath,
-                ThemeMd5 = ThemerrManager.GetMd5Hash(themePath),
+                ThemeHash = ThemerrManager.GetThemeHash(themePath),
                 YoutubeThemeUrl = "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
                 ThemeProvider = ThemerrThemeProvider.Themerr,
             });
         Assert.True(manager.ContinueDownload(item, themePath), "ContinueDownload returned False");
 
-        // test when both theme and data row exist, and md5 hashes do not match
+        // test when both theme and data row exist, and hashes do not match
         item = CreateMovie("continue-6");
         repository.Save(
             item,
             new ThemerrMediaItemSaveOptions
             {
                 ThemePath = themePath,
-                ThemeMd5 = "different-md5",
+                ThemeHash = "different-hash",
                 YoutubeThemeUrl = "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
                 ThemeProvider = ThemerrThemeProvider.Themerr,
             });
@@ -720,6 +723,8 @@ public class TestThemerrManager
 
         Assert.Equal(Path.Combine(tempPath, "themerr.json"), legacyDataPath);
         Assert.Equal(Path.Combine(tempPath, "theme.mp3"), themePath);
+        File.Copy(Path.Combine(Directory.GetCurrentDirectory(), "data", "audio_stub.mp3"), themePath, true);
+        var expectedThemeHash = ThemerrManager.GetThemeHash(themePath);
 
         await File.WriteAllTextAsync(
             legacyDataPath,
@@ -735,7 +740,8 @@ public class TestThemerrManager
 
         var themerrData = repository.Get(item, themePath);
         Assert.NotNull(themerrData);
-        Assert.Equal("legacy-md5", themerrData.ThemeMd5);
+        Assert.Equal(expectedThemeHash, themerrData.ThemeHash);
+        Assert.Equal(ThemerrThemeHasher.CurrentAlgorithm, themerrData.ThemeHashAlgorithm);
         Assert.Equal(ThemerrThemeProvider.Themerr, themerrData.ThemeProvider);
         Assert.Equal("https://www.youtube.com/watch?v=legacy", themerrData.YoutubeThemeUrl);
     }
@@ -759,13 +765,13 @@ public class TestThemerrManager
             themePath,
             true);
 
-        var themeMd5 = ThemerrManager.GetMd5Hash(themePath);
+        var themeHash = ThemerrManager.GetThemeHash(themePath);
         await File.WriteAllTextAsync(
             legacyDataPath,
             JsonConvert.SerializeObject(new
             {
                 downloaded_timestamp = DateTime.UtcNow,
-                theme_md5 = themeMd5,
+                theme_md5 = "legacy-md5",
                 youtube_theme_url = youtubeThemeUrl,
             }));
 
@@ -774,7 +780,8 @@ public class TestThemerrManager
         Assert.False(File.Exists(legacyDataPath));
         var syncedItem = Assert.Single(syncedItems);
         Assert.Equal(ThemerrThemeProvider.Themerr, syncedItem.ThemeProvider);
-        Assert.Equal(themeMd5, syncedItem.ThemeMd5);
+        Assert.Equal(themeHash, syncedItem.ThemeHash);
+        Assert.Equal(ThemerrThemeHasher.CurrentAlgorithm, syncedItem.ThemeHashAlgorithm);
         Assert.Equal(youtubeThemeUrl, syncedItem.YoutubeThemeUrl);
     }
 
@@ -809,13 +816,13 @@ public class TestThemerrManager
             actualThemePath,
             true);
 
-        var themeMd5 = ThemerrManager.GetMd5Hash(actualThemePath);
+        var themeHash = ThemerrManager.GetThemeHash(actualThemePath);
         await File.WriteAllTextAsync(
             legacyDataPath,
             JsonConvert.SerializeObject(new
             {
                 downloaded_timestamp = DateTime.UtcNow,
-                theme_md5 = themeMd5,
+                theme_md5 = "legacy-md5",
                 youtube_theme_url = youtubeThemeUrl,
             }));
 
@@ -854,7 +861,8 @@ public class TestThemerrManager
         Assert.False(File.Exists(legacyDataPath));
         Assert.NotNull(syncedItem);
         Assert.Equal(ThemerrThemeProvider.Themerr, syncedItem.ThemeProvider);
-        Assert.Equal(themeMd5, syncedItem.ThemeMd5);
+        Assert.Equal(themeHash, syncedItem.ThemeHash);
+        Assert.Equal(ThemerrThemeHasher.CurrentAlgorithm, syncedItem.ThemeHashAlgorithm);
         Assert.Equal(youtubeThemeUrl, syncedItem.YoutubeThemeUrl);
     }
 
@@ -892,13 +900,13 @@ public class TestThemerrManager
             true);
         File.Copy(currentThemePath, legacyThemePath, true);
 
-        var themeMd5 = ThemerrManager.GetMd5Hash(currentThemePath);
+        var themeHash = ThemerrManager.GetThemeHash(currentThemePath);
         await File.WriteAllTextAsync(
             legacyDataPath,
             JsonConvert.SerializeObject(new
             {
                 downloaded_timestamp = DateTime.UtcNow,
-                theme_md5 = themeMd5,
+                theme_md5 = "legacy-md5",
                 youtube_theme_url = youtubeThemeUrl,
             }));
 
@@ -928,7 +936,8 @@ public class TestThemerrManager
         Assert.Equal(currentMediaPath, syncedItem.ItemPath);
         Assert.Equal(currentThemePath, syncedItem.ThemePath);
         Assert.Equal(ThemerrThemeProvider.Themerr, syncedItem.ThemeProvider);
-        Assert.Equal(themeMd5, syncedItem.ThemeMd5);
+        Assert.Equal(themeHash, syncedItem.ThemeHash);
+        Assert.Equal(ThemerrThemeHasher.CurrentAlgorithm, syncedItem.ThemeHashAlgorithm);
         Assert.Equal(youtubeThemeUrl, syncedItem.YoutubeThemeUrl);
     }
 
@@ -999,7 +1008,7 @@ public class TestThemerrManager
         Assert.True(syncedItem.InThemerrDb);
         Assert.Equal(checkedUtc, syncedItem.InThemerrDbCheckedUtc);
         Assert.Equal(youtubeThemeUrl, syncedItem.YoutubeThemeUrl);
-        Assert.Null(syncedItem.ThemeMd5);
+        Assert.Null(syncedItem.ThemeHash);
     }
 
     [Theory]
@@ -1244,29 +1253,31 @@ public class TestThemerrManager
         Assert.True(
             youtubeThemeUrl == savedThemerrData.YoutubeThemeUrl,
             $"youtubeThemeUrl {youtubeThemeUrl} does not match savedYoutubeThemeUrl {savedThemerrData.YoutubeThemeUrl}");
+        Assert.Equal(ThemerrManager.GetThemeHash(stubVideoPath), savedThemerrData.ThemeHash);
+        Assert.Equal(ThemerrThemeHasher.CurrentAlgorithm, savedThemerrData.ThemeHashAlgorithm);
     }
 
     [Fact]
     [Trait("Category", "Unit")]
-    private void TestGetMd5Hash()
+    private void TestGetThemeHash()
     {
         var stubVideoPath = Path.Combine(
             Directory.GetCurrentDirectory(),
             "data",
             "video_stub.mp4");
 
-        var expectedMd5HashFile = Path.Combine(
+        var expectedHashFile = Path.Combine(
             Directory.GetCurrentDirectory(),
             "data",
-            "video_stub.mp4.md5");
+            "video_stub.mp4.sha256");
 
-        // get expected md5 hash out of file
-        var expectedMd5Hash = File.ReadAllText(expectedMd5HashFile).Trim();
+        // get expected hash out of file
+        var expectedHash = File.ReadAllText(expectedHashFile).Trim();
 
-        // get actual md5 hash
-        var actualMd5Hash = ThemerrManager.GetMd5Hash(stubVideoPath);
+        // get actual hash
+        var actualHash = ThemerrManager.GetThemeHash(stubVideoPath);
 
-        Assert.Equal(expectedMd5Hash, actualMd5Hash);
+        Assert.Equal(expectedHash, actualHash);
     }
 
     /// <summary>
@@ -1520,7 +1531,7 @@ public class TestThemerrManager
         var backupPath = Path.Combine(Path.GetDirectoryName(themePath)!, "theme.backup.mp3");
 
         File.Copy(Path.Combine(Directory.GetCurrentDirectory(), "data", "audio_stub.mp3"), themePath, true);
-        var originalMd5 = ThemerrManager.GetMd5Hash(themePath);
+        var originalHash = ThemerrManager.GetThemeHash(themePath);
 
         repository.Save(movie, new ThemerrMediaItemSaveOptions
         {
@@ -1537,7 +1548,7 @@ public class TestThemerrManager
             Assert.False(result);
             Assert.True(File.Exists(themePath));
             Assert.False(File.Exists(backupPath));
-            Assert.Equal(originalMd5, ThemerrManager.GetMd5Hash(themePath));
+            Assert.Equal(originalHash, ThemerrManager.GetThemeHash(themePath));
         }
         finally
         {

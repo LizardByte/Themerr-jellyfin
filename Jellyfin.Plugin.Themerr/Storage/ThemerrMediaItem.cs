@@ -55,7 +55,12 @@ namespace Jellyfin.Plugin.Themerr.Storage
         /// <summary>
         /// Gets or sets the hash of the downloaded theme file.
         /// </summary>
-        public string ThemeMd5 { get; set; }
+        public string ThemeHash { get; set; }
+
+        /// <summary>
+        /// Gets or sets the algorithm used for <see cref="ThemeHash"/>.
+        /// </summary>
+        public string ThemeHashAlgorithm { get; set; }
 
         /// <summary>
         /// Gets or sets the current theme provider.
