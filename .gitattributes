@@ -1,4 +1,6 @@
 # ensure Linux specific files are checked out with LF line endings
+.gitattributes text eol=lf
 Dockerfile text eol=lf
 *.dockerfile text eol=lf
+.dockerignore text eol=lf
 *.sh text eol=lf
