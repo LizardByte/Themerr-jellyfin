@@ -776,9 +776,11 @@ namespace Jellyfin.Plugin.Themerr
             var existingThemePath = GetExistingThemePath(item, themePath);
             var themeProvider = GetCurrentThemeProvider(existingThemePath, existingData);
             var themeHash = GetCurrentThemeHash(themeProvider, existingThemePath, existingData);
-            var downloadedTimestampUtc = themeProvider == ThemerrThemeProvider.Themerr
-                ? existingData?.DownloadedTimestampUtc
-                : null;
+            var downloadedTimestampUtc = existingData?.DownloadedTimestampUtc;
+            if (themeProvider != ThemerrThemeProvider.Themerr)
+            {
+                downloadedTimestampUtc = null;
+            }
 
             return _themerrRepository.Save(
                 item,

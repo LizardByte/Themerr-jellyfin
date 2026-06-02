@@ -12,6 +12,7 @@ build:
   tools:
     python: "3.14"
   apt_packages:
+    - doxygen  # required to generate source API docs
     - graphviz  # required to build diagrams
   jobs:
     post_build:

@@ -32,6 +32,20 @@ public class TestThemerrRepository
 
     [Fact]
     [Trait("Category", "Unit")]
+    public void TestDatabasePathFallsBackToPluginConfigurationsPath()
+    {
+        var fallbackPath = CreateTempDirectory();
+        Mock<IApplicationPaths> mockApplicationPaths = new();
+        mockApplicationPaths.Setup(a => a.DataPath).Returns(" ");
+        mockApplicationPaths.Setup(a => a.PluginConfigurationsPath).Returns(fallbackPath);
+
+        var databasePath = ThemerrDatabasePath.GetDatabasePath(mockApplicationPaths.Object);
+
+        Assert.Equal(Path.Combine(fallbackPath, "Themerr", "themerr.db"), databasePath);
+    }
+
+    [Fact]
+    [Trait("Category", "Unit")]
     public void TestMigrationsUpAndDown()
     {
         var databasePath = CreateDatabasePath();
@@ -50,6 +64,27 @@ public class TestThemerrRepository
         using (var context = new ThemerrDbContext(databasePath))
         {
             Assert.Empty(context.Database.GetAppliedMigrations());
+        }
+    }
+
+    [Fact]
+    [Trait("Category", "Unit")]
+    public void TestMigrateUpWithDatabasePathWithoutDirectory()
+    {
+        var databasePath = $"themerr_{Guid.NewGuid():N}.db";
+        var migrator = new ThemerrDatabaseMigrator(databasePath);
+
+        try
+        {
+            Assert.True(migrator.MigrateUp());
+        }
+        finally
+        {
+            SqliteConnection.ClearAllPools();
+            if (File.Exists(databasePath))
+            {
+                File.Delete(databasePath);
+            }
         }
     }
 
@@ -626,6 +661,20 @@ VALUES (
 
         var result = ThemerrMediaPath.GetItemDirectory(item);
         Assert.Equal("/nonexistent/bare/noexit", result);
+    }
+
+    [Fact]
+    [Trait("Category", "Unit")]
+    public void TestGetDirectoryFromPathExistingFileWithoutExtension()
+    {
+        var tempPath = CreateTempDirectory();
+        var mediaPath = Path.Combine(tempPath, "media-file");
+        File.WriteAllText(mediaPath, string.Empty);
+        var item = new Movie { Name = "Test", Path = mediaPath };
+
+        var result = ThemerrMediaPath.GetItemDirectory(item);
+
+        Assert.Equal(tempPath, result);
     }
 
     [Fact]
