@@ -1,4 +1,3 @@
-﻿using MediaBrowser.Common.Configuration;
 using MediaBrowser.Model.Serialization;
 using Moq;
 
@@ -18,11 +17,11 @@ public class TestThemerrPlugin
     /// <param name="output">An <see cref="ITestOutputHelper"/> instance.</param>
     public TestThemerrPlugin(ITestOutputHelper output)
     {
-        var applicationPaths = new Mock<IApplicationPaths>();
-        applicationPaths.Setup(x => x.PluginsPath).Returns("Plugins");
-
         var xmlSerializer = new Mock<IXmlSerializer>();
-        _plugin = new ThemerrPlugin(applicationPaths.Object, xmlSerializer.Object);
+        xmlSerializer
+            .Setup(x => x.DeserializeFromFile(It.IsAny<Type>(), It.IsAny<string>()))
+            .Returns(new Configuration.PluginConfiguration());
+        _plugin = new ThemerrPlugin(TestHelper.GetMockApplicationPaths().Object, xmlSerializer.Object);
     }
 
     /// <summary>

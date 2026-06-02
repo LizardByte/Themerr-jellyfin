@@ -46,6 +46,19 @@ namespace Jellyfin.Plugin.Themerr.Api
         }
 
         /// <summary>
+        /// Initializes a new instance of the <see cref="ThemerrController"/> class.
+        /// </summary>
+        /// <param name="themerrManager">The Themerr manager.</param>
+        /// <param name="logger">The logger.</param>
+        public ThemerrController(
+            ThemerrManager themerrManager,
+            ILogger<ThemerrController> logger)
+        {
+            _themerrManager = themerrManager;
+            _logger = logger;
+        }
+
+        /// <summary>
         /// Trigger an update from the configuration html page.
         ///
         /// A response code of 204 indicates that the download has started successfully.
@@ -125,7 +138,7 @@ namespace Jellyfin.Plugin.Themerr.Api
         public async Task<ActionResult> ReplaceTheme(Guid itemId)
         {
             _logger.LogInformation("Starting theme replacement of {ItemId}", itemId);
-            var success = await _themerrManager.ReplaceWithThemerTheme(itemId);
+            var success = await _themerrManager.ReplaceWithThemerrTheme(itemId);
             return success ? NoContent() : NotFound();
         }
     }

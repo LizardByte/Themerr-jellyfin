@@ -38,13 +38,15 @@ namespace Jellyfin.Plugin.Themerr
         private static readonly HashSet<string> InitialUpdateCompletedDatabasePaths =
             new HashSet<string>(StringComparer.OrdinalIgnoreCase);
 
-        private static readonly HttpClient HttpClient = new HttpClient();
+        private static readonly HttpClient DefaultHttpClient = new HttpClient();
 
         private readonly ILibraryManager _libraryManager;
         private readonly Timer _timer;
         private readonly ILogger<ThemerrManager> _logger;
         private readonly IYoutubeClientWrapper _youtubeClientWrapper;
         private readonly ThemerrRepository _themerrRepository;
+        private readonly HttpClient _httpClient;
+        private readonly Func<BaseItem, IReadOnlyList<BaseItem>> _themeSongProvider;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="ThemerrManager"/> class.
@@ -54,12 +56,16 @@ namespace Jellyfin.Plugin.Themerr
         /// <param name="logger">The logger.</param>
         /// <param name="youtubeClientWrapper">The YouTube client wrapper. Uses the default implementation when null.</param>
         /// <param name="themerrRepository">The Themerr sqlite repository. Uses the default implementation when null.</param>
+        /// <param name="httpClient">The HTTP client used to query ThemerrDB. Uses the default client when null.</param>
+        /// <param name="themeSongProvider">The provider used to read existing theme songs. Uses Jellyfin items when null.</param>
         public ThemerrManager(
             IApplicationPaths applicationPaths,
             ILibraryManager libraryManager,
             ILogger<ThemerrManager> logger,
             IYoutubeClientWrapper youtubeClientWrapper = null,
-            ThemerrRepository themerrRepository = null)
+            ThemerrRepository themerrRepository = null,
+            HttpClient httpClient = null,
+            Func<BaseItem, IReadOnlyList<BaseItem>> themeSongProvider = null)
         {
             _libraryManager = libraryManager;
             _logger = logger;
@@ -67,6 +73,8 @@ namespace Jellyfin.Plugin.Themerr
             _youtubeClientWrapper = youtubeClientWrapper ?? new YoutubeClientWrapper();
             _themerrRepository = themerrRepository ??
                 new ThemerrRepository(ThemerrDatabasePath.GetDatabasePath(applicationPaths), logger);
+            _httpClient = httpClient ?? DefaultHttpClient;
+            _themeSongProvider = themeSongProvider ?? (item => item.GetThemeSongs());
         }
 
         /// <summary>
@@ -439,12 +447,12 @@ namespace Jellyfin.Plugin.Themerr
         /// </summary>
         /// <param name="itemId">The Jellyfin item ID.</param>
         /// <returns>True if the theme was replaced successfully; otherwise false.</returns>
-        public async Task<bool> ReplaceWithThemerTheme(Guid itemId)
+        public async Task<bool> ReplaceWithThemerrTheme(Guid itemId)
         {
             var item = _libraryManager.GetItemById(itemId);
             if (item == null)
             {
-                _logger.LogWarning("ReplaceWithThemerTheme: item not found for ID {ItemId}", itemId);
+                _logger.LogWarning("ReplaceWithThemerrTheme: item not found for ID {ItemId}", itemId);
                 return false;
             }
 
@@ -472,7 +480,7 @@ namespace Jellyfin.Plugin.Themerr
 
             if (string.IsNullOrEmpty(youtubeThemeUrl))
             {
-                _logger.LogWarning("ReplaceWithThemerTheme: no YouTube URL found for {ItemName}", item.Name);
+                _logger.LogWarning("ReplaceWithThemerrTheme: no YouTube URL found for {ItemName}", item.Name);
                 return false;
             }
 
@@ -480,12 +488,12 @@ namespace Jellyfin.Plugin.Themerr
             var backupCreated = false;
             if (ThemerrPlugin.Instance?.Configuration.BackupUserSuppliedTheme == true && File.Exists(themePath))
             {
-                _logger.LogInformation("ReplaceWithThemerTheme: Backing up existing theme for {ItemName}", item.Name);
+                _logger.LogInformation("ReplaceWithThemerrTheme: Backing up existing theme for {ItemName}", item.Name);
                 File.Move(themePath, backupPath, overwrite: true);
                 backupCreated = true;
             }
 
-            _logger.LogInformation("ReplaceWithThemerTheme: Starting mp3 save {ItemName}", item.Name);
+            _logger.LogInformation("ReplaceWithThemerrTheme: Starting mp3 save {ItemName}", item.Name);
             var success = await SaveMp3(themePath, youtubeThemeUrl).ConfigureAwait(false);
             if (!success)
             {
@@ -497,12 +505,12 @@ namespace Jellyfin.Plugin.Themerr
                 return false;
             }
 
-            _logger.LogInformation("ReplaceWithThemerTheme: Saving Themerr Data for {ItemName}", item.Name);
+            _logger.LogInformation("ReplaceWithThemerrTheme: Saving Themerr Data for {ItemName}", item.Name);
             SaveThemerrData(item, themePath, youtubeThemeUrl);
 
             try
             {
-                _logger.LogInformation("ReplaceWithThemerTheme: Refresh MetaData for {ItemName}", item.Name);
+                _logger.LogInformation("ReplaceWithThemerrTheme: Refresh MetaData for {ItemName}", item.Name);
                 await item.RefreshMetadata(CancellationToken.None).ConfigureAwait(false);
             }
             catch (Exception e)
@@ -537,7 +545,7 @@ namespace Jellyfin.Plugin.Themerr
 
             try
             {
-                response = await HttpClient.GetAsync(themerrDbUrl).ConfigureAwait(false);
+                response = await _httpClient.GetAsync(themerrDbUrl).ConfigureAwait(false);
             }
             catch (Exception e)
             {
@@ -768,9 +776,11 @@ namespace Jellyfin.Plugin.Themerr
             var existingThemePath = GetExistingThemePath(item, themePath);
             var themeProvider = GetCurrentThemeProvider(existingThemePath, existingData);
             var themeHash = GetCurrentThemeHash(themeProvider, existingThemePath, existingData);
-            var downloadedTimestampUtc = themeProvider == ThemerrThemeProvider.Themerr
-                ? existingData?.DownloadedTimestampUtc
-                : null;
+            var downloadedTimestampUtc = existingData?.DownloadedTimestampUtc;
+            if (themeProvider != ThemerrThemeProvider.Themerr)
+            {
+                downloadedTimestampUtc = null;
+            }
 
             return _themerrRepository.Save(
                 item,
@@ -834,7 +844,7 @@ namespace Jellyfin.Plugin.Themerr
 
             try
             {
-                var themeSongs = item.GetThemeSongs();
+                var themeSongs = _themeSongProvider(item);
                 if (themeSongs != null && themeSongs.Count > 0 && System.IO.File.Exists(themeSongs[0].Path))
                 {
                     return themeSongs[0].Path;
