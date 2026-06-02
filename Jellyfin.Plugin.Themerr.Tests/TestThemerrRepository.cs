@@ -359,6 +359,25 @@ VALUES (
 
     [Fact]
     [Trait("Category", "Unit")]
+    public void TestMigratedThemeHashPathCandidatesReturnsThemeAndLegacyThemePaths()
+    {
+        var themePath = Path.Combine(CreateTempDirectory(), "theme.mp3");
+        var legacyDirectory = CreateTempDirectory();
+        var legacyDataPath = Path.Combine(legacyDirectory, "themerr.json");
+        var getMigratedThemeHashPathCandidates = typeof(ThemerrRepository).GetMethod(
+            "GetMigratedThemeHashPathCandidates",
+            BindingFlags.NonPublic | BindingFlags.Static)!;
+
+        var candidates = Assert.IsAssignableFrom<IEnumerable<string>>(
+            getMigratedThemeHashPathCandidates.Invoke(null, new object[] { themePath, legacyDataPath }));
+
+        Assert.Equal(
+            new[] { themePath, Path.Combine(legacyDirectory, "theme.mp3") },
+            candidates.ToArray());
+    }
+
+    [Fact]
+    [Trait("Category", "Unit")]
     public void TestMigrateLegacyDataSaveFailureKeepsLegacyFile()
     {
         var repository = CreateRepository();
