@@ -68,6 +68,10 @@ efcore_version = get_package_version(
     file_path=csproj_file,
     package_name='Microsoft.EntityFrameworkCore.Sqlite',
 )
+youtube_explode_version = get_package_version(
+    file_path=csproj_file,
+    package_name='YoutubeExplode',
+)
 efcore_doc_version = get_major_minor_version(efcore_version) or dotnet_version
 
 # The full version, including alpha/beta/rc tags
@@ -174,6 +178,9 @@ sphinx_csharp_ext_search_pages = {
         f'?view=efcore-{efcore_doc_version}',
         'https://learn.microsoft.com/en-us/search/?terms=microsoft.entityframeworkcore.migrations.%s',
     ),
+    'YoutubeExplode': (
+        f'https://www.nuget.org/packages/YoutubeExplode/{youtube_explode_version}#%s',
+    ),
     'Jellyfin.Controller.MediaBrowser.Common.Configuration': (
         f'https://github.com/jellyfin/jellyfin/blob/v{jellyfin_version}/MediaBrowser.Common/Configuration/%s.cs',
     ),
@@ -232,6 +239,7 @@ sphinx_csharp_ext_type_map = {
         ],
         'Threading.Tasks': [
             'Task',
+            'ValueTask',
         ],
     },
     'System.Collections.Generic': {
@@ -280,6 +288,12 @@ sphinx_csharp_ext_type_map = {
         '': [
             'Migration',
             'MigrationBuilder',
+        ],
+    },
+    'YoutubeExplode': {
+        'Videos.Streams': [
+            'IStreamInfo',
+            'StreamManifest',
         ],
     },
     'Jellyfin.Controller.MediaBrowser.Common.Configuration': {
