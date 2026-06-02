@@ -222,7 +222,7 @@
                 })
             }
 
-            async function replaceWithThemerTheme(itemId, issueUrl, tableColumnContribute, tableColumnStatus, replaceButton) {
+            async function replaceWithThemerrTheme(itemId, issueUrl, tableColumnContribute, tableColumnStatus, replaceButton) {
                 const originalText = replaceButton.innerText;
                 replaceButton.innerText = translate('replacing_button');
                 replaceButton.style.opacity = '0.6';
@@ -244,14 +244,14 @@
                     tableColumnContribute.appendChild(editButton);
 
                     tableColumnStatus.innerHTML = '';
-                    const themerStatus = STATUS_CONFIG['themerr'];
+                    const themerrStatus = STATUS_CONFIG['themerr'];
                     let statusSpan = document.createElement('span');
                     let statusText = document.createElement('span');
                     statusSpan.setAttribute('class', 'material-icons');
                     statusText.setAttribute('class', 'detailTableBodyCell');
-                    statusSpan.classList.add(themerStatus.icon);
-                    statusSpan.setAttribute('style', 'margin-right: 6px; color: ' + themerStatus.color + ';');
-                    statusText.innerText = translate(themerStatus.key);
+                    statusSpan.classList.add(themerrStatus.icon);
+                    statusSpan.setAttribute('style', 'margin-right: 6px; color: ' + themerrStatus.color + ';');
+                    statusText.innerText = translate(themerrStatus.key);
                     tableColumnStatus.appendChild(statusSpan);
                     tableColumnStatus.appendChild(statusText);
                 } catch (error) {
@@ -438,7 +438,7 @@
                     replaceAllButton.style.opacity = '0.6'
                     replaceAllButton.style.pointerEvents = 'none'
                     for (const entry of replaceableItems) {
-                        await replaceWithThemerTheme(
+                        await replaceWithThemerrTheme(
                             entry.id,
                             entry.issueUrl,
                             entry.tableColumnContribute,
@@ -502,7 +502,7 @@
                         replaceButton.setAttribute('class', 'raised button-submit block emby-button')
                         replaceButton.setAttribute('title', translate('replace_button_title'))
                         replaceButton.setAttribute('target', '_blank')
-                        replaceButton.addEventListener('click', () => replaceWithThemerTheme(items[item]["id"], items[item]["issue_url"], tableColumnContribute, tableColumnStatus, replaceButton))
+                        replaceButton.addEventListener('click', () => replaceWithThemerrTheme(items[item]["id"], items[item]["issue_url"], tableColumnContribute, tableColumnStatus, replaceButton))
                         replaceButton.innerText = translate('replace_button')
                         tableColumnContribute.appendChild(replaceButton)
                         replaceableItems.push({

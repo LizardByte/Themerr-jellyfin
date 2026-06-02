@@ -1715,22 +1715,22 @@ public class TestThemerrManager
     }
 
     /// <summary>
-    /// Test ReplaceWithThemerTheme returns false when item is not found.
+    /// Test ReplaceWithThemerrTheme returns false when item is not found.
     /// </summary>
     [Fact]
     [Trait("Category", "Unit")]
-    private async Task TestReplaceWithThemerThemeItemNotFound()
+    private async Task TestReplaceWithThemerrThemeItemNotFound()
     {
-        var result = await _themerrManager.ReplaceWithThemerTheme(Guid.Empty);
+        var result = await _themerrManager.ReplaceWithThemerrTheme(Guid.Empty);
         Assert.False(result);
     }
 
     /// <summary>
-    /// Test ReplaceWithThemerTheme returns false when no YouTube URL is stored.
+    /// Test ReplaceWithThemerrTheme returns false when no YouTube URL is stored.
     /// </summary>
     [Fact]
     [Trait("Category", "Unit")]
-    private async Task TestReplaceWithThemerThemeNoStoredUrl()
+    private async Task TestReplaceWithThemerrThemeNoStoredUrl()
     {
         // TMDB ID "0" is a known-absent sentinel that returns 404 from ThemerrDB,
         // so neither ThemerrDB nor the stored URL will have a value.
@@ -1747,16 +1747,16 @@ public class TestThemerrManager
         });
 
         var manager = CreateThemerrManagerWithMockYoutubeAndItemById(movie, repository);
-        var result = await manager.ReplaceWithThemerTheme(movie.Id);
+        var result = await manager.ReplaceWithThemerrTheme(movie.Id);
         Assert.False(result);
     }
 
     /// <summary>
-    /// Test ReplaceWithThemerTheme returns false when the item has no repository row and ThemerrDB has no entry.
+    /// Test ReplaceWithThemerrTheme returns false when the item has no repository row and ThemerrDB has no entry.
     /// </summary>
     [Fact]
     [Trait("Category", "Unit")]
-    private async Task TestReplaceWithThemerThemeNoRepositoryRow()
+    private async Task TestReplaceWithThemerrThemeNoRepositoryRow()
     {
         // TMDB ID "0" returns 404 from ThemerrDB; no row saved to the repository,
         // so the null-conditional fallback (existingData?.YoutubeThemeUrl) returns null.
@@ -1764,16 +1764,16 @@ public class TestThemerrManager
         var repository = CreateThemerrRepository();
 
         var manager = CreateThemerrManagerWithMockYoutubeAndItemById(movie, repository);
-        var result = await manager.ReplaceWithThemerTheme(movie.Id);
+        var result = await manager.ReplaceWithThemerrTheme(movie.Id);
         Assert.False(result);
     }
 
     /// <summary>
-    /// Test ReplaceWithThemerTheme returns false for a found but unsupported item.
+    /// Test ReplaceWithThemerrTheme returns false for a found but unsupported item.
     /// </summary>
     [Fact]
     [Trait("Category", "Unit")]
-    private async Task TestReplaceWithThemerThemeUnsupportedItem()
+    private async Task TestReplaceWithThemerrThemeUnsupportedItem()
     {
         var album = new MusicAlbum
         {
@@ -1781,17 +1781,17 @@ public class TestThemerrManager
         };
         var manager = CreateThemerrManagerWithMockYoutubeAndItemById(album, CreateThemerrRepository());
 
-        var result = await manager.ReplaceWithThemerTheme(album.Id);
+        var result = await manager.ReplaceWithThemerrTheme(album.Id);
 
         Assert.False(result);
     }
 
     /// <summary>
-    /// Test ReplaceWithThemerTheme downloads and replaces a user-supplied theme.
+    /// Test ReplaceWithThemerrTheme downloads and replaces a user-supplied theme.
     /// </summary>
     [Fact]
     [Trait("Category", "Unit")]
-    private async Task TestReplaceWithThemerTheme()
+    private async Task TestReplaceWithThemerrTheme()
     {
         var movie = CreateMovie("1");
         var repository = CreateThemerrRepository();
@@ -1811,7 +1811,7 @@ public class TestThemerrManager
 
         try
         {
-            var result = await manager.ReplaceWithThemerTheme(movie.Id);
+            var result = await manager.ReplaceWithThemerrTheme(movie.Id);
             Assert.True(result);
             Assert.True(File.Exists(themePath));
 
@@ -1835,11 +1835,11 @@ public class TestThemerrManager
     }
 
     /// <summary>
-    /// Test that ReplaceWithThemerTheme creates theme.backup.mp3 when the setting is enabled and a theme already exists.
+    /// Test that ReplaceWithThemerrTheme creates theme.backup.mp3 when the setting is enabled and a theme already exists.
     /// </summary>
     [Fact]
     [Trait("Category", "Unit")]
-    private async Task TestReplaceWithThemerThemeCreatesBackup()
+    private async Task TestReplaceWithThemerrThemeCreatesBackup()
     {
         CreateThemerrPluginInstance(backupUserSuppliedTheme: true);
 
@@ -1865,7 +1865,7 @@ public class TestThemerrManager
 
         try
         {
-            var result = await manager.ReplaceWithThemerTheme(movie.Id);
+            var result = await manager.ReplaceWithThemerrTheme(movie.Id);
             Assert.True(result);
             Assert.True(File.Exists(themePath));
             Assert.True(File.Exists(backupPath));
@@ -1885,11 +1885,11 @@ public class TestThemerrManager
     }
 
     /// <summary>
-    /// Test that ReplaceWithThemerTheme does not create a backup when the setting is disabled.
+    /// Test that ReplaceWithThemerrTheme does not create a backup when the setting is disabled.
     /// </summary>
     [Fact]
     [Trait("Category", "Unit")]
-    private async Task TestReplaceWithThemerThemeNoBackupWhenSettingDisabled()
+    private async Task TestReplaceWithThemerrThemeNoBackupWhenSettingDisabled()
     {
         CreateThemerrPluginInstance(backupUserSuppliedTheme: false);
 
@@ -1915,7 +1915,7 @@ public class TestThemerrManager
 
         try
         {
-            var result = await manager.ReplaceWithThemerTheme(movie.Id);
+            var result = await manager.ReplaceWithThemerrTheme(movie.Id);
             Assert.True(result);
             Assert.True(File.Exists(themePath));
             Assert.False(File.Exists(backupPath));
@@ -1930,11 +1930,11 @@ public class TestThemerrManager
     }
 
     /// <summary>
-    /// Test that ReplaceWithThemerTheme does not create a backup when no existing theme file is present.
+    /// Test that ReplaceWithThemerrTheme does not create a backup when no existing theme file is present.
     /// </summary>
     [Fact]
     [Trait("Category", "Unit")]
-    private async Task TestReplaceWithThemerThemeNoBackupWhenNoExistingTheme()
+    private async Task TestReplaceWithThemerrThemeNoBackupWhenNoExistingTheme()
     {
         CreateThemerrPluginInstance(backupUserSuppliedTheme: true);
 
@@ -1958,7 +1958,7 @@ public class TestThemerrManager
 
         try
         {
-            var result = await manager.ReplaceWithThemerTheme(movie.Id);
+            var result = await manager.ReplaceWithThemerrTheme(movie.Id);
             Assert.True(result);
             Assert.True(File.Exists(themePath));
             Assert.False(File.Exists(backupPath));
@@ -1973,11 +1973,11 @@ public class TestThemerrManager
     }
 
     /// <summary>
-    /// Test that ReplaceWithThemerTheme skips backup when the plugin instance is unavailable.
+    /// Test that ReplaceWithThemerrTheme skips backup when the plugin instance is unavailable.
     /// </summary>
     [Fact]
     [Trait("Category", "Unit")]
-    private async Task TestReplaceWithThemerThemeNoBackupWhenPluginInstanceMissing()
+    private async Task TestReplaceWithThemerrThemeNoBackupWhenPluginInstanceMissing()
     {
         var previousPlugin = ThemerrPlugin.Instance;
         SetThemerrPluginInstance(null);
@@ -2004,7 +2004,7 @@ public class TestThemerrManager
 
         try
         {
-            var result = await manager.ReplaceWithThemerTheme(movie.Id);
+            var result = await manager.ReplaceWithThemerrTheme(movie.Id);
             Assert.True(result);
             Assert.True(File.Exists(themePath));
             Assert.False(File.Exists(backupPath));
@@ -2025,11 +2025,11 @@ public class TestThemerrManager
     }
 
     /// <summary>
-    /// Test that ReplaceWithThemerTheme returns false without restore work when no backup exists.
+    /// Test that ReplaceWithThemerrTheme returns false without restore work when no backup exists.
     /// </summary>
     [Fact]
     [Trait("Category", "Unit")]
-    private async Task TestReplaceWithThemerThemeDownloadFailureWithoutBackup()
+    private async Task TestReplaceWithThemerrThemeDownloadFailureWithoutBackup()
     {
         var previousPlugin = ThemerrPlugin.Instance;
         CreateThemerrPluginInstance(backupUserSuppliedTheme: false);
@@ -2054,7 +2054,7 @@ public class TestThemerrManager
 
         try
         {
-            var result = await manager.ReplaceWithThemerTheme(movie.Id);
+            var result = await manager.ReplaceWithThemerrTheme(movie.Id);
 
             Assert.False(result);
             Assert.False(File.Exists(themePath));
@@ -2076,11 +2076,11 @@ public class TestThemerrManager
     }
 
     /// <summary>
-    /// Test that ReplaceWithThemerTheme restores the original theme from backup when the download fails.
+    /// Test that ReplaceWithThemerrTheme restores the original theme from backup when the download fails.
     /// </summary>
     [Fact]
     [Trait("Category", "Unit")]
-    private async Task TestReplaceWithThemerThemeRestoresBackupOnDownloadFailure()
+    private async Task TestReplaceWithThemerrThemeRestoresBackupOnDownloadFailure()
     {
         CreateThemerrPluginInstance(backupUserSuppliedTheme: true);
 
@@ -2107,7 +2107,7 @@ public class TestThemerrManager
 
         try
         {
-            var result = await manager.ReplaceWithThemerTheme(movie.Id);
+            var result = await manager.ReplaceWithThemerrTheme(movie.Id);
             Assert.False(result);
             Assert.True(File.Exists(themePath));
             Assert.False(File.Exists(backupPath));

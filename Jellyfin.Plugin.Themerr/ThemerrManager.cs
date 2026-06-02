@@ -447,12 +447,12 @@ namespace Jellyfin.Plugin.Themerr
         /// </summary>
         /// <param name="itemId">The Jellyfin item ID.</param>
         /// <returns>True if the theme was replaced successfully; otherwise false.</returns>
-        public async Task<bool> ReplaceWithThemerTheme(Guid itemId)
+        public async Task<bool> ReplaceWithThemerrTheme(Guid itemId)
         {
             var item = _libraryManager.GetItemById(itemId);
             if (item == null)
             {
-                _logger.LogWarning("ReplaceWithThemerTheme: item not found for ID {ItemId}", itemId);
+                _logger.LogWarning("ReplaceWithThemerrTheme: item not found for ID {ItemId}", itemId);
                 return false;
             }
 
@@ -480,7 +480,7 @@ namespace Jellyfin.Plugin.Themerr
 
             if (string.IsNullOrEmpty(youtubeThemeUrl))
             {
-                _logger.LogWarning("ReplaceWithThemerTheme: no YouTube URL found for {ItemName}", item.Name);
+                _logger.LogWarning("ReplaceWithThemerrTheme: no YouTube URL found for {ItemName}", item.Name);
                 return false;
             }
 
@@ -488,12 +488,12 @@ namespace Jellyfin.Plugin.Themerr
             var backupCreated = false;
             if (ThemerrPlugin.Instance?.Configuration.BackupUserSuppliedTheme == true && File.Exists(themePath))
             {
-                _logger.LogInformation("ReplaceWithThemerTheme: Backing up existing theme for {ItemName}", item.Name);
+                _logger.LogInformation("ReplaceWithThemerrTheme: Backing up existing theme for {ItemName}", item.Name);
                 File.Move(themePath, backupPath, overwrite: true);
                 backupCreated = true;
             }
 
-            _logger.LogInformation("ReplaceWithThemerTheme: Starting mp3 save {ItemName}", item.Name);
+            _logger.LogInformation("ReplaceWithThemerrTheme: Starting mp3 save {ItemName}", item.Name);
             var success = await SaveMp3(themePath, youtubeThemeUrl).ConfigureAwait(false);
             if (!success)
             {
@@ -505,12 +505,12 @@ namespace Jellyfin.Plugin.Themerr
                 return false;
             }
 
-            _logger.LogInformation("ReplaceWithThemerTheme: Saving Themerr Data for {ItemName}", item.Name);
+            _logger.LogInformation("ReplaceWithThemerrTheme: Saving Themerr Data for {ItemName}", item.Name);
             SaveThemerrData(item, themePath, youtubeThemeUrl);
 
             try
             {
-                _logger.LogInformation("ReplaceWithThemerTheme: Refresh MetaData for {ItemName}", item.Name);
+                _logger.LogInformation("ReplaceWithThemerrTheme: Refresh MetaData for {ItemName}", item.Name);
                 await item.RefreshMetadata(CancellationToken.None).ConfigureAwait(false);
             }
             catch (Exception e)
