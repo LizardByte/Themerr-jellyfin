@@ -1,4 +1,5 @@
-﻿using System.Linq;
+using System.Diagnostics.CodeAnalysis;
+using System.Linq;
 using System.Threading.Tasks;
 using YoutubeExplode;
 using YoutubeExplode.Videos.Streams;
@@ -13,21 +14,51 @@ namespace Jellyfin.Plugin.Themerr
         /// <inheritdoc/>
         public async Task DownloadAudioAsync(string videoUrl, string destination)
         {
-            var youtube = new YoutubeClient();
-            var streamManifest = await youtube.Videos.Streams.GetManifestAsync(videoUrl);
+            var streamManifest = await GetStreamManifestAsync(videoUrl);
 
-            var streamInfo = streamManifest
-                .GetAudioOnlyStreams()
-                .Where(s => s.Container == Container.Mp4)
-                .GetWithHighestBitrate()
-                ?? streamManifest.GetAudioOnlyStreams().GetWithHighestBitrate();
+            var audioStreams = streamManifest.GetAudioOnlyStreams().ToList();
+            var mp4Streams = audioStreams.Where(s => s.Container == Container.Mp4).ToList();
+            IStreamInfo streamInfo = null;
+            if (mp4Streams.Count > 0)
+            {
+                streamInfo = mp4Streams.GetWithHighestBitrate();
+            }
+            else if (audioStreams.Count > 0)
+            {
+                streamInfo = audioStreams.GetWithHighestBitrate();
+            }
 
             if (streamInfo == null)
             {
                 return;
             }
 
-            await youtube.Videos.Streams.DownloadAsync(streamInfo, destination);
+            await DownloadAsync(streamInfo, destination);
+        }
+
+        /// <summary>
+        /// Gets the stream manifest for a YouTube video.
+        /// </summary>
+        /// <param name="videoUrl">The YouTube video URL.</param>
+        /// <returns>The stream manifest.</returns>
+        [ExcludeFromCodeCoverage]
+        protected virtual ValueTask<StreamManifest> GetStreamManifestAsync(string videoUrl)
+        {
+            var youtube = new YoutubeClient();
+            return youtube.Videos.Streams.GetManifestAsync(videoUrl);
+        }
+
+        /// <summary>
+        /// Downloads the selected stream to a file.
+        /// </summary>
+        /// <param name="streamInfo">The selected stream.</param>
+        /// <param name="destination">The destination file path.</param>
+        /// <returns>A <see cref="ValueTask"/> representing the asynchronous operation.</returns>
+        [ExcludeFromCodeCoverage]
+        protected virtual ValueTask DownloadAsync(IStreamInfo streamInfo, string destination)
+        {
+            var youtube = new YoutubeClient();
+            return youtube.Videos.Streams.DownloadAsync(streamInfo, destination);
         }
     }
 }

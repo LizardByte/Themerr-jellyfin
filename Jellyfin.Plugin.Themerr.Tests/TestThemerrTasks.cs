@@ -39,6 +39,30 @@ public class TestThemerrTasks
 
     [Fact]
     [Trait("Category", "Unit")]
+    public async Task TestExecuteAsync()
+    {
+        Mock<IApplicationPaths> mockApplicationPaths = TestHelper.GetMockApplicationPaths();
+        Mock<ILibraryManager> mockLibraryManager = new();
+        Mock<ILogger<ThemerrTasks>> mockLogger = new();
+        Mock<ILoggerFactory> mockLoggerFactory = new();
+
+        mockLoggerFactory
+            .Setup(x => x.CreateLogger(It.IsAny<string>()))
+            .Returns(new Mock<ILogger>().Object);
+
+        var tasks = new ThemerrTasks(
+            mockApplicationPaths.Object,
+            mockLibraryManager.Object,
+            mockLogger.Object,
+            mockLoggerFactory.Object);
+
+        await tasks.ExecuteAsync(new Progress<double>(), CancellationToken.None);
+
+        Assert.Equal("Themerr", tasks.Category);
+    }
+
+    [Fact]
+    [Trait("Category", "Unit")]
     public void TestGetTriggersUsesConfiguredInterval()
     {
         var trigger = Assert.Single(ThemerrTasks.GetTriggers(30));

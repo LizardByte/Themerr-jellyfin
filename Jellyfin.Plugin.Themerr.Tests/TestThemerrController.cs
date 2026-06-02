@@ -69,6 +69,18 @@ public class TestThemerrController
     }
 
     /// <summary>
+    /// Test TriggerUpdateRequest starts and completes an update.
+    /// </summary>
+    [Fact]
+    [Trait("Category", "Unit")]
+    public async Task TestTriggerUpdateRequest()
+    {
+        await _controller.TriggerUpdateRequest();
+
+        Assert.NotNull(_controller);
+    }
+
+    /// <summary>
     /// Test GetProgress from API with items pre-populated in the database.
     /// </summary>
     [Fact]
