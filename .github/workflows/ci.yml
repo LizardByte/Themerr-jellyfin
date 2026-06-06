@@ -35,7 +35,7 @@ jobs:
 
       - name: Release Setup
         id: release-setup
-        uses: LizardByte/actions/actions/release_setup@25babf9f2e9f088145ba488339c78c4df9394fc7  # v2026.524.145234
+        uses: LizardByte/actions/actions/release_setup@200eaeb897a2b065a65cb6f16b41077432007490  # v2026.605.34721
         with:
           dotnet: true
           github_token: ${{ secrets.GITHUB_TOKEN }}
@@ -157,7 +157,7 @@ jobs:
 
       - name: Create/Update GitHub Release
         if: ${{ needs.release-setup.outputs.publish_release == 'true' }}
-        uses: LizardByte/actions/actions/release_create@25babf9f2e9f088145ba488339c78c4df9394fc7  # v2026.524.145234
+        uses: LizardByte/actions/actions/release_create@200eaeb897a2b065a65cb6f16b41077432007490  # v2026.605.34721
         with:
           allowUpdates: false
           body: ${{ needs.release-setup.outputs.release_body }}
