@@ -1,19 +1,20 @@
 .. toctree::
-   :maxdepth: 2
-   :caption: About
+   :maxdepth: 1
 
-   about/overview
-   about/installation
+   Overview <about/overview>
+
+.. toctree::
+   :maxdepth: 2
+   :caption: Guides
+
    about/docker
    about/usage
-   about/troubleshooting
    about/changelog
 
 .. toctree::
    :maxdepth: 2
    :caption: Contributing
 
-   contributing/database
    contributing/build
    contributing/localization
    contributing/testing

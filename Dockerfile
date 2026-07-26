@@ -69,7 +69,7 @@ ENV PATH="/root/.dotnet:/root/.local/bin:${VIRTUAL_ENV}/bin:${PATH}"
 
 # create build dir and copy the files required to restore dependencies and build the plugin
 WORKDIR /build
-COPY --link pyproject.toml uv.lock README.rst LICENSE Directory.Build.props Jellyfin.Plugin.Themerr.sln ./
+COPY --link pyproject.toml uv.lock README.md LICENSE Directory.Build.props Jellyfin.Plugin.Themerr.sln ./
 COPY --link themerr-jellyfin.png ./
 COPY --link scripts/ scripts/
 COPY --link Jellyfin.Plugin.Themerr/ Jellyfin.Plugin.Themerr/

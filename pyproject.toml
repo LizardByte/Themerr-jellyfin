@@ -6,7 +6,7 @@ build-backend = "setuptools.build_meta"
 name = "themerr-jellyfin"
 version = "0.0.0.0"
 description = "Plugin for Jellyfin that adds theme songs to movies and TV shows using ThemerrDB"
-readme = "README.rst"
+readme = "README.md"
 requires-python = ">=3.14"
 license = {text = "AGPL-3.0-only"}
 authors = [

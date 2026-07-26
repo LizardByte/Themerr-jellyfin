@@ -403,9 +403,10 @@ sphinx_csharp_ignore_xref = [
     '>',
 ]
 
-# disable epub mimetype warnings
+# The README uses a raw HTML h1 to center its title, which MyST does not count when validating heading levels.
+# disable epub mimetype and README heading warnings
 # https://github.com/readthedocs/readthedocs.org/blob/eadf6ac6dc6abc760a91e1cb147cc3c5f37d1ea8/docs/conf.py#L235-L236
-suppress_warnings = ["epub.unknown_project_files"]
+suppress_warnings = ["epub.unknown_project_files", "myst.header"]
 
 # get doxygen version
 doxy_proc = subprocess.run('doxygen --version', shell=True, cwd=source_dir, capture_output=True)
