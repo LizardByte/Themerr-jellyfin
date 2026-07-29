@@ -569,15 +569,15 @@ wheels = [
 
 [[package]]
 name = "rstcheck"
-version = "6.2.5"
+version = "6.3.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "rstcheck-core" },
     { name = "typer" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/20/c9/4910e032405dbe1178bc410c45531b7bcc4f36326af167f4648f212c2409/rstcheck-6.2.5.tar.gz", hash = "sha256:122b6d6b953fa1a09d7e7de42ac5d8938da291c6f68351ace6166bb50fc3bd6c", size = 25235, upload-time = "2025-06-01T13:06:36.324Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/0a/3e/54182f5a310e0e2eb287170eb590bb93011161e28e51aa499120ab5c9318/rstcheck-6.3.0.tar.gz", hash = "sha256:583072b43939627b1b0f4492e8af2587092efc1fb5e9f0228fa2df9ea3b44873", size = 30887, upload-time = "2026-07-28T19:49:07.054Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/6b/c2/67e0fa861f250e343c5c25de5f09800e85227241942d018a3e303d14d965/rstcheck-6.2.5-py3-none-any.whl", hash = "sha256:09af9555cf05f23651189154066d483ced25d36ebb3f01dc3a5d27524e4a5fdc", size = 8679, upload-time = "2025-06-01T13:06:35.16Z" },
+    { url = "https://files.pythonhosted.org/packages/44/13/8bdf4e9f028e147ebabd8e093d30b0bc6e70ebbcfa9dbd9b93861e7315cd/rstcheck-6.3.0-py3-none-any.whl", hash = "sha256:3c1d8753b5dc01c33d114711552b2c4855fde00e0713f5a8341d7aaab2777058", size = 8999, upload-time = "2026-07-28T19:49:05.664Z" },
 ]
 
 [package.optional-dependencies]
@@ -587,15 +587,15 @@ sphinx = [
 
 [[package]]
 name = "rstcheck-core"
-version = "1.3.0"
+version = "1.3.1"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "docutils" },
     { name = "pydantic" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/c2/1e/f61bd8f3ebf3a049e1a5b13aed463cea968a18ac8d41e7fa86813abba801/rstcheck_core-1.3.0.tar.gz", hash = "sha256:6238ff6e531e003171e2ffefeb7b18a55fd70a00d69affe25a9bc11b194dd750", size = 54829, upload-time = "2026-05-04T10:46:29.168Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/69/91/1d6dc8b0f4482b5c1d96aa35127963c55f5724e84390db6839e2c1973f3f/rstcheck_core-1.3.1.tar.gz", hash = "sha256:3fce3e9f9d250659db021b158e63a373298140dab9aa37ea917373c962bfa04e", size = 61224, upload-time = "2026-07-28T19:25:32.438Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/f9/c7/ea5a20fba2f60fb35bdae56d06907b257a546265e4aba1eb46e9e3229e8e/rstcheck_core-1.3.0-py3-none-any.whl", hash = "sha256:3e71d97e4ef2294d710e67d3f15e8f1f54b33272a662eabdfca22a9d9e88c6c2", size = 28349, upload-time = "2026-05-04T10:46:27.89Z" },
+    { url = "https://files.pythonhosted.org/packages/da/4c/b46fa11eb819094f0317622b07a560a097f751300d24c19959171a0f1398/rstcheck_core-1.3.1-py3-none-any.whl", hash = "sha256:21eb176c9cb1e6255bd4293d7d220710515cfe6f0862958fcddee8040aa30f88", size = 28703, upload-time = "2026-07-28T19:25:30.596Z" },
 ]
 
 [[package]]
@@ -808,7 +808,7 @@ docs = [
     { name = "breathe", specifier = "==4.36.0" },
     { name = "furo", specifier = "==2025.12.19" },
     { name = "myst-parser", specifier = "==5.1.0" },
-    { name = "rstcheck", extras = ["sphinx"], specifier = "==6.2.5" },
+    { name = "rstcheck", extras = ["sphinx"], specifier = "==6.3.0" },
     { name = "rstfmt", specifier = "==0.0.14" },
     { name = "sphinx", specifier = "==9.1.0" },
     { name = "sphinx-copybutton", specifier = "==0.5.2" },
