@@ -36,7 +36,6 @@ STATIC_BUILD_CONFIG = {
 ARTIFACTS = [
     "Jellyfin.Plugin.Themerr.dll",
     "YoutubeExplode.dll",
-    "AngleSharp.dll",
     "JsonExtensions.dll",
 ]
 
