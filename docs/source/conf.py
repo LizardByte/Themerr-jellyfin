@@ -35,6 +35,26 @@ def get_package_version(file_path: str, package_name: str):
     return None
 
 
+def get_jellyfin_source_ref(version: str | None):
+    """
+    Map the ``Jellyfin.Controller`` NuGet version to the matching git tag.
+
+    Stable packages share the tag's three-part version (``10.11.11`` ->
+    ``v10.11.11``), but pre-releases drop the patch component: the NuGet package
+    ``12.0.0-rc5`` is tagged ``v12.0-rc5``. Emitting ``v12.0.0-rc5`` 404s, and
+    since most ``sphinx_csharp_ext_search_pages`` entries have no fallback URL,
+    sphinx_csharp raises ``IndexError`` rather than reporting a broken link.
+    """
+    if version is None:
+        return None
+
+    base, sep, pre = version.partition('-')
+    if sep:
+        base = '.'.join(base.split('.')[:2])
+
+    return f'v{base}{sep}{pre}'
+
+
 def get_major_minor_version(version: str | None):
     if version is None:
         return None
@@ -73,6 +93,7 @@ youtube_explode_version = get_package_version(
     package_name='YoutubeExplode',
 )
 efcore_doc_version = get_major_minor_version(efcore_version) or dotnet_version
+jellyfin_source_ref = get_jellyfin_source_ref(jellyfin_version)
 
 # The full version, including alpha/beta/rc tags
 # https://docs.readthedocs.io/en/stable/reference/environment-variables.html#envvar-READTHEDOCS_VERSION
@@ -182,40 +203,40 @@ sphinx_csharp_ext_search_pages = {
         f'https://www.nuget.org/packages/YoutubeExplode/{youtube_explode_version}#%s',
     ),
     'Jellyfin.Controller.MediaBrowser.Common.Configuration': (
-        f'https://github.com/jellyfin/jellyfin/blob/v{jellyfin_version}/MediaBrowser.Common/Configuration/%s.cs',
+        f'https://github.com/jellyfin/jellyfin/blob/{jellyfin_source_ref}/MediaBrowser.Common/Configuration/%s.cs',
     ),
     'Jellyfin.Controller.MediaBrowser.Common.Plugins': (
-        f'https://github.com/jellyfin/jellyfin/blob/v{jellyfin_version}/MediaBrowser.Common/Plugins/%s.cs',
+        f'https://github.com/jellyfin/jellyfin/blob/{jellyfin_source_ref}/MediaBrowser.Common/Plugins/%s.cs',
     ),
     'Jellyfin.Controller.MediaBrowser.Controller': (
-        f'https://github.com/jellyfin/jellyfin/blob/v{jellyfin_version}/MediaBrowser.Controller/%s.cs',
+        f'https://github.com/jellyfin/jellyfin/blob/{jellyfin_source_ref}/MediaBrowser.Controller/%s.cs',
     ),
     'Jellyfin.Controller.MediaBrowser.Controller.Configuration': (
-        f'https://github.com/jellyfin/jellyfin/blob/v{jellyfin_version}/MediaBrowser.Controller/Configuration/%s.cs',
+        f'https://github.com/jellyfin/jellyfin/blob/{jellyfin_source_ref}/MediaBrowser.Controller/Configuration/%s.cs',
     ),
     'Jellyfin.Controller.MediaBrowser.Controller.Entities': (
-        f'https://github.com/jellyfin/jellyfin/blob/v{jellyfin_version}/MediaBrowser.Controller/Entities/%s.cs',
+        f'https://github.com/jellyfin/jellyfin/blob/{jellyfin_source_ref}/MediaBrowser.Controller/Entities/%s.cs',
     ),
     'Jellyfin.Controller.MediaBrowser.Controller.Entities.Movies': (
-        f'https://github.com/jellyfin/jellyfin/blob/v{jellyfin_version}/MediaBrowser.Controller/Entities/Movies/%s.cs',
+        f'https://github.com/jellyfin/jellyfin/blob/{jellyfin_source_ref}/MediaBrowser.Controller/Entities/Movies/%s.cs',
     ),
     'Jellyfin.Controller.MediaBrowser.Controller.Entities.TV': (
-        f'https://github.com/jellyfin/jellyfin/blob/v{jellyfin_version}/MediaBrowser.Controller/Entities/TV/%s.cs',
+        f'https://github.com/jellyfin/jellyfin/blob/{jellyfin_source_ref}/MediaBrowser.Controller/Entities/TV/%s.cs',
     ),
     'Jellyfin.Controller.MediaBrowser.Controller.Entities.Library': (
-        f'https://github.com/jellyfin/jellyfin/blob/v{jellyfin_version}/MediaBrowser.Controller/Library/%s.cs',
+        f'https://github.com/jellyfin/jellyfin/blob/{jellyfin_source_ref}/MediaBrowser.Controller/Library/%s.cs',
     ),
     'Jellyfin.Controller.MediaBrowser.Controller.Plugins': (
-        f'https://github.com/jellyfin/jellyfin/blob/v{jellyfin_version}/MediaBrowser.Controller/Plugins/%s.cs',
+        f'https://github.com/jellyfin/jellyfin/blob/{jellyfin_source_ref}/MediaBrowser.Controller/Plugins/%s.cs',
     ),
     'Jellyfin.Controller.MediaBrowser.Model.Plugins': (
-        f'https://github.com/jellyfin/jellyfin/blob/v{jellyfin_version}/MediaBrowser.Model/Plugins/%s.cs',
+        f'https://github.com/jellyfin/jellyfin/blob/{jellyfin_source_ref}/MediaBrowser.Model/Plugins/%s.cs',
     ),
     'Jellyfin.Controller.MediaBrowser.Model.Serialization': (
-        f'https://github.com/jellyfin/jellyfin/blob/v{jellyfin_version}/MediaBrowser.Model/Serialization/%s.cs',
+        f'https://github.com/jellyfin/jellyfin/blob/{jellyfin_source_ref}/MediaBrowser.Model/Serialization/%s.cs',
     ),
     'Jellyfin.Controller.MediaBrowser.Model.Tasks': (
-        f'https://github.com/jellyfin/jellyfin/blob/v{jellyfin_version}/MediaBrowser.Model/Tasks/%s.cs',
+        f'https://github.com/jellyfin/jellyfin/blob/{jellyfin_source_ref}/MediaBrowser.Model/Tasks/%s.cs',
     ),
 }
 
