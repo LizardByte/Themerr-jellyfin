@@ -484,7 +484,7 @@ namespace Jellyfin.Plugin.Themerr
                 return false;
             }
 
-            var backupPath = Path.Combine(Path.GetDirectoryName(themePath)!, "theme.backup.mp3");
+            var backupPath = Path.Combine(Path.GetDirectoryName(themePath), "theme.backup.mp3");
             var backupCreated = false;
             if (ThemerrPlugin.Instance?.Configuration.BackupUserSuppliedTheme == true && File.Exists(themePath))
             {
