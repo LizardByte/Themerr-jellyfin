@@ -1,6 +1,4 @@
 # syntax=docker/dockerfile:1
-# artifacts: false
-# platforms: linux/amd64
 # Linuxserver.io docker mods are not multiplatform, so no point in enabling "linux/arm64/v8"
 # cannot enable "linux/arm/v7" due to issue with dotnet
 FROM ubuntu:26.04 AS base
