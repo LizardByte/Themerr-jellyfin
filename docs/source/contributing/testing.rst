@@ -50,7 +50,7 @@ Lint with rstcheck
 
 Unit Testing
 ------------
-Themerr-jellyfin uses `xUnit <https://www.nuget.org/packages/xunit>`__ for unit testing.
+Themerr-jellyfin uses `xUnit <https://www.nuget.org/packages/xunit.v3>`__ for unit testing.
 
 Test with xUnit
    .. code-block:: bash
