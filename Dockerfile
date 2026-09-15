@@ -50,7 +50,7 @@ set -e
 url="https://dot.net/v1/dotnet-install.sh"
 curl --proto "=https" --tlsv1.2 --silent --show-error --fail --location "$url" --output dotnet-install.sh
 chmod +x ./dotnet-install.sh
-./dotnet-install.sh --channel 9.0
+./dotnet-install.sh --channel 10.0
 _DOTNET
 
 # install uv
