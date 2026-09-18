@@ -15,38 +15,23 @@ code styling. This is run automatically as part of the build process.
 
 The config file for StyleCop.Analyzers is ``.editorconfig``.
 
-Sphinx
+Dockle
 ------
-Themerr-jellyfin uses `Sphinx <https://www.sphinx-doc.org/en/master/>`__ for documentation building. Sphinx, along with
-other required python dependencies are included in the ``docs`` dependency group in ``pyproject.toml``. Python
-dependencies are managed with ``uv`` and locked in ``uv.lock``.
+Themerr-jellyfin uses Dockle to build the Sphinx guide and the native Doxygen API reference from ``dockle.toml``.
 
-Install the documentation dependencies with:
+Install the current prerelease dependencies with:
 
 .. code-block:: bash
 
-   uv sync --only-group docs --no-install-project
+   python -m pip install 'lizardbyte-dockle[all] @ https://github.com/LizardByte/dockle/releases/download/v2026.918.203650/lizardbyte_dockle-2026.918.203650-py3-none-any.whl'
 
-The config file for Sphinx is ``docs/source/conf.py``. This is already included in the root of the repo and should not
-be modified.
+Dockle generates both native configuration files; do not add a project ``conf.py`` or ``Doxyfile``.
 
-Test with Sphinx
+Test the documentation
    .. code-block:: bash
 
-      cd docs
-      uv run --no-sync make html
-
-   Alternatively
-
-   .. code-block:: bash
-
-      cd docs
-      uv run --no-sync sphinx-build -b html source build
-
-Lint with rstcheck
-   .. code-block:: bash
-
-      uv run --no-sync rstcheck -r .
+      PYTHONPATH=third-party/dockle/src python -m dockle check
+      PYTHONPATH=third-party/dockle/src python -m dockle build
 
 Unit Testing
 ------------

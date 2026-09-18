@@ -6,43 +6,5 @@ Our source code is documented using the `standard documentation guidelines
 Source
 ------
 
-.. doxygenindex::
-   :allow-dot-graphs:
-
-.. Ideally, we would use `doxygenfile` with `:allow-dot-graphs:`, but sphinx complains about duplicated namespaces...
-..
-.. .. toctree::
-..    :caption: Jellyfin.Plugin.Themerr
-..    :maxdepth: 1
-..    :glob:
-.. 
-..    Jellyfin.Plugin.Themerr/*
-.. 
-.. .. toctree::
-..    :caption: Jellyfin.Plugin.Themerr/Api
-..    :maxdepth: 1
-..    :glob:
-.. 
-..    Jellyfin.Plugin.Themerr/Api/*
-.. 
-.. .. toctree::
-..    :caption: Jellyfin.Plugin.Themerr/Configuration
-..    :maxdepth: 1
-..    :glob:
-.. 
-..    Jellyfin.Plugin.Themerr/Configuration/*
-.. 
-.. .. toctree::
-..    :caption: Jellyfin.Plugin.Themerr/ScheduledTasks
-..    :maxdepth: 1
-..    :glob:
-.. 
-..    Jellyfin.Plugin.Themerr/ScheduledTasks/*
-
-.. Alternatively, can document the namespaces individually, but they don't support graphviz
-..
-.. .. doxygennamespace:: Jellyfin::Plugin::Themerr
-..    :members:
-..    :protected-members:
-..    :private-members:
-..    :undoc-members:
+Dockle publishes the native Doxygen output as a separate target. Open the
+`API reference <../api/>`__ for namespaces, types, members, and graphs.

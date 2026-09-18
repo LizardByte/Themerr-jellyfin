@@ -12,31 +12,16 @@ build:
   tools:
     python: "3.14"
   apt_packages:
-    - doxygen  # required to generate source API docs
-    - graphviz  # required to build diagrams
-  jobs:
-    post_build:
-      - rstcheck -r .  # lint rst files
-      # - rstfmt --check --diff -w 120 .  # check rst formatting
+    - doxygen
+    - graphviz
+  commands:
+    - python -m pip install 'lizardbyte-dockle[all] @ https://github.com/LizardByte/dockle/releases/download/v2026.918.203650/lizardbyte_dockle-2026.918.203650-py3-none-any.whl'
+    - env PYTHONPATH=third-party/dockle/src python -m dockle check
+    - env PYTHONPATH=third-party/dockle/src python -m dockle build
+    - mkdir -p "${READTHEDOCS_OUTPUT}html/"
+    - cp -r _site/. "${READTHEDOCS_OUTPUT}html/"
 
-# submodules required to install sphinx-csharp
+# Dockle source overlay used until the migration fixes are released
 submodules:
   include: all
   recursive: true
-
-# Build documentation in the docs/ directory with Sphinx
-sphinx:
-  builder: html
-  configuration: docs/source/conf.py
-  fail_on_warning: true
-
-# Using Sphinx, build docs in additional formats
-formats: all
-
-python:
-  install:
-    - method: uv
-      command: sync
-      path: .
-      groups:
-        - docs
