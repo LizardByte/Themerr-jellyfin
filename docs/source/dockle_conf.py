@@ -54,7 +54,8 @@ def get_jellyfin_source_version(version: str | None):
 # -- Project integration ------------------------------------------------------
 
 root_dir = dockle_project_root
-csproj_file = root_dir / 'Jellyfin.Plugin.Themerr' / 'Jellyfin.Plugin.Themerr.csproj'
+plugin_name = 'Jellyfin.Plugin.Themerr'
+csproj_file = root_dir / plugin_name / f'{plugin_name}.csproj'
 
 dotnet_version = get_dotnet_version(file_path=csproj_file)
 jellyfin_version = get_package_version(
@@ -106,9 +107,9 @@ source_suffix = {
 
 # extension config options
 autosectionlabel_prefix_document = True  # Make sure the target is unique
-breathe_default_project = 'Jellyfin.Plugin.Themerr'
+breathe_default_project = plugin_name
 breathe_projects = {
-    'Jellyfin.Plugin.Themerr': str(root_dir / '_site' / 'api' / 'xml')
+    plugin_name: str(root_dir / '_site' / 'api' / 'xml')
 }
 sphinx_csharp_test_links = True
 todo_include_todos = True
