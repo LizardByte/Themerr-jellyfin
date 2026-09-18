@@ -41,6 +41,8 @@ namespace Jellyfin.Plugin.Themerr
         }
 
         /// <inheritdoc />
+        /// <param name="cancellationToken">A token that can cancel startup.</param>
+        /// <returns>A task that represents the startup operation.</returns>
         public Task StartAsync(CancellationToken cancellationToken)
         {
             _themerrManager.StartInitialMigrationUpdate();
@@ -59,6 +61,8 @@ namespace Jellyfin.Plugin.Themerr
         }
 
         /// <inheritdoc />
+        /// <param name="cancellationToken">A token that can cancel shutdown.</param>
+        /// <returns>A task that represents the shutdown operation.</returns>
         public Task StopAsync(CancellationToken cancellationToken)
         {
             var plugin = ThemerrPlugin.Instance;

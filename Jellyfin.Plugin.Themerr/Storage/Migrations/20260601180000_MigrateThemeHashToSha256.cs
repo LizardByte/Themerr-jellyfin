@@ -14,6 +14,7 @@ namespace Jellyfin.Plugin.Themerr.Storage.Migrations
     public partial class MigrateThemeHashToSha256 : Migration
     {
         /// <inheritdoc />
+        /// <param name="migrationBuilder">The builder used to migrate theme hashes to SHA-256.</param>
         protected override void Up(MigrationBuilder migrationBuilder)
         {
             migrationBuilder.RenameColumn(
@@ -33,6 +34,7 @@ namespace Jellyfin.Plugin.Themerr.Storage.Migrations
         }
 
         /// <inheritdoc />
+        /// <param name="migrationBuilder">The builder used to restore the legacy theme hash schema.</param>
         protected override void Down(MigrationBuilder migrationBuilder)
         {
             migrationBuilder.Sql(@"

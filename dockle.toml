@@ -14,16 +14,6 @@ strict = true
 clean = true
 
 [[targets]]
-name = "docs"
-title = "Themerr-jellyfin documentation"
-framework = "sphinx"
-source = "docs/source"
-home = true
-
-[targets.sphinx]
-exclude_patterns = ["toc.rst"]
-
-[[targets]]
 name = "api"
 title = "Themerr-jellyfin API"
 framework = "doxygen"
@@ -33,5 +23,15 @@ source = "Jellyfin.Plugin.Themerr"
 inputs = ["Jellyfin.Plugin.Themerr"]
 optimize_output_java = true
 separate_member_pages = true
-warn_if_undoc_enum_val = false
-warn_no_paramdoc = false
+generate_xml = true
+
+[[targets]]
+name = "docs"
+title = "Themerr-jellyfin documentation"
+framework = "sphinx"
+source = "docs/source"
+home = true
+
+[targets.sphinx]
+exclude_patterns = ["toc.rst"]
+extra_config = "docs/source/dockle_conf.py"

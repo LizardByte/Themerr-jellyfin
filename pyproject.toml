@@ -19,6 +19,15 @@ dev = [
     "jprm==1.1.0",
     "PyYAML==6.0.3",
 ]
+docs = [
+    "breathe==4.36.0",
+    "sphinx-copybutton==0.5.2",
+    "sphinx-csharp",
+]
+
+[tool.uv.sources]
+sphinx-csharp = { path = "third-party/sphinx-csharp" }
+
 [project.urls]
 Homepage = "https://github.com/LizardByte/Themerr-jellyfin"
 Repository = "https://github.com/LizardByte/Themerr-jellyfin"

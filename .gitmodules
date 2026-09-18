@@ -1,3 +1,7 @@
+[submodule "third-party/dockle"]
+	path = third-party/dockle
+	url = https://github.com/LizardByte/dockle.git
+	branch = master
 [submodule "third-party/jellyfin-apiclient-javascript"]
 	path = third-party/jellyfin-apiclient-javascript
 	url = https://github.com/jellyfin/jellyfin-apiclient-javascript.git
@@ -6,7 +10,7 @@
 	path = third-party/jellyfin-web
 	url = https://github.com/jellyfin/jellyfin-web.git
 	branch = master
-[submodule "third-party/dockle"]
-	path = third-party/dockle
-	url = https://github.com/LizardByte/dockle.git
+[submodule "third-party/sphinx-csharp"]
+	path = third-party/sphinx-csharp
+	url = https://github.com/rogerbarton/sphinx-csharp.git
 	branch = master

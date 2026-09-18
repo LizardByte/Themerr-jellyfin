@@ -6,5 +6,5 @@ Our source code is documented using the `standard documentation guidelines
 Source
 ------
 
-Dockle publishes the native Doxygen output as a separate target. Open the
-`API reference <../api/>`__ for namespaces, types, members, and graphs.
+.. doxygenindex::
+   :allow-dot-graphs:

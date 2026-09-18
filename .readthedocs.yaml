@@ -6,22 +6,24 @@
 # Required
 version: 2
 
-# Set the version of Python
 build:
   os: ubuntu-24.04
   tools:
-    python: "3.14"
-  apt_packages:
-    - doxygen
-    - graphviz
+    python: "miniconda-latest"
   commands:
-    - python -m pip install 'lizardbyte-dockle[all] @ https://github.com/LizardByte/dockle/releases/download/v2026.918.203650/lizardbyte_dockle-2026.918.203650-py3-none-any.whl'
-    - env PYTHONPATH=third-party/dockle/src python -m dockle check
-    - env PYTHONPATH=third-party/dockle/src python -m dockle build
-    - mkdir -p "${READTHEDOCS_OUTPUT}html/"
-    - cp -r _site/. "${READTHEDOCS_OUTPUT}html/"
+    - |
+      if [ -f readthedocs_build.sh ]; then
+        dockle_dir="."
+      else
+        dockle_dir="./third-party/dockle"
+      fi
+      chmod +x "${dockle_dir}/readthedocs_build.sh"
+      export DOCKLE_DIR="${dockle_dir}"
+      "${dockle_dir}/readthedocs_build.sh"
 
-# Dockle source overlay used until the migration fixes are released
+conda:
+  environment: third-party/dockle/environment.yml
+
 submodules:
   include: all
   recursive: true

@@ -33,6 +33,7 @@ namespace Jellyfin.Plugin.Themerr.Storage
         public DbSet<ThemerrMediaItem> MediaItems { get; set; }
 
         /// <inheritdoc />
+        /// <param name="optionsBuilder">The builder used to configure this database context.</param>
         protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
         {
             if (!optionsBuilder.IsConfigured)
@@ -42,6 +43,7 @@ namespace Jellyfin.Plugin.Themerr.Storage
         }
 
         /// <inheritdoc />
+        /// <param name="modelBuilder">The builder used to configure the Themerr database model.</param>
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             var mediaItem = modelBuilder.Entity<ThemerrMediaItem>();
