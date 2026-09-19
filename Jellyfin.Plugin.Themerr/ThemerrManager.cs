@@ -322,6 +322,7 @@ namespace Jellyfin.Plugin.Themerr
         /// Download the theme song for a media item if it doesn't already exist.
         /// </summary>
         /// <param name="item">The Jellyfin media object.</param>
+        /// <returns>A task that represents the asynchronous theme processing operation.</returns>
         public async Task ProcessItemTheme(BaseItem item)
         {
             var dbType = ThemerrDbType.Get(item);

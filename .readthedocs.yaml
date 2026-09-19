@@ -6,37 +6,27 @@
 # Required
 version: 2
 
-# Set the version of Python
 build:
   os: ubuntu-24.04
   tools:
-    python: "3.14"
-  apt_packages:
-    - doxygen  # required to generate source API docs
-    - graphviz  # required to build diagrams
+    nodejs: "22"
+    python: "miniconda-latest"
   jobs:
-    post_build:
-      - rstcheck -r .  # lint rst files
-      # - rstfmt --check --diff -w 120 .  # check rst formatting
+    build:
+      html:
+        - |
+          if [ -f readthedocs_build.sh ]; then
+            dockle_dir="."
+          else
+            dockle_dir="./third-party/dockle"
+          fi
+          chmod +x "${dockle_dir}/readthedocs_build.sh"
+          export DOCKLE_DIR="${dockle_dir}"
+          "${dockle_dir}/readthedocs_build.sh"
 
-# submodules required to install sphinx-csharp
+conda:
+  environment: third-party/dockle/environment.yml
+
 submodules:
   include: all
   recursive: true
-
-# Build documentation in the docs/ directory with Sphinx
-sphinx:
-  builder: html
-  configuration: docs/source/conf.py
-  fail_on_warning: true
-
-# Using Sphinx, build docs in additional formats
-formats: all
-
-python:
-  install:
-    - method: uv
-      command: sync
-      path: .
-      groups:
-        - docs
