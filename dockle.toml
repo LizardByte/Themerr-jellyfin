@@ -18,6 +18,7 @@ name = "api"
 title = "Themerr-jellyfin API"
 framework = "doxygen"
 source = "Jellyfin.Plugin.Themerr"
+publish = false
 
 [targets.doxygen]
 inputs = ["Jellyfin.Plugin.Themerr"]
@@ -33,5 +34,4 @@ source = "docs/source"
 home = true
 
 [targets.sphinx]
-exclude_patterns = ["toc.rst"]
 extra_config = "docs/source/dockle_conf.py"
