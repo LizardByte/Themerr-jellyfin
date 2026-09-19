@@ -53,7 +53,7 @@ def get_jellyfin_source_version(version: str | None):
 
 # -- Project integration ------------------------------------------------------
 
-root_dir = dockle_project_root
+root_dir = dockle_project_root  # noqa: F821 - injected by Dockle
 plugin_name = 'Jellyfin.Plugin.Themerr'
 csproj_file = root_dir / plugin_name / f'{plugin_name}.csproj'
 
@@ -80,7 +80,7 @@ efcore_doc_version = get_major_minor_version(efcore_version) or dotnet_version
 # Add any Sphinx extension module names here, as strings. They can be
 # extensions coming with Sphinx (named 'sphinx.ext.*') or your custom
 # ones.
-extensions.extend([
+extensions.extend([  # noqa: F821 - injected by Dockle
     'breathe',  # c# support for sphinx with doxygen, and sphinx-csharp
     'sphinx.ext.autosectionlabel',
     'sphinx.ext.graphviz',  # enable graphs for breathe
