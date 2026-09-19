@@ -35,3 +35,4 @@ home = true
 
 [targets.sphinx]
 extra_config = "docs/source/dockle_conf.py"
+source_edit_link = "https://github.com/LizardByte/Themerr-jellyfin/blob/master/docs/source/{filename}"
