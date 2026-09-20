@@ -19,19 +19,19 @@ Dockle
 ------
 Themerr-jellyfin uses Dockle to build the Sphinx guide and the native Doxygen API reference from ``dockle.toml``.
 
-Install the current prerelease dependencies with:
+Install the released package from PyPI with:
 
 .. code-block:: bash
 
-   python -m pip install 'lizardbyte-dockle[all] @ https://github.com/LizardByte/dockle/releases/download/v2026.918.203650/lizardbyte_dockle-2026.918.203650-py3-none-any.whl'
+   python -m pip install 'lizardbyte-dockle[all]==2026.919.233535'
 
 Dockle generates both native configuration files; do not add a project ``conf.py`` or ``Doxyfile``.
 
 Test the documentation
    .. code-block:: bash
 
-      PYTHONPATH=third-party/dockle/src python -m dockle check
-      PYTHONPATH=third-party/dockle/src python -m dockle build
+      dockle check
+      dockle build
 
 Unit Testing
 ------------
