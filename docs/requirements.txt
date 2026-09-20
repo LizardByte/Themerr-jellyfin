@@ -1,2 +1,0 @@
-breathe==4.36.0
-./third-party/sphinx-csharp
