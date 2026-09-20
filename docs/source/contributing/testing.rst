@@ -23,7 +23,7 @@ Install the released package from PyPI with:
 
 .. code-block:: bash
 
-   python -m pip install 'lizardbyte-dockle[all]==2026.919.233535'
+   python -m pip install 'lizardbyte-dockle[all]'
 
 Dockle generates both native configuration files; do not add a project ``conf.py`` or ``Doxyfile``.
 
