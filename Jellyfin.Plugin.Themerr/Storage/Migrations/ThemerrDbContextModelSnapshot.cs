@@ -14,6 +14,7 @@ namespace Jellyfin.Plugin.Themerr.Storage.Migrations
     public class ThemerrDbContextModelSnapshot : ModelSnapshot
     {
         /// <inheritdoc />
+        /// <param name="modelBuilder">The builder used to recreate the current database model.</param>
         protected override void BuildModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618

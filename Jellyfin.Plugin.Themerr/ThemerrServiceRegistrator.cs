@@ -10,6 +10,8 @@ namespace Jellyfin.Plugin.Themerr
     public class ThemerrServiceRegistrator : IPluginServiceRegistrator
     {
         /// <inheritdoc />
+        /// <param name="serviceCollection">The service collection receiving Themerr registrations.</param>
+        /// <param name="applicationHost">The Jellyfin application host.</param>
         public void RegisterServices(IServiceCollection serviceCollection, IServerApplicationHost applicationHost)
         {
             serviceCollection.AddHostedService<ThemerrStartupService>();

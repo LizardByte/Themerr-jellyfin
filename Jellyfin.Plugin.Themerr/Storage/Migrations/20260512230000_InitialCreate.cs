@@ -15,6 +15,7 @@ namespace Jellyfin.Plugin.Themerr.Storage.Migrations
     public partial class InitialCreate : Migration
     {
         /// <inheritdoc />
+        /// <param name="migrationBuilder">The builder used to create the initial schema.</param>
         protected override void Up(MigrationBuilder migrationBuilder)
         {
             migrationBuilder.CreateTable(
@@ -54,6 +55,7 @@ namespace Jellyfin.Plugin.Themerr.Storage.Migrations
         }
 
         /// <inheritdoc />
+        /// <param name="migrationBuilder">The builder used to remove the initial schema.</param>
         protected override void Down(MigrationBuilder migrationBuilder)
         {
             migrationBuilder.DropTable(
