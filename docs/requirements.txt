@@ -1,3 +1,2 @@
 breathe==4.36.0
-sphinx-copybutton==0.5.2
 ./third-party/sphinx-csharp

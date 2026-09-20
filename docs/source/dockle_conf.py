@@ -86,7 +86,6 @@ extensions.extend([  # noqa: F821 - injected by Dockle
     'sphinx.ext.graphviz',  # enable graphs for breathe
     'sphinx.ext.todo',  # enable to-do sections
     'sphinx.ext.viewcode',  # add links to view source code
-    'sphinx_copybutton',  # add a copy button to code blocks
     'sphinx_csharp',  # c# directives
 ])
 
