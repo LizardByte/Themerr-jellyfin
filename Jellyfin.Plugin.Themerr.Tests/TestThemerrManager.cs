@@ -859,6 +859,51 @@ public class TestThemerrManager
         await manager.ProcessItemTheme(item);
 
         Assert.False(File.Exists(themePath));
+
+        var trackedItem = repository.Get(item, themePath);
+        Assert.NotNull(trackedItem);
+        Assert.True(trackedItem.InThemerrDb);
+        Assert.Equal("https://www.youtube.com/watch?v=download-fails", trackedItem.YoutubeThemeUrl);
+        Assert.Null(trackedItem.DownloadedTimestampUtc);
+    }
+
+    [Fact]
+    [Trait("Category", "Unit")]
+    private async Task TestProcessItemThemeReturnsWhenSaveThemerrDataFails()
+    {
+        var repository = CreateThemerrRepository();
+        var tempPath = CreateTempDirectory();
+        var item = CreateMovie("hash-fails");
+        item.Path = Path.Combine(tempPath, "Hash Fails (1970).mp4");
+        var themePath = ThemerrManager.GetThemePath(item);
+        var httpClient = CreateThemerrDbHttpClient(new Dictionary<string, string>
+        {
+            [ThemerrManager.CreateThemerrDbLink("hash-fails", "movies")] =
+                CreateThemerrDbJson("https://www.youtube.com/watch?v=hash-fails"),
+        });
+
+        // Simulates SaveMp3 reporting success without the destination file actually
+        // existing afterward (e.g. an incomplete or since-removed download), which
+        // causes SaveThemerrData's hash computation to fail.
+        var mockYoutubeClient = new Mock<IYoutubeClientWrapper>();
+        mockYoutubeClient
+            .Setup(y => y.DownloadAudioAsync(It.IsAny<string>(), It.IsAny<string>()))
+            .Returns(Task.CompletedTask);
+
+        var manager = CreateThemerrManager(
+            repository,
+            youtubeClientWrapper: mockYoutubeClient.Object,
+            httpClient: httpClient);
+
+        await manager.ProcessItemTheme(item);
+
+        Assert.False(File.Exists(themePath));
+
+        var trackedItem = repository.Get(item, themePath);
+        Assert.NotNull(trackedItem);
+        Assert.True(trackedItem.InThemerrDb);
+        Assert.Equal("https://www.youtube.com/watch?v=hash-fails", trackedItem.YoutubeThemeUrl);
+        Assert.Null(trackedItem.DownloadedTimestampUtc);
     }
 
     [Fact]

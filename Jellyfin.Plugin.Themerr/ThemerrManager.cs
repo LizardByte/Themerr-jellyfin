@@ -370,10 +370,35 @@ namespace Jellyfin.Plugin.Themerr
             var successMp3 = await SaveMp3(themePath, youtubeThemeUrl).ConfigureAwait(false);
             if (!successMp3)
             {
+                // Record that ThemerrDB has a theme for this item even though the download
+                // failed (dead video, cipher extraction failure, etc.), so it still shows up
+                // in the dashboard instead of silently disappearing from tracking.
+                SaveTrackedItem(
+                    item,
+                    themePath,
+                    existingThemerrData,
+                    availability.InThemerrDb,
+                    availability.YoutubeThemeUrl,
+                    availability.CheckedUtc);
                 return;
             }
 
-            SaveThemerrData(item, themePath, youtubeThemeUrl);
+            var successThemerrData = SaveThemerrData(item, themePath, youtubeThemeUrl);
+            if (!successThemerrData)
+            {
+                // The mp3 reported success but the file was missing or unreadable when we
+                // tried to hash it (e.g. an incomplete or since-removed download). Fall back
+                // to a tracked-only record so the item still shows up in the dashboard.
+                SaveTrackedItem(
+                    item,
+                    themePath,
+                    existingThemerrData,
+                    availability.InThemerrDb,
+                    availability.YoutubeThemeUrl,
+                    availability.CheckedUtc);
+                return;
+            }
+
             try
             {
                 await item.RefreshMetadata(CancellationToken.None).ConfigureAwait(false);
