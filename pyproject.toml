@@ -20,7 +20,7 @@ dev = [
     "PyYAML==6.0.3",
 ]
 docs = [
-    "breathe==5.0.0",
+    "breathe==5.1.0",
     "sphinx-csharp",
 ]
 
