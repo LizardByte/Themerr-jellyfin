@@ -146,9 +146,9 @@
                         const backupChecked = document.querySelector('#BackupUserSuppliedTheme').checked
                         config.BackupUserSuppliedTheme = backupChecked
                         config.backupUserSuppliedTheme = backupChecked
-                        _ApiClient.updatePluginConfiguration(ThemerrConfig.pluginUniqueId, config).then(function (result) {
-                            Dashboard.processPluginConfigurationUpdateResult(result)
-                        })
+                        return _ApiClient.updatePluginConfiguration(ThemerrConfig.pluginUniqueId, config)
+                    }).then(function (result) {
+                        Dashboard.processPluginConfigurationUpdateResult(result)
                     })
 
                     e.preventDefault()
@@ -437,15 +437,15 @@
                     replaceAllButton.innerText = translate('replacing_button')
                     replaceAllButton.style.opacity = '0.6'
                     replaceAllButton.style.pointerEvents = 'none'
-                    for (const entry of replaceableItems) {
-                        await replaceWithThemerrTheme(
+                    // Keep theme downloads sequential to avoid overloading the server and upstream services.
+                    await replaceableItems.reduce((replacementChain, entry) =>
+                        replacementChain.then(() => replaceWithThemerrTheme(
                             entry.id,
                             entry.issueUrl,
                             entry.tableColumnContribute,
                             entry.tableColumnStatus,
                             entry.replaceButton
-                        )
-                    }
+                        )), Promise.resolve())
                     replaceAllButton.style.display = 'none'
                 })
                 container.appendChild(replaceAllButton)
