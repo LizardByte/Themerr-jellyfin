@@ -8,6 +8,9 @@
   <h4 align="center">Jellyfin theme song plugin using ThemerrDB.</h4>
 </div>
 
+> [!WARNING]
+> This project is archived and has been replaced by [LizardByte/Themerr](https://github.com/LizardByte/Themerr).
+
 <div align="center">
   <a href="https://github.com/LizardByte/Themerr-jellyfin/actions/workflows/ci.yml?query=branch%3Amaster"><img src="https://img.shields.io/github/actions/workflow/status/lizardbyte/Themerr-jellyfin/ci.yml.svg?branch=master&label=build&logo=github&style=for-the-badge" alt="GitHub Workflow Status"></a>
   <a href="https://github.com/LizardByte/Themerr-jellyfin/releases/latest"><img src="https://img.shields.io/github/downloads/lizardbyte/Themerr-jellyfin/total.svg?style=for-the-badge&logo=github" alt="GitHub Releases"></a>
