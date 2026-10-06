@@ -17,6 +17,7 @@
   "no_snapshot_yet": "Запустите «Обновить песни темы» для создания панели управления.",
   "no_theme_song": "Нет треков с темой",
   "plugin_relies": "Этот плагин полагается на TMDB провайдера. Пожалуйста, убедитесь, что он включен!",
+  "project_archived_warning": "Этот проект архивирован и был заменен Themerr.",
   "replace_all_button": "Заменить все",
   "replace_all_button_title": "Заменить все пользовательские темы темами ThemerrDB",
   "replace_button": "Заменить",
