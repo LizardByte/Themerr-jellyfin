@@ -17,6 +17,7 @@
   "no_snapshot_yet": "Führen Sie 'Theme Songs' aus, um den Fortschritt zu generieren.",
   "no_theme_song": "Kein Titeltitel",
   "plugin_relies": "Dieses Plugin basiert auf dem TMDB-Provider. Bitte stellen Sie sicher, dass es aktiviert ist!",
+  "project_archived_warning": "Dieses Projekt ist archiviert und wurde durch Themerr ersetzt.",
   "replace_all_button": "Alle ersetzen",
   "replace_all_button_title": "Ersetzen Sie alle vom Benutzer gelieferten Themes mit ThemerDB Themes",
   "replace_button": "Ersetzen",
