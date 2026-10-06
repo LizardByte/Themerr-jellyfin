@@ -17,6 +17,7 @@
   "no_snapshot_yet": "İlerleme panosunu oluşturmak için 'Tema Şarkılarını Güncelle'yi çalıştırın.",
   "no_theme_song": "Tema şarkısı yok",
   "plugin_relies": "Bu eklenti TMDB sağlayıcısına dayanır. Lütfen etkin olduğundan emin olun!",
+  "project_archived_warning": "Bu proje arşivlenmiştir ve yerini Themerr almıştır.",
   "replace_all_button": "Tümünü Değiştirin",
   "replace_all_button_title": "Kullanıcı tarafından sağlanan tüm temaları ThemerrDB temaları ile değiştirin",
   "replace_button": "Değiştirin",
