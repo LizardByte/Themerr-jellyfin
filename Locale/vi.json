@@ -17,6 +17,7 @@
   "no_snapshot_yet": "Chạy 'Cập nhật bài hát chủ đề' để tạo bảng điều khiển tiến độ.",
   "no_theme_song": "Không có bài hát chủ đề",
   "plugin_relies": "Plugin này phụ thuộc vào nhà cung cấp TMDB. Vui lòng đảm bảo rằng nó đã được kích hoạt!",
+  "project_archived_warning": "Dự án này đã được lưu trữ và đã được thay thế bằng Themerr.",
   "replace_all_button": "Thay thế tất cả",
   "replace_all_button_title": "Thay thế tất cả các chủ đề do người dùng cung cấp bằng các chủ đề từ ThemerrDB",
   "replace_button": "Thay thế",

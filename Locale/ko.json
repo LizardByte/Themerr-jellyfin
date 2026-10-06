@@ -17,6 +17,7 @@
   "no_snapshot_yet": "'테마곡 업데이트'를 실행하여 진행률 대시보드를 생성합니다.",
   "no_theme_song": "테마곡 없음",
   "plugin_relies": "이 플러그인은 TMDB 제공업체에 의존합니다. 활성화되어 있는지 확인하세요!",
+  "project_archived_warning": "이 프로젝트는 아카이브 처리되었으며, Themerr로 대체되었습니다.",
   "replace_all_button": "모두 바꾸기",
   "replace_all_button_title": "사용자가 제공한 모든 테마를 ThemerrDB 테마로 교체합니다.",
   "replace_button": "교체",

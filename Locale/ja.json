@@ -17,6 +17,7 @@
   "no_snapshot_yet": "進捗ダッシュボードを生成するには、「テーマソングを更新」を実行します。",
   "no_theme_song": "テーマの曲がありません",
   "plugin_relies": "このプラグインは TMDB プロバイダーに依存しています。有効にしていることを確認してください！",
+  "project_archived_warning": "このプロジェクトはアーカイブされ、Themerrに置き換えられました。",
   "replace_all_button": "すべて置換",
   "replace_all_button_title": "ユーザーが提供するすべてのテーマをThemerrDBのテーマに置き換える",
   "replace_button": "置換",

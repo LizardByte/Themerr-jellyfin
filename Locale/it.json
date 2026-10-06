@@ -17,6 +17,7 @@
   "no_snapshot_yet": "Eseguire 'Aggiorna brani del tema' per generare il cruscotto di avanzamento.",
   "no_theme_song": "Nessuna sigla",
   "plugin_relies": "Questo plugin si basa sul provider TMDB. Assicurati che sia abilitato!",
+  "project_archived_warning": "Questo progetto è archiviato ed è stato sostituito da Themerr.",
   "replace_all_button": "Sostituisci Tutto",
   "replace_all_button_title": "Sostituire tutti i temi forniti dall'utente con temi ThemerrDB",
   "replace_button": "Sostituisci",

@@ -17,6 +17,7 @@
   "no_snapshot_yet": "Exécutez 'Mettre à jour les chansons du thème' pour générer le tableau de bord de progression.",
   "no_theme_song": "Aucune chanson de thème",
   "plugin_relies": "Ce plugin repose sur le fournisseur TMDB. Veuillez vous assurer qu'il est activé!",
+  "project_archived_warning": "Ce projet est archivé et a été remplacé par Themerr.",
   "replace_all_button": "Remplacer tout",
   "replace_all_button_title": "Remplacer tous les thèmes fournis par l'utilisateur par des thèmes ThemerrDB",
   "replace_button": "Remplacer",

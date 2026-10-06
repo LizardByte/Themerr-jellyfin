@@ -17,6 +17,7 @@
   "no_snapshot_yet": "Uruchom 'Aktualizuj piosenki motywu', aby wygenerować panel postępów.",
   "no_theme_song": "Brak piosenki przewodniej",
   "plugin_relies": "Ta wtyczka opiera się na dostawcy TMDB. Upewnij się, że jest on włączony!",
+  "project_archived_warning": "Ten projekt jest zarchiwizowany i został zastąpiony przez Themerr.",
   "replace_all_button": "Zastąp wszystko",
   "replace_all_button_title": "Zastąp wszystkie dostarczone przez użytkownika motywy ThemerrDB",
   "replace_button": "Zamień",

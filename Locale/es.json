@@ -17,6 +17,7 @@
   "no_snapshot_yet": "Ejecuta 'Actualizar canciones temáticas' para generar el panel de progreso.",
   "no_theme_song": "Sin tema musical",
   "plugin_relies": "Este plugin se basa en el proveedor de TMDB. ¡Por favor, asegúrese que está habilitado!",
+  "project_archived_warning": "Este proyecto está archivado y ha sido reemplazado por Themerr.",
   "replace_all_button": "Reemplazar todo",
   "replace_all_button_title": "Reemplazar todos los temas suministrados por el usuario con temas ThemerrDB",
   "replace_button": "Reemplazar",

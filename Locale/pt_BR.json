@@ -17,6 +17,7 @@
   "no_snapshot_yet": "Execute 'Atualizar músicas temáticas' para gerar o painel de progresso.",
   "no_theme_song": "Sem música tema",
   "plugin_relies": "Este plug-in depende do provedor TMDB. Certifique-se de que ele esteja ativado!",
+  "project_archived_warning": "Este projeto está arquivado e foi substituído pelo Themerr.",
   "replace_all_button": "Substituir todos",
   "replace_all_button_title": "Substituir todos os temas fornecidos pelo ThemerrDB",
   "replace_button": "Substituir",
