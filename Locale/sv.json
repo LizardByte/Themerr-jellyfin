@@ -17,6 +17,7 @@
   "no_snapshot_yet": "Kör 'Uppdatera temasångar' för att generera förloppsinstruktionen.",
   "no_theme_song": "Ingen temalåt",
   "plugin_relies": "Denna plugin förlitar sig på TMDB-leverantören. Se till att den är aktiverad!",
+  "project_archived_warning": "Projektet är arkiverat och har ersatts av Themerr.",
   "replace_all_button": "Ersätt alla",
   "replace_all_button_title": "Ersätt alla teman från användaren med ThemerrDB-teman",
   "replace_button": "Ersätt",
