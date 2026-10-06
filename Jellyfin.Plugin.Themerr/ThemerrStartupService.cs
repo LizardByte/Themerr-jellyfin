@@ -19,6 +19,7 @@ namespace Jellyfin.Plugin.Themerr
     {
         private readonly ITaskManager _taskManager;
         private readonly ThemerrManager _themerrManager;
+        private readonly ILogger<ThemerrStartupService> _logger;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="ThemerrStartupService"/> class.
@@ -34,6 +35,7 @@ namespace Jellyfin.Plugin.Themerr
             ITaskManager taskManager)
         {
             _taskManager = taskManager;
+            _logger = loggerFactory.CreateLogger<ThemerrStartupService>();
             _themerrManager = new ThemerrManager(
                 applicationPaths,
                 libraryManager,
@@ -45,6 +47,10 @@ namespace Jellyfin.Plugin.Themerr
         /// <returns>A task that represents the startup operation.</returns>
         public Task StartAsync(CancellationToken cancellationToken)
         {
+            _logger.LogWarning(
+                "Themerr-jellyfin is archived and has been replaced by LizardByte/Themerr. " +
+                "Please migrate to https://github.com/LizardByte/Themerr.");
+
             _themerrManager.StartInitialMigrationUpdate();
 
             var plugin = ThemerrPlugin.Instance;
