@@ -17,6 +17,7 @@
   "no_snapshot_yet": "執行「更新主題曲」以產生進度儀表板。",
   "no_theme_song": "沒有主題曲",
   "plugin_relies": "此插件依賴於 TMDB 提供者。請確認已啟用！",
+  "project_archived_warning": "此專案已歸檔，並由 Themerr 取代。",
   "replace_all_button": "全部更換",
   "replace_all_button_title": "使用 ThemerrDB 主題取代所有使用者提供的主題",
   "replace_button": "更換",
