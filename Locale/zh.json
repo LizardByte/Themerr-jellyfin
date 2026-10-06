@@ -17,6 +17,7 @@
   "no_snapshot_yet": "运行“更新主题歌曲”生成进度仪表板。",
   "no_theme_song": "没有主题歌曲",
   "plugin_relies": "此插件依赖于 TMDB 提供程序。请确保它已启用！",
+  "project_archived_warning": "此项目已存档，已被Themerr取代。",
   "replace_all_button": "全部替换",
   "replace_all_button_title": "将所有用户提供的主题替换为 ThemerrDB 主题",
   "replace_button": "替换",
